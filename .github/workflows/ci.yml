@@ -14,9 +14,9 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: template_nest
-          POSTGRES_PASSWORD: template_nest
-          POSTGRES_DB: template_nest_test
+          POSTGRES_USER: grafo
+          POSTGRES_PASSWORD: grafo
+          POSTGRES_DB: grafo_tareas_test
         ports:
           - 5432:5432
         options: >-
@@ -26,7 +26,7 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://template_nest:template_nest@localhost:5432/template_nest_test?schema=public
+      DATABASE_URL: postgresql://grafo:grafo@localhost:5432/grafo_tareas_test?schema=public
       NODE_ENV: test
 
     steps:
@@ -48,3 +48,7 @@ jobs:
       - run: pnpm test
       - run: pnpm prisma migrate deploy
       - run: pnpm test:e2e
+      # El contrato versionado no puede quedar atrás del código: la PWA y la VR generan sus hooks de acá.
+      - run: pnpm openapi:export && git diff --exit-code openapi.json
+      # La API no conoce ninguna herramienta (concepto § Prueba de que sigue agnóstico).
+      - run: '! grep -rnE "sag\.laboratorio|Laboratorio/|dev\.azure|6VhFQg6v45qcJHPc|todoist" src | grep -v /importadores/'

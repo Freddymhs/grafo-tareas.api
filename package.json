@@ -1,7 +1,7 @@
 {
   "name": "grafo-tareas-api",
   "version": "0.0.1",
-  "description": "",
+  "description": "grafo-tareas: tareas como grafo — nodos, conexiones, ramas y lo derivado (API NestJS)",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
@@ -23,7 +23,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prepare": "husky"
+    "prepare": "husky",
+    "openapi:export": "pnpm build && node dist/openapi"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
@@ -120,5 +121,6 @@
       "^@config/(.*)$": "<rootDir>/config/$1",
       "^@database/(.*)$": "<rootDir>/database/$1"
     }
-  }
+  },
+  "packageManager": "pnpm@10.34.7"
 }

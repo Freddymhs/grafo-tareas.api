@@ -21,6 +21,12 @@ export class ValidationError extends DomainError {
   }
 }
 
+export class ConflictError extends DomainError {
+  constructor(message: string) {
+    super('CONFLICT', message, 409);
+  }
+}
+
 export class ExternalAPIError extends DomainError {
   constructor(message: string = 'External API error') {
     super('EXTERNAL_API_ERROR', message, 502);

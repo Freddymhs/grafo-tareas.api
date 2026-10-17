@@ -1,0 +1,232 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
+import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { AppModule } from './../src/app.module';
+import { PrismaService } from './../src/database/prisma.service';
+
+/** La forma que da el ResponseInterceptor: { statusCode, data, meta }. */
+interface Envuelto<T> {
+  data: T;
+}
+interface ConId {
+  id: string;
+}
+interface Resumen extends ConId {
+  titulo: string;
+}
+interface Bloqueado {
+  bloqueado: boolean;
+  por: Resumen[];
+}
+interface Libera {
+  directos: Resumen[];
+  cadena: Resumen[];
+}
+
+const PREFIJO = '/api/v1';
+const UUID_INEXISTENTE = '00000000-0000-4000-8000-000000000000';
+
+describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres tareas', () => {
+  let app: NestFastifyApplication;
+  let prisma: PrismaService;
+
+  const post = async <T>(url: string, payload: object) => {
+    const res = await app.inject({
+      method: 'POST',
+      url: PREFIJO + url,
+      payload,
+    });
+    return {
+      status: res.statusCode,
+      body: JSON.parse(res.body) as Envuelto<T>,
+    };
+  };
+  const get = async <T>(url: string) => {
+    const res = await app.inject({ method: 'GET', url: PREFIJO + url });
+    return {
+      status: res.statusCode,
+      body: JSON.parse(res.body) as Envuelto<T>,
+    };
+  };
+  const nodo = async (tipo: TipoNodo, titulo: string) =>
+    (await post<ConId>('/nodos', { tipo, titulo })).body.data.id;
+  const conectar = (origenId: string, destinoId: string, tipo: TipoConexion) =>
+    post<ConId>('/conexiones', { origenId, destinoId, tipo });
+  const titulos = (nodos: Resumen[]) =>
+    nodos.map(({ titulo }) => titulo).sort();
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+    app = moduleFixture.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter(),
+    );
+    app.setGlobalPrefix('api/v1');
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    prisma = app.get(PrismaService);
+    await prisma.conexion.deleteMany();
+    await prisma.nodo.deleteMany();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  const ids: Record<string, string> = {};
+
+  it('crea una rama y rechaza color fuera de una RAMA', async () => {
+    const rama = await post<ConId>('/ramas', {
+      titulo: 'Control fronterizo',
+      color: '#3b82f6',
+    });
+    expect(rama.status).toBe(201);
+    ids.rama = rama.body.data.id;
+
+    const conColor = await post('/nodos', {
+      tipo: TipoNodo.TAREA,
+      titulo: 'x',
+      color: '#ffffff',
+    });
+    expect(conColor.status).toBe(400);
+  });
+
+  it('un importador no duplica: mismo origen + id → 409 (C3)', async () => {
+    const externo = { externoOrigen: 'todoist', externoId: '123' };
+    const primero = await post('/nodos', {
+      tipo: TipoNodo.TAREA,
+      titulo: 'a',
+      ...externo,
+    });
+    const segundo = await post('/nodos', {
+      tipo: TipoNodo.TAREA,
+      titulo: 'b',
+      ...externo,
+    });
+    expect([primero.status, segundo.status]).toEqual([201, 409]);
+  });
+
+  it('arma el grafo y valida las conexiones', async () => {
+    ids.tomas = await nodo(TipoNodo.PERSONA, 'Tomás');
+    ids.duda = await nodo(TipoNodo.DUDA, 'W2 · ¿condición o tabla?');
+    ids.t1 = await nodo(TipoNodo.TAREA, 'Validador del paso 3');
+    ids.t2 = await nodo(TipoNodo.TAREA, 'Service del paso 3');
+    ids.t3 = await nodo(TipoNodo.TAREA, 'Postman del PBI');
+    ids.libre = await nodo(TipoNodo.TAREA, 'Leer la wiki');
+
+    expect(
+      (await conectar(ids.duda, ids.tomas, TipoConexion.ESPERA_RESPUESTA_DE))
+        .status,
+    ).toBe(201);
+    await conectar(ids.t1, ids.duda, TipoConexion.BLOQUEADA_POR);
+    await conectar(ids.t2, ids.duda, TipoConexion.BLOQUEADA_POR);
+    await conectar(ids.t3, ids.t1, TipoConexion.DEPENDE_DE);
+    await conectar(ids.t1, ids.rama, TipoConexion.PERTENECE_A);
+    await conectar(ids.libre, ids.rama, TipoConexion.PERTENECE_A);
+
+    expect(
+      (await conectar(ids.t1, ids.duda, TipoConexion.BLOQUEADA_POR)).status,
+    ).toBe(409);
+    expect(
+      (await conectar(ids.t1, ids.t1, TipoConexion.DEPENDE_DE)).status,
+    ).toBe(400);
+    expect(
+      (await conectar(ids.t1, UUID_INEXISTENTE, TipoConexion.DEPENDE_DE))
+        .status,
+    ).toBe(404);
+  });
+
+  it('bloqueado: la tarea espera la duda; la libre no espera nada (C1)', async () => {
+    const t1 = await get<Bloqueado>(`/nodos/${ids.t1}/bloqueado`);
+    expect(t1.body.data.bloqueado).toBe(true);
+    expect(titulos(t1.body.data.por)).toEqual(['W2 · ¿condición o tabla?']);
+
+    const libre = await get<Bloqueado>(`/nodos/${ids.libre}/bloqueado`);
+    expect(libre.body.data.bloqueado).toBe(false);
+  });
+
+  it('hoy puedo: solo lo abierto que nada bloquea, y nunca personas, dudas ni ramas', async () => {
+    const hoy = await get<Resumen[]>('/derivado/hoy-puedo');
+    expect(titulos(hoy.body.data)).toEqual(['Leer la wiki', 'a']);
+  });
+
+  it('si Tomás contesta: libera la duda directo y las tres tareas en cadena', async () => {
+    const libera = await get<Libera>(`/nodos/${ids.tomas}/libera`);
+    expect(titulos(libera.body.data.directos)).toEqual([
+      'W2 · ¿condición o tabla?',
+    ]);
+    expect(titulos(libera.body.data.cadena)).toEqual([
+      'Postman del PBI',
+      'Service del paso 3',
+      'Validador del paso 3',
+    ]);
+  });
+
+  it('un ciclo A→B→A no cuelga la consulta', async () => {
+    const a = await nodo(TipoNodo.TAREA, 'ciclo-a');
+    const b = await nodo(TipoNodo.TAREA, 'ciclo-b');
+    await conectar(a, b, TipoConexion.DEPENDE_DE);
+    await conectar(b, a, TipoConexion.DEPENDE_DE);
+
+    const libera = await get<Libera>(`/nodos/${a}/libera`);
+    expect(libera.status).toBe(200);
+    // B solo esperaba a A: queda libre. A no se lista a sí mismo. La recursión del SQL y el punto fijo terminan.
+    expect(titulos(libera.body.data.directos)).toEqual(['ciclo-b']);
+    expect(libera.body.data.cadena).toEqual([]);
+  });
+
+  it('las ramas cuentan sus miembros', async () => {
+    const ramas = await get<Array<ConId & { miembros: number }>>('/ramas');
+    const rama = ramas.body.data.find(({ id }) => id === ids.rama);
+    expect(rama?.miembros).toBe(2);
+  });
+
+  it('las posiciones se guardan en lote y se leen (C2); un id inexistente tumba el lote', async () => {
+    const guardar = await app.inject({
+      method: 'PUT',
+      url: `${PREFIJO}/nodos/posiciones`,
+      payload: { posiciones: [{ id: ids.t1, x: 1, y: 1.6, z: -2 }] },
+    });
+    expect(guardar.statusCode).toBe(200);
+
+    const t1 = await get<{ posX: number; posY: number; posZ: number }>(
+      `/nodos/${ids.t1}`,
+    );
+    expect([t1.body.data.posX, t1.body.data.posY, t1.body.data.posZ]).toEqual([
+      1, 1.6, -2,
+    ]);
+
+    const roto = await app.inject({
+      method: 'PUT',
+      url: `${PREFIJO}/nodos/posiciones`,
+      payload: { posiciones: [{ id: UUID_INEXISTENTE, x: 0, y: 0, z: 0 }] },
+    });
+    expect(roto.statusCode).toBe(404);
+  });
+
+  it('cerrar la duda libera la tarea; borrar un nodo borra sus conexiones', async () => {
+    const cerrar = await app.inject({
+      method: 'PATCH',
+      url: `${PREFIJO}/nodos/${ids.duda}`,
+      payload: { estado: EstadoNodo.CERRADO },
+    });
+    expect(cerrar.statusCode).toBe(200);
+    const t1 = await get<Bloqueado>(`/nodos/${ids.t1}/bloqueado`);
+    expect(t1.body.data.bloqueado).toBe(false);
+
+    const borrar = await app.inject({
+      method: 'DELETE',
+      url: `${PREFIJO}/nodos/${ids.t3}`,
+    });
+    expect(borrar.statusCode).toBe(204);
+    expect((await get(`/nodos/${ids.t3}`)).status).toBe(404);
+    const conexionesDeT3 = await prisma.conexion.count({
+      where: { OR: [{ origenId: ids.t3 }, { destinoId: ids.t3 }] },
+    });
+    expect(conexionesDeT3).toBe(0);
+  });
+});

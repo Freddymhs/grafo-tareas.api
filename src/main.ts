@@ -3,11 +3,12 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
 import helmet from '@fastify/helmet';
 import { ENV_KEYS } from '@config/env.constants.js';
+import { SWAGGER_CONFIG } from '@config/swagger.js';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -33,14 +34,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('template-nest API')
-    .setDescription('API base de template-nest para construir nuevos servicios')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  const document = SwaggerModule.createDocument(app, SWAGGER_CONFIG);
   SwaggerModule.setup('docs', app, document);
 
   app.enableShutdownHooks();

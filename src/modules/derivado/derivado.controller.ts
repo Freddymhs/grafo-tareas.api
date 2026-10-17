@@ -1,0 +1,38 @@
+import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ErrorResponseDto } from '../../common/dto/index.js';
+import { NodoResumenDto } from '../nodos/dto/index.js';
+import { DerivadoService } from './derivado.service.js';
+import { BloqueadoResponseDto, LiberaResponseDto } from './dto/index.js';
+
+/** Lo que se calcula sobre el grafo. Vive solo acá: la PWA y la VR lo muestran, no lo recalculan (C1). */
+@ApiTags('Derivado')
+@Controller()
+export class DerivadoController {
+  constructor(private readonly service: DerivadoService) {}
+
+  @Get('derivado/hoy-puedo')
+  @ApiOperation({ summary: 'Hoy puedo…: trabajo ABIERTO que nada bloquea' })
+  @ApiResponse({ status: 200, type: [NodoResumenDto] })
+  hoyPuedo() {
+    return this.service.hoyPuedo();
+  }
+
+  @Get('nodos/:id/bloqueado')
+  @ApiOperation({ summary: '¿Está bloqueado? y qué lo bloquea' })
+  @ApiResponse({ status: 200, type: BloqueadoResponseDto })
+  @ApiResponse({ status: 404, type: ErrorResponseDto })
+  bloqueado(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.bloqueado(id);
+  }
+
+  @Get('nodos/:id/libera')
+  @ApiOperation({
+    summary: 'Si este nodo se cierra (alguien contesta), qué se libera',
+  })
+  @ApiResponse({ status: 200, type: LiberaResponseDto })
+  @ApiResponse({ status: 404, type: ErrorResponseDto })
+  libera(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.libera(id);
+  }
+}

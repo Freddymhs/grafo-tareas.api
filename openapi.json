@@ -1,0 +1,979 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Service healthy"
+          },
+          "503": {
+            "description": "Service degraded"
+          }
+        },
+        "summary": "Health check with DB connectivity",
+        "tags": ["Health"]
+      }
+    },
+    "/api/v1/nodos": {
+      "get": {
+        "operationId": "NodosController_findAll",
+        "parameters": [
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 0,
+              "default": 0,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "tipo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "TAREA",
+                "HISTORIA",
+                "FASE",
+                "RAMA",
+                "DUDA",
+                "PERSONA",
+                "PR",
+                "DAILY_ITEM"
+              ]
+            }
+          },
+          {
+            "name": "estado",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["ABIERTO", "CERRADO"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NodoResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar nodos, filtrando por tipo o estado",
+        "tags": ["Nodos"]
+      },
+      "post": {
+        "operationId": "NodosController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNodoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodoResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Crear un nodo",
+        "tags": ["Nodos"]
+      }
+    },
+    "/api/v1/nodos/posiciones": {
+      "put": {
+        "operationId": "NodosController_guardarPosiciones",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuardarPosicionesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ guardadas: n }"
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Guardar las posiciones del mapa 3D en lote (todo o nada)",
+        "tags": ["Nodos"]
+      }
+    },
+    "/api/v1/nodos/{id}": {
+      "get": {
+        "operationId": "NodosController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodoResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Obtener un nodo",
+        "tags": ["Nodos"]
+      },
+      "patch": {
+        "operationId": "NodosController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNodoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodoResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Editar un nodo (título, estado, color…)",
+        "tags": ["Nodos"]
+      },
+      "delete": {
+        "operationId": "NodosController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Borrar un nodo y sus conexiones",
+        "tags": ["Nodos"]
+      }
+    },
+    "/api/v1/conexiones": {
+      "get": {
+        "operationId": "ConexionesController_findAll",
+        "parameters": [
+          {
+            "name": "nodoId",
+            "required": false,
+            "in": "query",
+            "description": "Conexiones que salen o entran a este nodo",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "tipo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DEPENDE_DE",
+                "ESPERA_RESPUESTA_DE",
+                "BLOQUEADA_POR",
+                "PERTENECE_A",
+                "EN_DAILY_DE"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConexionResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Listar conexiones, de un nodo o de un tipo",
+        "tags": ["Conexiones"]
+      },
+      "post": {
+        "operationId": "ConexionesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConexionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConexionResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Conectar dos nodos",
+        "tags": ["Conexiones"]
+      }
+    },
+    "/api/v1/conexiones/{id}": {
+      "delete": {
+        "operationId": "ConexionesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Quitar una conexión",
+        "tags": ["Conexiones"]
+      }
+    },
+    "/api/v1/ramas": {
+      "get": {
+        "operationId": "RamasController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RamaResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Las ramas de color y cuántos nodos tiene cada una",
+        "tags": ["Ramas"]
+      },
+      "post": {
+        "operationId": "RamasController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRamaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodoResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Crear una rama de color",
+        "tags": ["Ramas"]
+      }
+    },
+    "/api/v1/derivado/hoy-puedo": {
+      "get": {
+        "operationId": "DerivadoController_hoyPuedo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NodoResumenDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Hoy puedo…: trabajo ABIERTO que nada bloquea",
+        "tags": ["Derivado"]
+      }
+    },
+    "/api/v1/nodos/{id}/bloqueado": {
+      "get": {
+        "operationId": "DerivadoController_bloqueado",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BloqueadoResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "¿Está bloqueado? y qué lo bloquea",
+        "tags": ["Derivado"]
+      }
+    },
+    "/api/v1/nodos/{id}/libera": {
+      "get": {
+        "operationId": "DerivadoController_libera",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiberaResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Si este nodo se cierra (alguien contesta), qué se libera",
+        "tags": ["Derivado"]
+      }
+    }
+  },
+  "info": {
+    "title": "grafo-tareas API",
+    "description": "Tareas como grafo: nodos, conexiones, ramas y lo derivado (bloqueado, hoy puedo, qué se libera)",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "NodoResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "TAREA",
+              "HISTORIA",
+              "FASE",
+              "RAMA",
+              "DUDA",
+              "PERSONA",
+              "PR",
+              "DAILY_ITEM"
+            ]
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": ["ABIERTO", "CERRADO"]
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          },
+          "externoOrigen": {
+            "type": "string",
+            "nullable": true
+          },
+          "externoId": {
+            "type": "string",
+            "nullable": true
+          },
+          "posX": {
+            "type": "number",
+            "nullable": true
+          },
+          "posY": {
+            "type": "number",
+            "nullable": true
+          },
+          "posZ": {
+            "type": "number",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": ["id", "tipo", "titulo", "estado", "createdAt", "updatedAt"]
+      },
+      "PosicionNodoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "x": {
+            "type": "number",
+            "example": 1.25
+          },
+          "y": {
+            "type": "number",
+            "example": 1.6
+          },
+          "z": {
+            "type": "number",
+            "example": -2.4
+          }
+        },
+        "required": ["id", "x", "y", "z"]
+      },
+      "GuardarPosicionesDto": {
+        "type": "object",
+        "properties": {
+          "posiciones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PosicionNodoDto"
+            }
+          }
+        },
+        "required": ["posiciones"]
+      },
+      "ErrorDetailDto": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "example": "nombre"
+          },
+          "message": {
+            "type": "string",
+            "example": "must not be empty"
+          }
+        },
+        "required": ["field", "message"]
+      },
+      "ErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 400
+          },
+          "error": {
+            "type": "string",
+            "example": "VALIDATION_ERROR"
+          },
+          "message": {
+            "type": "string",
+            "example": "Validation failed"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDetailDto"
+            }
+          },
+          "meta": {
+            "type": "object"
+          }
+        },
+        "required": ["statusCode", "error", "message", "meta"]
+      },
+      "CreateNodoDto": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "TAREA",
+              "HISTORIA",
+              "FASE",
+              "RAMA",
+              "DUDA",
+              "PERSONA",
+              "PR",
+              "DAILY_ITEM"
+            ],
+            "example": "TAREA"
+          },
+          "titulo": {
+            "type": "string",
+            "example": "Revisar la colección del PBI 24972"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": ["ABIERTO", "CERRADO"],
+            "default": "ABIERTO"
+          },
+          "color": {
+            "type": "string",
+            "example": "#3b82f6",
+            "description": "Solo para nodos RAMA"
+          },
+          "externoOrigen": {
+            "type": "string",
+            "example": "mi-tablero",
+            "description": "Herramienta de origen (texto libre). Va junto con externoId"
+          },
+          "externoId": {
+            "type": "string",
+            "example": "6Vh..."
+          }
+        },
+        "required": ["tipo", "titulo"]
+      },
+      "UpdateNodoDto": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "example": "Revisar la colección del PBI 24972"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": ["ABIERTO", "CERRADO"],
+            "default": "ABIERTO"
+          },
+          "color": {
+            "type": "string",
+            "example": "#3b82f6",
+            "description": "Solo para nodos RAMA"
+          }
+        }
+      },
+      "ConexionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "origenId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "destinoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "DEPENDE_DE",
+              "ESPERA_RESPUESTA_DE",
+              "BLOQUEADA_POR",
+              "PERTENECE_A",
+              "EN_DAILY_DE"
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": ["id", "origenId", "destinoId", "tipo", "createdAt"]
+      },
+      "CreateConexionDto": {
+        "type": "object",
+        "properties": {
+          "origenId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "El nodo que depende / pertenece"
+          },
+          "destinoId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "El nodo del que depende / al que pertenece"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "DEPENDE_DE",
+              "ESPERA_RESPUESTA_DE",
+              "BLOQUEADA_POR",
+              "PERTENECE_A",
+              "EN_DAILY_DE"
+            ],
+            "example": "DEPENDE_DE"
+          }
+        },
+        "required": ["origenId", "destinoId", "tipo"]
+      },
+      "RamaResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "color": {
+            "type": "object",
+            "example": "#3b82f6"
+          },
+          "estado": {
+            "type": "string",
+            "enum": ["ABIERTO", "CERRADO"]
+          },
+          "miembros": {
+            "type": "number",
+            "description": "Nodos que PERTENECEN_A esta rama"
+          }
+        },
+        "required": ["id", "titulo", "color", "estado", "miembros"]
+      },
+      "CreateRamaDto": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "example": "Control fronterizo"
+          },
+          "color": {
+            "type": "string",
+            "example": "#3b82f6"
+          }
+        },
+        "required": ["titulo", "color"]
+      },
+      "NodoResumenDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "TAREA",
+              "HISTORIA",
+              "FASE",
+              "RAMA",
+              "DUDA",
+              "PERSONA",
+              "PR",
+              "DAILY_ITEM"
+            ]
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": ["ABIERTO", "CERRADO"]
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": ["id", "tipo", "titulo", "estado"]
+      },
+      "BloqueadoResponseDto": {
+        "type": "object",
+        "properties": {
+          "bloqueado": {
+            "type": "boolean"
+          },
+          "por": {
+            "description": "Los nodos ABIERTOS de los que depende, a los que espera o que lo bloquean",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NodoResumenDto"
+            }
+          }
+        },
+        "required": ["bloqueado", "por"]
+      },
+      "LiberaResponseDto": {
+        "type": "object",
+        "properties": {
+          "directos": {
+            "description": "Quedan libres en cuanto se cierra el nodo",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NodoResumenDto"
+            }
+          },
+          "cadena": {
+            "description": "Quedan libres después, si lo liberado antes también se cierra",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NodoResumenDto"
+            }
+          }
+        },
+        "required": ["directos", "cadena"]
+      }
+    }
+  }
+}

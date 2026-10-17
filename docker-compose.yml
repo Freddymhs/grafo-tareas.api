@@ -8,7 +8,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
-      - DATABASE_URL=postgresql://template_nest:template_nest@postgres:5432/template_nest?schema=public
+      - DATABASE_URL=postgresql://grafo:grafo@postgres:5432/grafo_tareas?schema=public
       - CORS_ORIGINS=http://localhost:3001
       - PINO_LOG_LEVEL=info
       - THROTTLE_TTL=60
@@ -23,15 +23,15 @@ services:
   postgres:
     image: postgres:16-alpine
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5433:5432'
     environment:
-      POSTGRES_USER: template_nest
-      POSTGRES_PASSWORD: template_nest
-      POSTGRES_DB: template_nest
+      POSTGRES_USER: grafo
+      POSTGRES_PASSWORD: grafo
+      POSTGRES_DB: grafo_tareas
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U template_nest']
+      test: ['CMD-SHELL', 'pg_isready -U grafo']
       interval: 5s
       timeout: 5s
       retries: 5

@@ -1,182 +1,48 @@
-# template-nest
+# grafo-tareas.api
 
-Plantilla backend con NestJS + Fastify + Prisma + PostgreSQL.
+La fuente de verdad de `grafo-tareas`: tareas como **grafo**, no como árbol. Nació de `Freddymhs/template-nest`
+(NestJS 11 + Fastify + Prisma 7 + Postgres); el plan vive en el orquestador: `../docs/_CONCEPTO.md` y
+`../docs/backlog/FASE_2_API_GRAFO.md`.
 
-Sirve como base para construir APIs y futuros frontends.
+**La API no conoce ninguna herramienta** (ni Todoist, ni Azure): solo nodos, conexiones y ramas. Lo único que
+nombra una herramienta son los importadores (`src/importadores/`, FASE 3). El CI lo verifica con un grep.
 
-## Quick Start
+## El dominio
+
+|              |                                                                                                                                                                                                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Nodo**     | `tipo` (TAREA, HISTORIA, FASE, RAMA, DUDA, PERSONA, PR, DAILY_ITEM) · `titulo` · `estado` (ABIERTO/CERRADO) · `color` (solo RAMA) · `externo {origen, id}` (de dónde se importó, único) · `pos {x,y,z}` (el mapa 3D, persistido)                              |
+| **Conexión** | `origen → destino` con `tipo`: DEPENDE_DE, ESPERA_RESPUESTA_DE, BLOQUEADA_POR (bloquean al origen mientras el destino siga ABIERTO), PERTENECE_A (a una rama), EN_DAILY_DE                                                                                    |
+| **Derivado** | se calcula **acá y solo acá** (C1): `bloqueado` (qué lo frena), `hoy-puedo` (trabajo abierto que nada bloquea), `libera` (si este nodo se cierra —alguien contesta—, qué queda libre, directo y en cadena; `WITH RECURSIVE` + punto fijo, termina con ciclos) |
+
+## Rutas (prefijo `/api/v1`, Swagger en `/docs`)
+
+```
+GET/POST        nodos               PATCH/DELETE nodos/:id        PUT nodos/posiciones (lote, todo o nada)
+GET/POST        conexiones          DELETE conexiones/:id
+GET/POST        ramas               (ramas con cuántos nodos tiene cada una)
+GET             derivado/hoy-puedo  GET nodos/:id/bloqueado       GET nodos/:id/libera
+GET             health
+```
+
+`openapi.json` es el contrato versionado: la PWA y la VR generan sus tipos y hooks de ahí (Orval). Se regenera con
+`pnpm openapi:export` y el CI falla si quedó atrás del código.
+
+## Correr
 
 ```bash
-# 1. Clonar y copiar variables
+docker compose up -d postgres          # Postgres 16 en 127.0.0.1:5433 (usuario/clave grafo, bases grafo_tareas y grafo_tareas_test)
 cp .env.example .env
-
-# 2. Instalar dependencias
-pnpm install
-
-# 3. Levantar todo con Docker (api + postgres)
-docker-compose up
-
-# O solo la DB con Docker y la app en local:
-docker-compose up postgres
-pnpm prisma:generate
-pnpm dev
+pnpm install && pnpm prisma:generate && pnpm prisma:migrate
+pnpm build && pnpm start:prod           # http://localhost:3000/docs
 ```
 
-La app arranca en `http://localhost:3000` y Swagger en `http://localhost:3000/docs`.
+Gates: `pnpm type-check` · `pnpm lint` · `pnpm test` (unit, repos mockeados) · `pnpm test:e2e` (contra `grafo_tareas_test`:
+el escenario del concepto —Tomás, una duda W2 y tres tareas— de punta a punta).
 
-## Stack
+## Convenciones
 
-| Capa          | Tecnologia                          |
-| ------------- | ----------------------------------- |
-| Framework     | NestJS 11                           |
-| HTTP adapter  | Fastify                             |
-| ORM           | Prisma 7                            |
-| Base de datos | PostgreSQL 16                       |
-| Validacion    | class-validator + class-transformer |
-| Documentacion | Swagger (GET /docs)                 |
-| Logging       | Pino (nestjs-pino)                  |
-| Testing       | Jest + Supertest                    |
-| CI            | GitHub Actions                      |
-
-## Scripts
-
-| Script                 | Descripcion                    |
-| ---------------------- | ------------------------------ |
-| `pnpm dev`             | Desarrollo con watch mode      |
-| `pnpm build`           | Build de produccion            |
-| `pnpm start:prod`      | Ejecutar build                 |
-| `pnpm lint`            | ESLint + Prettier con auto-fix |
-| `pnpm test`            | Tests unitarios                |
-| `pnpm test:cov`        | Tests con coverage             |
-| `pnpm test:e2e`        | Tests end-to-end               |
-| `pnpm prisma:generate` | Generar Prisma client          |
-| `pnpm prisma:migrate`  | Ejecutar migraciones           |
-| `pnpm prisma:studio`   | Prisma Studio (GUI de DB)      |
-
-## Endpoints
-
-| Metodo | Path                   | Descripcion                   |
-| ------ | ---------------------- | ----------------------------- |
-| GET    | `/api/v1/health`       | Health check con estado de DB |
-| GET    | `/api/v1/examples`     | Listar recursos (paginado)    |
-| GET    | `/api/v1/examples/:id` | Obtener recurso por ID        |
-| POST   | `/api/v1/examples`     | Crear recurso                 |
-| PUT    | `/api/v1/examples/:id` | Actualizar recurso            |
-| DELETE | `/api/v1/examples/:id` | Eliminar recurso              |
-| GET    | `/docs`                | Swagger UI                    |
-
-## Documentacion
-
-| Documento                               | Contenido                                                                                                                  |
-| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| [IDEA](docs/IDEA.md)                    | Documentacion completa: arquitectura, configuracion, contrato API, convenciones, deploy, testing, guia de modulos, roadmap |
-| [Fuentes de datos](docs/fuentes-datos/) | Investigacion de APIs externas verificadas                                                                                 |
-
-## Variables de entorno
-
-Ver `.env.example` para la lista completa. Las variables requeridas se validan al arrancar con Joi (fail-fast).
-
-## Docker
-
-```bash
-# Desarrollo (api + postgres con hot-reload)
-docker-compose up
-
-# Solo build de imagen
-docker build -t template-nest-api .
-
-# Produccion
-docker build -t template-nest-api .
-docker run -p 3000:3000 --env-file .env template-nest-api
-```
-
-## Licencia
-
-Privado. Todos los derechos reservados.
-
----
-
-## Verificación
-
-Todo lo siguiente está comprobado y funcionando al 100%.
-
-### Calidad de código
-
-| Check                          | Comando                |
-| ------------------------------ | ---------------------- |
-| Lint + formato                 | `pnpm lint`            |
-| Tipado estricto                | `pnpm type-check`      |
-| Build (nest build + tsc-alias) | `pnpm build`           |
-| Prisma client generation       | `pnpm prisma:generate` |
-
-### Tests unitarios (10/10)
-
-```bash
-pnpm test
-```
-
-| Suite                       | Cubre                                                                   |
-| --------------------------- | ----------------------------------------------------------------------- |
-| `health.controller.spec.ts` | HTTP 200 (DB ok), HTTP 503 (DB caída), uptime y timestamp en respuesta  |
-| `example.service.spec.ts`   | Lógica CRUD, NotFoundError en ID inexistente, delegación al repositorio |
-
-### Tests e2e (1/1)
-
-```bash
-DATABASE_URL="postgresql://template_nest:template_nest@localhost:5432/template_nest?schema=public" \
-  pnpm test:e2e
-```
-
-| Suite             | Cubre                                                                                               |
-| ----------------- | --------------------------------------------------------------------------------------------------- |
-| `app.e2e-spec.ts` | Ciclo completo NestJS: bootstrap real de AppModule + Fastify, `GET /api/v1/health` con DB conectada |
-
-### Runtime
-
-```bash
-docker compose up -d postgres
-DATABASE_URL="..." pnpm prisma migrate deploy
-DATABASE_URL="..." PORT=3300 ... node dist/main.js
-```
-
-| Endpoint                        | Resultado verificado                                     |
-| ------------------------------- | -------------------------------------------------------- |
-| `GET /api/v1/health` (DB ok)    | HTTP 200 `{"status":"ok","db":"connected","uptime":...}` |
-| `GET /api/v1/health` (DB caída) | HTTP 503 `{"status":"degraded",...}`                     |
-| `GET /api/v1/examples`          | HTTP 200 con paginación                                  |
-| `POST /api/v1/examples`         | HTTP 201 con entidad creada                              |
-| `GET /api/v1/examples/:id`      | HTTP 200 con entidad                                     |
-| `PUT /api/v1/examples/:id`      | HTTP 200 con campos actualizados                         |
-| `DELETE /api/v1/examples/:id`   | HTTP 204                                                 |
-| `GET /docs`                     | HTTP 200 Swagger UI                                      |
-
-### Docker
-
-```bash
-docker build -t template-nest .
-# prisma generate corre en el stage deps, sin necesidad de DB
-```
-
-### CI (GitHub Actions)
-
-`pnpm install` → `pnpm prisma:generate` → `pnpm lint` → `pnpm build` → `pnpm test` → `pnpm prisma migrate deploy` → `pnpm test:e2e`  
-Postgres 16 disponible como service en el job.
-
-### Pipeline de commits (local)
-
-`git commit` → husky → lint-staged → `eslint --fix` + `prettier --write` (solo archivos staged)
-
-### Seguridad verificada
-
-| Aspecto                             | Estado                                                                                |
-| ----------------------------------- | ------------------------------------------------------------------------------------- |
-| Rate limiting (`@nestjs/throttler`) | Activo — in-memory store (ver gap abajo)                                              |
-| CORS (`@fastify/cors`)              | Activo — orígenes desde env                                                           |
-| Helmet (`@fastify/helmet`)          | Activo — CSP, HSTS, X-Frame-Options en cada respuesta                                 |
-| Body size (Fastify default)         | 1 MB por defecto — ajustar `bodyLimit` en `FastifyAdapter` si el proyecto lo requiere |
-
-### Gaps conocidos
-
-- **Throttler en multi-instancia** _(medio)_: el store es in-memory por defecto — cada pod tiene su propio contador. Para producción con múltiples réplicas, reemplazar con `ThrottlerStorageRedisService` (`@nestjs-throttler-storage-redis`)
-- **Tests e2e CRUD**: el e2e actual solo cubre health — añadir endpoints de examples por proyecto
-- **Auth/guards**: no incluido en el template — se agrega por proyecto
+- Un módulo por dominio (`src/modules/{nodos,conexiones,ramas,derivado}`), cada uno `controller → service → repository`.
+- Los errores de dominio son `DomainError` (404 `NotFoundError`, 400 `ValidationError`, 409 `ConflictError`); el filtro global los traduce.
+- Constantes del grafo en `src/common/constants/grafo.constants.ts`: qué conexiones bloquean, qué tipos son trabajo.
+- `calcular-libera.ts` es una función pura con su test: la regla de "qué se libera" no toca la base.

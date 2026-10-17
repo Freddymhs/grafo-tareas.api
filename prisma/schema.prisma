@@ -6,15 +6,69 @@ datasource db {
   provider = "postgresql"
 }
 
-/// Modelo de ejemplo para demostrar el patron CRUD.
-/// Reemplazar o eliminar al implementar dominios reales.
-model Example {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+/// Qué es un nodo del grafo (docs/_CONCEPTO.md § Modelo de dominio). HISTORIA y no HU: vocabulario de cualquier empresa.
+enum TipoNodo {
+  TAREA
+  HISTORIA
+  FASE
+  RAMA
+  DUDA
+  PERSONA
+  PR
+  DAILY_ITEM
+}
 
-  @@map("examples")
+enum EstadoNodo {
+  ABIERTO
+  CERRADO
+}
+
+/// DEPENDE_DE, ESPERA_RESPUESTA_DE y BLOQUEADA_POR bloquean al origen mientras el destino siga ABIERTO.
+enum TipoConexion {
+  DEPENDE_DE
+  ESPERA_RESPUESTA_DE
+  BLOQUEADA_POR
+  PERTENECE_A
+  EN_DAILY_DE
+}
+
+model Nodo {
+  id            String     @id @default(uuid())
+  tipo          TipoNodo
+  titulo        String
+  descripcion   String?
+  estado        EstadoNodo @default(ABIERTO)
+  /// Solo los nodos RAMA: el color de la rama, en hex (#rrggbb).
+  color         String?
+  /// De dónde se importó (texto libre: todoist, azure, github…) y su id allá. La API no conoce la lista (C3).
+  externoOrigen String?    @map("externo_origen")
+  externoId     String?    @map("externo_id")
+  /// Posición en el mapa 3D, persistida para que el mapa no cambie entre sesiones (C2).
+  posX          Float?     @map("pos_x")
+  posY          Float?     @map("pos_y")
+  posZ          Float?     @map("pos_z")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  salientes Conexion[] @relation("origen")
+  entrantes Conexion[] @relation("destino")
+
+  @@unique([externoOrigen, externoId])
+  @@index([tipo, estado])
+  @@map("nodos")
+}
+
+model Conexion {
+  id        String       @id @default(uuid())
+  origenId  String       @map("origen_id")
+  destinoId String       @map("destino_id")
+  tipo      TipoConexion
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  origen  Nodo @relation("origen", fields: [origenId], references: [id], onDelete: Cascade)
+  destino Nodo @relation("destino", fields: [destinoId], references: [id], onDelete: Cascade)
+
+  @@unique([origenId, destinoId, tipo])
+  @@index([destinoId])
+  @@map("conexiones")
 }
