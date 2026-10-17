@@ -14,7 +14,7 @@ export class RolesController {
   })
   @ApiResponse({ status: 200, type: RolesResponseDto })
   lista(): RolesResponseDto {
-    const { defecto, roles } = this.service.todos();
+    const { defecto, roles, complementos } = this.service.todos();
     return {
       defecto: roles.length > 0 ? defecto : null,
       roles: roles.map(({ clave, nombre, para, etapas }) => ({
@@ -23,6 +23,7 @@ export class RolesController {
         para,
         columnas: etapas.map(({ columna }) => columna),
       })),
+      complementos: complementos.map((c) => ({ ...c })),
     };
   }
 }

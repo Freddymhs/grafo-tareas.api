@@ -10,4 +10,9 @@ export {
   LARGO_MAXIMO_ETIQUETA,
   LARGO_MAXIMO_BUSQUEDA,
   LIMITE_MAXIMO_PAGINA,
+  PREFIJO_COMPLEMENTO,
+  OCULTAR_NOTAS,
+  etiquetaDeComplemento,
+  CLAVE_DECISION,
+  ORIGEN_RITUAL,
 } from './grafo.constants';

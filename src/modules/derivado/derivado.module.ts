@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
+import { RolesModule } from '../roles/roles.module.js';
 import { DerivadoController } from './derivado.controller.js';
 import { DerivadoRepository } from './derivado.repository.js';
 import { DerivadoService } from './derivado.service.js';
 
 @Module({
+  imports: [RolesModule],
   controllers: [DerivadoController],
   providers: [DerivadoService, DerivadoRepository],
 })

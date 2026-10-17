@@ -23,6 +23,7 @@ GET/POST        conexiones          DELETE conexiones/:id
 GET/POST        ramas               (ramas con cuántos nodos tiene cada una)
 GET             derivado/hoy-puedo  GET nodos/:id/bloqueado       GET nodos/:id/libera
 GET             etapas              roles   (GET nodos?rol=<clave>: los nodos de ese rol)
+GET/POST        nodos/:id/complementos   POST nodos/:id/escalar   POST nodos/:id/decidir   GET area
 GET             health
 ```
 
@@ -30,6 +31,12 @@ GET             health
 trabajo y las columnas de cada tablero, y `GET /etapas` suma esas columnas a la lista del tablero (`ETAPAS`, C9). El
 rol de un nodo es una etiqueta con la clave del rol; sin ninguna, es el `defecto`. Sin `ROLES_ARCHIVO`, no hay roles y
 todo funciona como antes.
+
+**Complementos (FASE 9, C11).** Lo que cuelga de un PBI sin ser un rol: el catálogo está en el mismo `roles.yaml`
+(`complementos:`), cada uno es un nodo DUDA/TAREA/DAILY_ITEM con la etiqueta `complemento:<clave>` y `PERTENECE_A` su PBI.
+Una duda frena a su PBI; `escalar` la pasa al siguiente de la escalera del área y `decidir` la cierra dejando la
+decisión. Escaleras y rituales salen del `refs.yaml` del área (`REFS_ARCHIVO`, `GET /area`). Las notas (no
+accionables) no entran en `hoy-puedo` y `GET /nodos?notas=ocultar` las saca del tablero.
 
 `openapi.json` es el contrato versionado: la PWA y la VR generan sus tipos y hooks de ahí (Orval). Se regenera con
 `pnpm openapi:export` y el CI falla si quedó atrás del código.

@@ -2,13 +2,17 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { EstadoNodo, TipoNodo } from '@prisma/client';
 import {
   IsEnum,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
 } from 'class-validator';
-import { LARGO_MAXIMO_BUSQUEDA } from '../../../common/constants/index.js';
+import {
+  LARGO_MAXIMO_BUSQUEDA,
+  OCULTAR_NOTAS,
+} from '../../../common/constants/index.js';
 import { PaginationQueryDto } from '../../../common/dto/index.js';
 
 export class ListarNodosDto extends PaginationQueryDto {
@@ -45,6 +49,15 @@ export class ListarNodosDto extends PaginationQueryDto {
   @IsString()
   @IsNotEmpty()
   rol?: string;
+
+  @ApiPropertyOptional({
+    enum: [OCULTAR_NOTAS],
+    description:
+      'ocultar = sin los complementos que son notas (dolor, apunte, decisión…): el tablero',
+  })
+  @IsOptional()
+  @IsIn([OCULTAR_NOTAS])
+  notas?: typeof OCULTAR_NOTAS;
 
   @ApiPropertyOptional({
     format: 'uuid',

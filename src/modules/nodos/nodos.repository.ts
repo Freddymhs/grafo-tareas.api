@@ -20,6 +20,8 @@ export interface FiltroNodos {
   readonly rama?: string;
   readonly q?: string;
   readonly rol?: FiltroRol;
+  /** Etiquetas que excluyen al nodo (las notas, si el tablero las oculta). */
+  readonly sinEtiquetas?: readonly string[];
 }
 
 /** Traduce el filtro del dominio al where de Prisma. */
@@ -31,6 +33,7 @@ function whereDe({
   rama,
   q,
   rol,
+  sinEtiquetas,
 }: FiltroNodos): Prisma.NodoWhereInput {
   const porEtapa =
     etapa === undefined ? {} : { etapa: etapa === '' ? null : etapa };
@@ -65,13 +68,17 @@ function whereDe({
             ? {}
             : { NOT: { etiquetas: { hasSome: [...rol.sinNinguna] } } },
         ];
+  const sinExcluidas =
+    sinEtiquetas === undefined || sinEtiquetas.length === 0
+      ? {}
+      : { NOT: { etiquetas: { hasSome: [...sinEtiquetas] } } };
   return {
     tipo,
     estado,
     ...porEtapa,
     ...porRama,
     ...porTexto,
-    AND: [porEtiqueta, ...porRol],
+    AND: [porEtiqueta, ...porRol, sinExcluidas],
   };
 }
 

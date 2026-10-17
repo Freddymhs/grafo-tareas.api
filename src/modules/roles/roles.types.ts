@@ -41,7 +41,24 @@ export interface Rol {
   readonly etapas: readonly EtapaDeRol[];
 }
 
+/** Los tipos de nodo que puede ser un complemento (FASE 9: sin migración, con los tipos que ya hay). */
+export const NODOS_DE_COMPLEMENTO = ['DUDA', 'TAREA', 'DAILY_ITEM'] as const;
+export type NodoDeComplemento = (typeof NODOS_DE_COMPLEMENTO)[number];
+export const ESCALERAS = ['negocio', 'codigo'] as const;
+
+/** Lo que cuelga de un PBI sin ser un rol (C11): una duda, una decisión, algo para decir… */
+export interface Complemento {
+  readonly clave: string;
+  readonly nombre: string;
+  readonly nodo: NodoDeComplemento;
+  /** false = nota: no entra en «hoy puedo» ni en el tablero; se ve en el detalle de su PBI. */
+  readonly accionable: boolean;
+  /** Solo en una DUDA: qué escalera de `refs.yaml` sigue. */
+  readonly escalera: string | null;
+}
+
 export interface Roles {
   readonly defecto: string;
   readonly roles: readonly Rol[];
+  readonly complementos: readonly Complemento[];
 }

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { NotFoundError } from '../../common/exceptions/index.js';
+import { RolesService } from '../roles/roles.service.js';
 import { calcularLibera } from './calcular-libera.js';
 import {
   Bloqueo,
@@ -17,7 +18,10 @@ function agruparPorOrigen(bloqueos: readonly Bloqueo[]): Map<string, string[]> {
 
 @Injectable()
 export class DerivadoService {
-  constructor(private readonly repository: DerivadoRepository) {}
+  constructor(
+    private readonly repository: DerivadoRepository,
+    private readonly roles: RolesService,
+  ) {}
 
   async bloqueado(id: string) {
     await this.asegurarExiste(id);
@@ -26,7 +30,7 @@ export class DerivadoService {
   }
 
   async hoyPuedo() {
-    return this.repository.hoyPuedo();
+    return this.repository.hoyPuedo(this.roles.etiquetasDeNotas());
   }
 
   async libera(id: string) {

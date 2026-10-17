@@ -12,6 +12,8 @@ export const ENV_KEYS = {
   ETAPAS: 'ETAPAS',
   /** El roles.yaml del área (C11); sin ella, la API no tiene roles: GET /roles vacío y GET /etapas = ETAPAS. */
   ROLES_ARCHIVO: 'ROLES_ARCHIVO',
+  /** El refs.yaml del área (FASE 9): escaleras de dudas y rituales; sin ella, no hay a quién escalar. */
+  REFS_ARCHIVO: 'REFS_ARCHIVO',
 } as const;
 
 export type EnvKey = (typeof ENV_KEYS)[keyof typeof ENV_KEYS];

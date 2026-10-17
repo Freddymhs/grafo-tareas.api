@@ -1,0 +1,8 @@
+# Fixture: escaleras y rituales de un área inventada (formato del refs.yaml de un orquestador, FASE 9).
+proyecto: prueba
+tracker: none
+escalera:
+  negocio:
+    { antes: contrastar con el código, personas: [Analista, Senior Back] }
+  codigo: { personas: [Senior Back, Analista] }
+rituales: { daily: Daily, uno-a-uno: '1:1 con el líder' }

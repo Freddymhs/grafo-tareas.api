@@ -45,12 +45,14 @@ export class DerivadoRepository {
     return conexiones.map(({ destino }) => destino);
   }
 
-  async hoyPuedo(): Promise<NodoResumen[]> {
+  /** `notas`: las etiquetas de los complementos que no se hacen (un apunte, una decisión). */
+  async hoyPuedo(notas: readonly string[]): Promise<NodoResumen[]> {
     return this.prisma.nodo.findMany({
       where: {
         tipo: { in: [...TIPOS_ACCIONABLES] },
         estado: EstadoNodo.ABIERTO,
         salientes: { none: BLOQUEA_AHORA },
+        NOT: { etiquetas: { hasSome: [...notas] } },
       },
       select: RESUMEN,
       orderBy: { createdAt: 'asc' },

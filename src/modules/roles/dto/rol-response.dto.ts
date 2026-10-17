@@ -18,6 +18,25 @@ export class RolResponseDto {
   columnas!: string[];
 }
 
+export class ComplementoDeCatalogoDto {
+  @ApiProperty({ example: 'duda-negocio' })
+  clave!: string;
+
+  @ApiProperty({ example: 'Duda de negocio' })
+  nombre!: string;
+
+  @ApiProperty({ enum: ['DUDA', 'TAREA', 'DAILY_ITEM'] })
+  nodo!: string;
+
+  @ApiProperty({
+    description: 'false = nota: fuera de «hoy puedo» y del tablero',
+  })
+  accionable!: boolean;
+
+  @ApiProperty({ nullable: true, type: String, example: 'negocio' })
+  escalera!: string | null;
+}
+
 export class RolesResponseDto {
   @ApiProperty({
     nullable: true,
@@ -29,4 +48,10 @@ export class RolesResponseDto {
 
   @ApiProperty({ type: [RolResponseDto] })
   roles!: RolResponseDto[];
+
+  @ApiProperty({
+    type: [ComplementoDeCatalogoDto],
+    description: 'Lo que puede colgar de un PBI (FASE 9)',
+  })
+  complementos!: ComplementoDeCatalogoDto[];
 }

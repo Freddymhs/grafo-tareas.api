@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EstadoNodo, TipoNodo } from '@prisma/client';
 import { NotFoundError } from '../../common/exceptions/domain.exceptions';
 import { DerivadoRepository, NodoResumen } from './derivado.repository';
+import { RolesService } from '../roles/roles.service';
 import { DerivadoService } from './derivado.service';
 
 const resumen = (id: string, tipo: TipoNodo = TipoNodo.TAREA): NodoResumen => ({
@@ -29,6 +30,10 @@ describe('DerivadoService', () => {
       providers: [
         DerivadoService,
         { provide: DerivadoRepository, useValue: mockRepository },
+        {
+          provide: RolesService,
+          useValue: { etiquetasDeNotas: () => ['complemento:apunte'] },
+        },
       ],
     }).compile();
     return module.get(DerivadoService);

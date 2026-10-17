@@ -1,1 +1,5 @@
-export { RolesResponseDto, RolResponseDto } from './rol-response.dto';
+export {
+  ComplementoDeCatalogoDto,
+  RolesResponseDto,
+  RolResponseDto,
+} from './rol-response.dto';

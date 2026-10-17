@@ -1,0 +1,151 @@
+import { Injectable } from '@nestjs/common';
+import { EstadoNodo, Nodo, TipoNodo } from '@prisma/client';
+import {
+  CLAVE_DECISION,
+  PREFIJO_COMPLEMENTO,
+  etiquetaDeComplemento,
+} from '../../common/constants/index.js';
+import {
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from '../../common/exceptions/index.js';
+import { AreaService } from '../area/area.service.js';
+import { RolesService } from '../roles/roles.service.js';
+import type { Complemento } from '../roles/roles.types.js';
+import { ComplementosRepository } from './complementos.repository.js';
+import { CreateComplementoDto, DecidirDto, EscalarDto } from './dto/index.js';
+
+const RECURSO = 'Nodo';
+/** La fecha local (AAAA-MM-DD) de la máquina de la API: en UTC, después de las ~21 h de Chile el rastro decía mañana. */
+const FORMATO_FECHA_ISO = 'sv-SE';
+const hoy = () => new Date().toLocaleDateString(FORMATO_FECHA_ISO);
+
+const claveDe = ({ etiquetas }: Nodo) =>
+  etiquetas
+    .find((etiqueta) => etiqueta.startsWith(PREFIJO_COMPLEMENTO))
+    ?.slice(PREFIJO_COMPLEMENTO.length) ?? '';
+
+/** Lo que cuelga de un PBI (C11, FASE 9): el catálogo es el de roles.yaml; escaleras y rituales, los de refs.yaml. */
+@Injectable()
+export class ComplementosService {
+  constructor(
+    private readonly repository: ComplementosRepository,
+    private readonly roles: RolesService,
+    private readonly area: AreaService,
+  ) {}
+
+  async crear(padreId: string, dto: CreateComplementoDto) {
+    const { tipo, titulo, descripcion, ritual } = dto;
+    const complemento = this.roles.complemento(tipo);
+    const esParaUnRitual = complemento.nodo === TipoNodo.DAILY_ITEM;
+    if (!esParaUnRitual && ritual !== undefined) {
+      throw new ValidationError(
+        `"${tipo}" no se dice en un ritual: "ritual" solo va con un complemento DAILY_ITEM`,
+      );
+    }
+    if (esParaUnRitual && ritual === undefined) {
+      throw new ValidationError(
+        `"${tipo}" se dice en un ritual: falta "ritual" (GET /area)`,
+      );
+    }
+    await this.buscar(padreId);
+    const nodo = await this.repository.crear({
+      padreId,
+      tipo: complemento.nodo,
+      titulo,
+      descripcion: descripcion ?? null,
+      etiqueta: etiquetaDeComplemento(complemento.clave),
+      frenaAlPadre: complemento.nodo === TipoNodo.DUDA,
+      ritual:
+        esParaUnRitual && ritual !== undefined
+          ? this.area.ritual(ritual)
+          : null,
+    });
+    return { ...nodo, complemento: complemento.clave };
+  }
+
+  async deUnNodo(padreId: string) {
+    await this.buscar(padreId);
+    const nodos = await this.repository.deUnNodo(
+      padreId,
+      this.roles.etiquetasDeComplementos(),
+    );
+    return nodos.map((nodo) => ({ ...nodo, complemento: claveDe(nodo) }));
+  }
+
+  /** La duda pasa a esperar al siguiente de su escalera (o a `persona`); el rastro queda en su descripción. */
+  async escalar(id: string, { persona }: EscalarDto) {
+    const { duda, complemento } = await this.dudaAbierta(id);
+    if (complemento.escalera === null) {
+      throw new ValidationError(
+        `"${complemento.clave}" no tiene escalera en el catálogo`,
+      );
+    }
+    const escalera = this.area.escalera(complemento.escalera);
+    const anterior = await this.repository.esperaDe(id);
+    const posicion = anterior
+      ? escalera.personas.indexOf(anterior.persona)
+      : -1;
+    const siguiente = persona ?? escalera.personas[posicion + 1];
+    if (siguiente === undefined) {
+      throw new ConflictError(
+        `La duda ya llegó al final de la escalera ${escalera.clave} (${anterior?.persona ?? '—'}): no hay a quién más`,
+      );
+    }
+    if (siguiente === anterior?.persona) {
+      throw new ConflictError(`La duda ya espera a ${siguiente}`);
+    }
+    const primerPaso = anterior === null && escalera.antes !== null;
+    const rastro = [
+      `- ${hoy()} · escalada a ${siguiente}`,
+      anterior ? ` (antes: ${anterior.persona})` : '',
+      primerPaso ? ` · ya hecho: ${escalera.antes}` : '',
+    ].join('');
+    const actualizada = await this.repository.escalar(
+      duda,
+      siguiente,
+      anterior,
+      rastro,
+    );
+    return { ...actualizada, complemento: complemento.clave };
+  }
+
+  /** Cerrar una duda con su respuesta: la duda queda cerrada (no se borra) y la decisión, colgada de ella. */
+  async decidir(id: string, { quien, donde, texto }: DecidirDto) {
+    const { duda } = await this.dudaAbierta(id);
+    const decision = this.roles.complemento(CLAVE_DECISION);
+    const nodo = await this.repository.decidir(duda, {
+      titulo: texto,
+      descripcion: [
+        `Duda: ${duda.titulo}`,
+        `Contestó: ${quien}`,
+        `Dónde quedó: ${donde}`,
+        `Fecha: ${hoy()}`,
+      ].join('\n'),
+      etiqueta: etiquetaDeComplemento(decision.clave),
+    });
+    return { ...nodo, complemento: decision.clave };
+  }
+
+  private async dudaAbierta(
+    id: string,
+  ): Promise<{ duda: Nodo; complemento: Complemento }> {
+    const duda = await this.buscar(id);
+    if (duda.tipo !== TipoNodo.DUDA || !claveDe(duda)) {
+      throw new ValidationError(
+        'Solo una duda colgada como complemento se escala o se decide',
+      );
+    }
+    if (duda.estado !== EstadoNodo.ABIERTO) {
+      throw new ConflictError('La duda ya está cerrada');
+    }
+    return { duda, complemento: this.roles.complemento(claveDe(duda)) };
+  }
+
+  private async buscar(id: string): Promise<Nodo> {
+    const nodo = await this.repository.buscar(id);
+    if (!nodo) throw new NotFoundError(RECURSO);
+    return nodo;
+  }
+}

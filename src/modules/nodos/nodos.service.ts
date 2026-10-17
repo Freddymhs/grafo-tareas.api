@@ -26,10 +26,31 @@ export class NodosService {
   ) {}
 
   async findAll(query: ListarNodosDto) {
-    const { offset, limit, tipo, estado, etapa, etiqueta, rama, q, rol } =
-      query;
+    const {
+      offset,
+      limit,
+      tipo,
+      estado,
+      etapa,
+      etiqueta,
+      rama,
+      q,
+      rol,
+      notas,
+    } = query;
     const porRol = rol === undefined ? undefined : this.roles.filtroDe(rol);
-    const filtro = { tipo, estado, etapa, etiqueta, rama, q, rol: porRol };
+    const sinEtiquetas =
+      notas === undefined ? undefined : this.roles.etiquetasDeNotas();
+    const filtro = {
+      tipo,
+      estado,
+      etapa,
+      etiqueta,
+      rama,
+      q,
+      rol: porRol,
+      sinEtiquetas,
+    };
     const [data, total] = await Promise.all([
       this.repository.listar(filtro, offset, limit),
       this.repository.contar(filtro),

@@ -2,7 +2,13 @@
 // de una importación.
 import * as Joi from 'joi';
 import { parse } from 'yaml';
-import { CONDICIONES_SIMPLES, Roles } from './roles.types.js';
+import {
+  CONDICIONES_SIMPLES,
+  ESCALERAS,
+  NODOS_DE_COMPLEMENTO,
+  NodoDeComplemento,
+  Roles,
+} from './roles.types.js';
 
 const VERSION_SOPORTADA = 1;
 
@@ -15,10 +21,18 @@ interface RolCrudo {
   readonly etapas: Roles['roles'][number]['etapas'];
 }
 
+interface ComplementoCrudo {
+  readonly nombre: string;
+  readonly nodo: NodoDeComplemento;
+  readonly accionable: boolean;
+  readonly escalera?: string;
+}
+
 interface ArchivoCrudo {
   readonly version: number;
   readonly defecto: string;
   readonly roles: Readonly<Record<string, RolCrudo>>;
+  readonly complementos: Readonly<Record<string, ComplementoCrudo>>;
 }
 
 const condicion = Joi.alternatives(
@@ -46,14 +60,35 @@ const rol = Joi.object({
     .required(),
 });
 
+const complemento = Joi.object({
+  nombre: Joi.string().required(),
+  nodo: Joi.string()
+    .valid(...NODOS_DE_COMPLEMENTO)
+    .required(),
+  accionable: Joi.boolean().default(true),
+  escalera: Joi.string().valid(...ESCALERAS),
+})
+  // allowUnknown baja a los anidados: sin esto, «acionable: false» pasaría callado y la nota entraría en «hoy puedo».
+  .unknown(false);
+
 const archivo = Joi.object<ArchivoCrudo>({
   version: Joi.number().valid(VERSION_SOPORTADA).required(),
   defecto: Joi.string().required(),
   roles: Joi.object().pattern(Joi.string(), rol).min(1).required(),
+  complementos: Joi.object().pattern(Joi.string(), complemento).default({}),
 });
 
-function coherencia({ defecto, roles }: ArchivoCrudo): readonly string[] {
+function coherencia({
+  defecto,
+  roles,
+  complementos,
+}: ArchivoCrudo): readonly string[] {
   const errores: string[] = [];
+  for (const [clave, { nodo, escalera }] of Object.entries(complementos)) {
+    if (escalera !== undefined && nodo !== 'DUDA') {
+      errores.push(`complemento ${clave}: la escalera solo vale en una DUDA`);
+    }
+  }
   if (!(defecto in roles)) errores.push(`defecto «${defecto}» no es un rol`);
   const rolDeMarca = new Map<string, string>();
   for (const [clave, { marcas, grupos, etapas }] of Object.entries(roles)) {
@@ -101,6 +136,13 @@ export function leerRoles(texto: string): Roles {
       })),
       qa: r.qa,
       etapas: r.etapas,
+    })),
+    complementos: Object.entries(crudo.complementos).map(([clave, c]) => ({
+      clave,
+      nombre: c.nombre,
+      nodo: c.nodo,
+      accionable: c.accionable,
+      escalera: c.escalera ?? null,
     })),
   };
 }

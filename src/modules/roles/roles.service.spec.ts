@@ -27,6 +27,14 @@ describe('RolesService', () => {
     expect(new Set(lista).size).toBe(lista.length);
   });
 
+  it('las notas son las etiquetas de los complementos no accionables; un complemento desconocido es 400', () => {
+    const roles = conRoles();
+    expect(roles.etiquetasDeNotas()).toContain('complemento:apunte');
+    expect(roles.etiquetasDeNotas()).not.toContain('complemento:tramite');
+    expect(roles.etiquetasDeComplementos()).toHaveLength(12);
+    expect(() => roles.complemento('nada')).toThrow(ValidationError);
+  });
+
   it('el filtro del defecto excluye a los nodos de otro rol; el de otro rol pide su etiqueta', () => {
     const roles = conRoles();
     expect(roles.filtroDe('producto')).toEqual({ sinNinguna: ['calidad'] });

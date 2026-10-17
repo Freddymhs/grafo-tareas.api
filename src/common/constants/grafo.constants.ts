@@ -38,3 +38,14 @@ export const LARGO_MAXIMO_ETIQUETA = 50;
 export const LARGO_MAXIMO_BUSQUEDA = 200;
 /** Un listado no devuelve más que esto por página (el tablero pide 500 y le alcanza). */
 export const LIMITE_MAXIMO_PAGINA = 500;
+
+/** Un complemento (FASE 9) se reconoce por esta etiqueta: `complemento:<clave del catálogo de roles.yaml>`. */
+export const PREFIJO_COMPLEMENTO = 'complemento:';
+/** La clave del catálogo que deja `POST /nodos/:id/decidir`: una duda contestada (tiene que estar en roles.yaml). */
+export const CLAVE_DECISION = 'decision';
+/** Un ritual (daily, retro, 1:1) es un DAILY_ITEM con este origen externo, creado la primera vez que se usa. */
+export const ORIGEN_RITUAL = 'ritual';
+/** `GET /nodos?notas=ocultar`: el valor único del filtro. */
+export const OCULTAR_NOTAS = 'ocultar';
+export const etiquetaDeComplemento = (clave: string) =>
+  `${PREFIJO_COMPLEMENTO}${clave}`;

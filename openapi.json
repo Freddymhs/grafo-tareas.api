@@ -99,6 +99,16 @@
             }
           },
           {
+            "name": "notas",
+            "required": false,
+            "in": "query",
+            "description": "ocultar = sin los complementos que son notas (dolor, apunte, decisión…): el tablero",
+            "schema": {
+              "type": "string",
+              "enum": ["ocultar"]
+            }
+          },
+          {
             "name": "rama",
             "required": false,
             "in": "query",
@@ -675,6 +685,243 @@
         "summary": "Si este nodo se cierra (alguien contesta), qué se libera",
         "tags": ["Derivado"]
       }
+    },
+    "/api/v1/nodos/{id}/complementos": {
+      "get": {
+        "operationId": "ComplementosController_deUnNodo",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ComplementoResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Lo que cuelga de este nodo: dudas, decisiones, apuntes…",
+        "tags": ["Complementos"]
+      },
+      "post": {
+        "operationId": "ComplementosController_crear",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateComplementoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplementoResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Colgar un complemento del catálogo; una duda deja al nodo BLOQUEADA_POR ella",
+        "tags": ["Complementos"]
+      }
+    },
+    "/api/v1/nodos/{id}/escalar": {
+      "post": {
+        "operationId": "ComplementosController_escalar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EscalarDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplementoResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Escalar una duda: pasa a esperar al siguiente de su escalera (refs.yaml), con rastro en la descripción",
+        "tags": ["Complementos"]
+      }
+    },
+    "/api/v1/nodos/{id}/decidir": {
+      "post": {
+        "operationId": "ComplementosController_decidir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecidirDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplementoResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cerrar una duda con su respuesta: queda cerrada y deja una decisión colgada de ella y de su PBI",
+        "tags": ["Complementos"]
+      }
+    },
+    "/api/v1/area": {
+      "get": {
+        "operationId": "AreaController_todo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Escaleras de dudas y rituales del área (refs.yaml)",
+        "tags": ["Area"]
+      }
     }
   },
   "info": {
@@ -1012,6 +1259,33 @@
         },
         "required": ["clave", "nombre", "para", "columnas"]
       },
+      "ComplementoDeCatalogoDto": {
+        "type": "object",
+        "properties": {
+          "clave": {
+            "type": "string",
+            "example": "duda-negocio"
+          },
+          "nombre": {
+            "type": "string",
+            "example": "Duda de negocio"
+          },
+          "nodo": {
+            "type": "string",
+            "enum": ["DUDA", "TAREA", "DAILY_ITEM"]
+          },
+          "accionable": {
+            "type": "boolean",
+            "description": "false = nota: fuera de «hoy puedo» y del tablero"
+          },
+          "escalera": {
+            "type": "string",
+            "nullable": true,
+            "example": "negocio"
+          }
+        },
+        "required": ["clave", "nombre", "nodo", "accionable", "escalera"]
+      },
       "RolesResponseDto": {
         "type": "object",
         "properties": {
@@ -1025,9 +1299,16 @@
             "items": {
               "$ref": "#/components/schemas/RolResponseDto"
             }
+          },
+          "complementos": {
+            "description": "Lo que puede colgar de un PBI (FASE 9)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComplementoDeCatalogoDto"
+            }
           }
         },
-        "required": ["defecto", "roles"]
+        "required": ["defecto", "roles", "complementos"]
       },
       "ConexionResponseDto": {
         "type": "object",
@@ -1216,6 +1497,211 @@
           }
         },
         "required": ["directos", "cadena"]
+      },
+      "ComplementoResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "TAREA",
+              "HISTORIA",
+              "FASE",
+              "RAMA",
+              "DUDA",
+              "PERSONA",
+              "PR",
+              "DAILY_ITEM"
+            ]
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": ["ABIERTO", "CERRADO"]
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "etapa": {
+            "type": "string",
+            "nullable": true
+          },
+          "etiquetas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "prioridad": {
+            "type": "number",
+            "nullable": true
+          },
+          "vence": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          },
+          "externoOrigen": {
+            "type": "string",
+            "nullable": true
+          },
+          "externoId": {
+            "type": "string",
+            "nullable": true
+          },
+          "posX": {
+            "type": "number",
+            "nullable": true
+          },
+          "posY": {
+            "type": "number",
+            "nullable": true
+          },
+          "posZ": {
+            "type": "number",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "complemento": {
+            "type": "string",
+            "example": "duda-negocio",
+            "description": "La clave del catálogo (sale de su etiqueta complemento:<clave>)"
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "titulo",
+          "estado",
+          "etiquetas",
+          "createdAt",
+          "updatedAt",
+          "complemento"
+        ]
+      },
+      "CreateComplementoDto": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "example": "duda-negocio",
+            "description": "La clave de un complemento del catálogo (GET /roles)"
+          },
+          "titulo": {
+            "type": "string",
+            "example": "¿La solicitud tiene que quedar aprobada?"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "ritual": {
+            "type": "string",
+            "example": "daily",
+            "description": "Para un complemento DAILY_ITEM («para decir»): en qué ritual de GET /area se dice"
+          }
+        },
+        "required": ["tipo", "titulo"]
+      },
+      "EscalarDto": {
+        "type": "object",
+        "properties": {
+          "persona": {
+            "type": "string",
+            "example": "Nicolás",
+            "description": "A quién, si no es el siguiente de la escalera (p. ej. el senior de front en vez del de back)"
+          }
+        }
+      },
+      "DecidirDto": {
+        "type": "object",
+        "properties": {
+          "quien": {
+            "type": "string",
+            "example": "Tomás Carabantes"
+          },
+          "donde": {
+            "type": "string",
+            "example": "comentario en el PBI 25699",
+            "description": "Dónde quedó registrada la respuesta"
+          },
+          "texto": {
+            "type": "string",
+            "example": "La solicitud tiene que quedar aprobada"
+          }
+        },
+        "required": ["quien", "donde", "texto"]
+      },
+      "EscaleraResponseDto": {
+        "type": "object",
+        "properties": {
+          "clave": {
+            "type": "string",
+            "example": "negocio"
+          },
+          "antes": {
+            "type": "string",
+            "nullable": true,
+            "example": "contrastar con el código"
+          },
+          "personas": {
+            "description": "En orden",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["clave", "antes", "personas"]
+      },
+      "RitualResponseDto": {
+        "type": "object",
+        "properties": {
+          "clave": {
+            "type": "string",
+            "example": "daily"
+          },
+          "nombre": {
+            "type": "string",
+            "example": "Daily"
+          }
+        },
+        "required": ["clave", "nombre"]
+      },
+      "AreaResponseDto": {
+        "type": "object",
+        "properties": {
+          "escaleras": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EscaleraResponseDto"
+            }
+          },
+          "rituales": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RitualResponseDto"
+            }
+          }
+        },
+        "required": ["escaleras", "rituales"]
       }
     }
   }

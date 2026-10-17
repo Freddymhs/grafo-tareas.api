@@ -1,4 +1,4 @@
-# Fixture: dos roles del roles.yaml de la plantilla (~/dotfiles/workspace-template/docs/roles.yaml), copiados tal cual.
+# Fixture: dos roles y el catálogo de complementos del roles.yaml de la plantilla (~/dotfiles/workspace-template/docs/roles.yaml), copiados tal cual.
 # Lo usan los tests del importador de FASEs y de GET /roles. Si la plantilla cambia sus reglas, se recopian.
 version: 1
 defecto: producto
@@ -40,3 +40,17 @@ roles:
       - { clave: pr, columna: Pull Request, si: { qa: Listo para PR } }
       - { clave: aprobado, columna: APROBADO, si: cierre_real }
       - { clave: cerrado, columna: CERRADO, si: terminada }
+
+complementos:
+  duda-negocio: { nombre: Duda de negocio, nodo: DUDA, escalera: negocio }
+  duda-codigo: { nombre: Duda de código, nodo: DUDA, escalera: codigo }
+  dolor: { nombre: Dolor (PBI vs código), nodo: TAREA, accionable: false }
+  supuesto: { nombre: Supuesto, nodo: TAREA, accionable: false }
+  decision: { nombre: Decisión, nodo: TAREA, accionable: false }
+  para-decir: { nombre: Para decir, nodo: DAILY_ITEM }
+  propuesta: { nombre: Propuesta, nodo: TAREA, accionable: true }
+  tramite: { nombre: Trámite, nodo: TAREA, accionable: true }
+  apunte: { nombre: Apunte de dominio, nodo: TAREA, accionable: false }
+  evidencia: { nombre: Evidencia, nodo: TAREA, accionable: false }
+  trabajo-de-otro: { nombre: Trabajo de otro, nodo: TAREA, accionable: false }
+  captura: { nombre: Captura rápida, nodo: TAREA, accionable: true }

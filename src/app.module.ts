@@ -12,6 +12,8 @@ import { ConexionesModule } from './modules/conexiones/conexiones.module';
 import { RamasModule } from './modules/ramas/ramas.module';
 import { DerivadoModule } from './modules/derivado/derivado.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { ComplementosModule } from './modules/complementos/complementos.module';
+import { AreaModule } from './modules/area/area.module';
 import { ImportadoresModule } from './importadores/todoist/importadores.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
@@ -55,6 +57,8 @@ import { GLOBAL_VALIDATION_PIPE } from './common/pipes/validation.pipe';
     RamasModule,
     DerivadoModule,
     RolesModule,
+    ComplementosModule,
+    AreaModule,
     ImportadoresModule,
   ],
   providers: [
