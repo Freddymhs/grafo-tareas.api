@@ -1,9 +1,14 @@
-import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ErrorResponseDto } from '../../common/dto/index.js';
 import { NodoResumenDto } from '../nodos/dto/index.js';
 import { DerivadoService } from './derivado.service.js';
-import { BloqueadoResponseDto, LiberaResponseDto } from './dto/index.js';
+import {
+  BloqueadoResponseDto,
+  DiaQueryDto,
+  DiaResponseDto,
+  LiberaResponseDto,
+} from './dto/index.js';
 
 /** Lo que se calcula sobre el grafo. Vive solo acá: la PWA y la VR lo muestran, no lo recalculan (C1). */
 @ApiTags('Derivado')
@@ -16,6 +21,16 @@ export class DerivadoController {
   @ApiResponse({ status: 200, type: [NodoResumenDto] })
   hoyPuedo() {
     return this.service.hoyPuedo();
+  }
+
+  @Get('derivado/dia')
+  @ApiOperation({
+    summary:
+      'El parte del día: terminé, en curso (y si pasa del límite), detenido y para decir',
+  })
+  @ApiResponse({ status: 200, type: DiaResponseDto })
+  dia(@Query() { desde }: DiaQueryDto) {
+    return this.service.dia(desde);
   }
 
   @Get('nodos/:id/bloqueado')

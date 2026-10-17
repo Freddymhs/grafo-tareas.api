@@ -13,6 +13,8 @@ export const ORIGEN_FASES = 'fases-md';
 export const origenFases = (proyecto: string) => `${ORIGEN_FASES}:${proyecto}`;
 export const ETIQUETA_ABIERTO = 'abierto';
 export const externoFase = (numero: number) => `fase:${numero}`;
+/** El trámite de cierre de una FASE (FASE 10): uno por FASE, se cierra solo cuando se tildan sus casillas. */
+export const externoTramite = (numero: number) => `tramite:fase:${numero}`;
 export const externoAbierto = (taskId: string, orden: number) =>
   `abierto:${taskId}:${orden}`;
 /** El título que el importador de Todoist también usa para una FASE: así los dos apuntan al mismo nodo. */
@@ -65,6 +67,31 @@ function nodoDeFase(fase: FaseLeida, etapas: readonly string[]): NodoPlan {
   };
 }
 
+/**
+ * Una FASE entregada con casillas reales del cierre sin tildar deja un trámite «FASE n: falta …» (C11: esas
+ * subtareas no se crean a mano). Con todo tildado el mismo nodo queda CERRADO; sin entregar, no hay trámite.
+ */
+function tramiteDe(fase: FaseLeida, etiqueta: string): NodoPlan | null {
+  const pendiente = fase.cierrePendiente;
+  if (pendiente === null) return null;
+  const falta = pendiente.length > 0;
+  return {
+    externoId: externoTramite(fase.numero),
+    tipo: TipoNodo.TAREA,
+    titulo: falta
+      ? `${tituloFase(fase.numero)}: falta ${pendiente.join(', ')}`
+      : `${tituloFase(fase.numero)}: cierre oficial completo`,
+    descripcion:
+      'Sale de las casillas de «## Cierre oficial» de la FASE: se tilda allá, no acá.',
+    estado: falta ? EstadoNodo.ABIERTO : EstadoNodo.CERRADO,
+    color: null,
+    etapa: null,
+    etiquetas: [etiqueta],
+    prioridad: null,
+    vence: null,
+  };
+}
+
 function nodoDeAbierto(abierto: AbiertoLeido): DudaPlan {
   return {
     externoId: externoAbierto(abierto.taskId, abierto.orden),
@@ -86,9 +113,18 @@ export function traducirFases(
   abiertos: readonly AbiertoLeido[],
   etapas: readonly string[],
   proyecto: string,
+  /** La etiqueta del complemento trámite; null si el catálogo del área no lo tiene (no se crean trámites). */
+  etiquetaTramite: string | null = null,
 ): PlanFases {
   const numeros = new Set(fases.map(({ numero }) => numero));
-  const nodos = fases.map((fase) => nodoDeFase(fase, etapas));
+  const tramites = fases.flatMap((fase) => {
+    const tramite = etiquetaTramite ? tramiteDe(fase, etiquetaTramite) : null;
+    return tramite ? [{ fase: fase.numero, tramite }] : [];
+  });
+  const nodos = [
+    ...fases.map((fase) => nodoDeFase(fase, etapas)),
+    ...tramites.map(({ tramite }) => tramite),
+  ];
   // Una dependencia a una FASE que no está en el directorio queda suelta: el plan solo conecta lo que trae.
   const conexiones: ConexionPlan[] = fases.flatMap((fase) =>
     fase.dependencias
@@ -99,10 +135,15 @@ export function traducirFases(
         tipo: TipoConexion.DEPENDE_DE,
       })),
   );
+  const deTramites: ConexionPlan[] = tramites.map(({ fase, tramite }) => ({
+    origenExternoId: tramite.externoId,
+    destinoExternoId: externoFase(fase),
+    tipo: TipoConexion.PERTENECE_A,
+  }));
   return {
     origen: origenFases(proyecto),
     nodos,
-    conexiones,
+    conexiones: [...conexiones, ...deTramites],
     dudas: abiertos.map(nodoDeAbierto),
   };
 }

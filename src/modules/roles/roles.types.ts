@@ -20,6 +20,8 @@ export interface EtapaDeRol {
   /** El nombre de la columna en el tablero: tiene que estar en GET /etapas. */
   readonly columna: string;
   readonly si: Condicion;
+  /** Trabajo en curso (FASE 10): cuenta en «en curso» del parte y en el límite de dos a la vez. */
+  readonly curso: boolean;
 }
 
 export interface GrupoDeTareas {

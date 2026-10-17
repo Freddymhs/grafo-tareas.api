@@ -11,6 +11,10 @@ const resumen = (id: string, tipo: TipoNodo = TipoNodo.TAREA): NodoResumen => ({
   titulo: `Nodo ${id}`,
   estado: EstadoNodo.ABIERTO,
   color: null,
+  etapa: null,
+  etiquetas: [],
+  prioridad: null,
+  vence: null,
 });
 
 const mockRepository = {

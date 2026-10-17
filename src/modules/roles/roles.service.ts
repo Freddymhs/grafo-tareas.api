@@ -37,6 +37,14 @@ export class RolesService {
     return [...new Set(todas)];
   }
 
+  /** Las columnas que son trabajo en curso en algún rol (`curso: true`), sin repetir. */
+  columnasEnCurso(): readonly string[] {
+    const enCurso = this.roles.roles.flatMap(({ etapas }) =>
+      etapas.filter(({ curso }) => curso).map(({ columna }) => columna),
+    );
+    return [...new Set(enCurso)];
+  }
+
   filtroDe(clave: string): FiltroRol {
     const rol = this.buscar(clave);
     if (rol.clave !== this.roles.defecto) return { tiene: rol.clave };

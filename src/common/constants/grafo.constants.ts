@@ -11,6 +11,16 @@ export const CONEXIONES_BLOQUEANTES: readonly TipoConexion[] = [
  *  agrupan o bloquean, no se hacen. Medido 2026-10-16 con datos reales: con FASE adentro salían 96 de 80 tareas abiertas. */
 export const TIPOS_ACCIONABLES: readonly TipoNodo[] = [TipoNodo.TAREA];
 
+/** El parte del día (FASE 10) habla de tareas y de FASE: lo que se hace y lo que se entrega. */
+export const TIPOS_DEL_DIA: readonly TipoNodo[] = [
+  TipoNodo.TAREA,
+  TipoNodo.FASE,
+];
+/** Freddy lleva dos tarjetas a la vez a propósito (C11): el aviso es con más de dos, no con más de una. */
+export const LIMITE_EN_CURSO = 2;
+/** Sin `desde`, «terminé» mira las últimas 24 h: lo de desde la daily de ayer. */
+export const HORAS_DEL_PARTE = 24;
+
 export const PATRON_COLOR_HEX = /^#[0-9a-fA-F]{6}$/;
 export const LARGO_MAXIMO_TITULO = 500;
 export const MAXIMO_POSICIONES_POR_LOTE = 5000;
@@ -43,6 +53,8 @@ export const LIMITE_MAXIMO_PAGINA = 500;
 export const PREFIJO_COMPLEMENTO = 'complemento:';
 /** La clave del catálogo que deja `POST /nodos/:id/decidir`: una duda contestada (tiene que estar en roles.yaml). */
 export const CLAVE_DECISION = 'decision';
+/** La clave del catálogo para los trámites de cierre que deja `importar:fases` (FASE 10). */
+export const CLAVE_TRAMITE = 'tramite';
 /** Un ritual (daily, retro, 1:1) es un DAILY_ITEM con este origen externo, creado la primera vez que se usa. */
 export const ORIGEN_RITUAL = 'ritual';
 /** `GET /nodos?notas=ocultar`: el valor único del filtro. */

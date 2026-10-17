@@ -76,6 +76,33 @@ function cumple(condicion: Condicion, md: string, rol: Rol): boolean {
   return HECHA.test(tareasDelGrupo(md, rol, condicion.grupo));
 }
 
+/** La casilla de QA que dice «ya se entregó» (el PR); un rol sin ella (Negocio) se entrega con su última. */
+const CASILLA_DE_ENTREGA = 'Listo para PR';
+
+/**
+ * Lo que falta del cierre oficial de una FASE ya entregada: las casillas reales (URL commit, Evidencias, Wiki,
+ * PBI creado) todavía sin tildar. null = no hay trámite: la FASE no se entregó, o no tiene cierre real (tracker: none,
+ * «Cierre oficial — no aplica»). FASE 10.
+ */
+export function cierrePendiente(
+  md: string,
+  rol: Rol,
+): readonly string[] | null {
+  const entrega = rol.qa.includes(CASILLA_DE_ENTREGA)
+    ? CASILLA_DE_ENTREGA
+    : rol.qa.at(-1);
+  if (entrega === undefined || !tildada(seccion(md, 'QA'), entrega))
+    return null;
+  const cierre = seccion(md, CIERRE) ?? '';
+  const casilla = (marca: string, nombre: string) =>
+    new RegExp(`^- \\[${marca}\\] ${escapar(nombre)}\\b`, 'm').test(cierre);
+  const reales = CASILLAS_DE_CIERRE_REAL.filter((nombre) =>
+    casilla('[ x]', nombre),
+  );
+  if (reales.length === 0) return null;
+  return reales.filter((nombre) => casilla(' ', nombre));
+}
+
 /** La última etapa cuya condición se cumple; si ninguna, la primera. */
 export function derivarEtapa(md: string, rol: Rol): EtapaDeRol {
   const cumplidas = rol.etapas.filter(({ si }) => cumple(si, md, rol));

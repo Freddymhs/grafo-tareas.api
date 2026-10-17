@@ -1,17 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { EstadoNodo, Prisma } from '@prisma/client';
+import { EstadoNodo, Prisma, TipoConexion, TipoNodo } from '@prisma/client';
 import {
   CONEXIONES_BLOQUEANTES,
+  ORIGEN_RITUAL,
   TIPOS_ACCIONABLES,
+  TIPOS_DEL_DIA,
 } from '../../common/constants/index.js';
 import { PrismaService } from '../../database/prisma.service.js';
 
+/** Los campos de `NodoResumenDto`, todos: el contrato declaraba etapa, etiquetas, prioridad y vence y no llegaban. */
 const RESUMEN = {
   id: true,
   tipo: true,
   titulo: true,
   estado: true,
   color: true,
+  etapa: true,
+  etiquetas: true,
+  prioridad: true,
+  vence: true,
 } as const satisfies Prisma.NodoSelect;
 
 export type NodoResumen = Prisma.NodoGetPayload<{ select: typeof RESUMEN }>;
@@ -57,6 +64,111 @@ export class DerivadoRepository {
       select: RESUMEN,
       orderBy: { createdAt: 'asc' },
     });
+  }
+
+  /** Tareas y FASE cerradas desde `desde`, sin las notas (`updatedAt` es honesto: los importadores solo escriben lo que cambia). */
+  async terminadas(
+    desde: Date,
+    notas: readonly string[],
+  ): Promise<NodoResumen[]> {
+    return this.prisma.nodo.findMany({
+      where: {
+        tipo: { in: [...TIPOS_DEL_DIA] },
+        estado: EstadoNodo.CERRADO,
+        updatedAt: { gte: desde },
+        NOT: { etiquetas: { hasSome: [...notas] } },
+      },
+      select: RESUMEN,
+      orderBy: { updatedAt: 'asc' },
+    });
+  }
+
+  /** Tareas y FASE abiertas en una de esas columnas, con si algo las frena ahora. */
+  async enColumnas(columnas: readonly string[], notas: readonly string[]) {
+    const nodos = await this.prisma.nodo.findMany({
+      where: {
+        tipo: { in: [...TIPOS_DEL_DIA] },
+        estado: EstadoNodo.ABIERTO,
+        etapa: { in: [...columnas] },
+        NOT: { etiquetas: { hasSome: [...notas] } },
+      },
+      select: {
+        ...RESUMEN,
+        salientes: { where: BLOQUEA_AHORA, select: { id: true }, take: 1 },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    return nodos.map(({ salientes, ...nodo }) => ({
+      nodo,
+      etapa: nodo.etapa ?? '',
+      bloqueado: salientes.length > 0,
+    }));
+  }
+
+  /** Tareas y FASE abiertas en el tablero (con etapa) que algo frena, y qué. */
+  async detenidas(notas: readonly string[]) {
+    const nodos = await this.prisma.nodo.findMany({
+      where: {
+        tipo: { in: [...TIPOS_DEL_DIA] },
+        estado: EstadoNodo.ABIERTO,
+        etapa: { not: null },
+        salientes: { some: BLOQUEA_AHORA },
+        NOT: { etiquetas: { hasSome: [...notas] } },
+      },
+      select: {
+        ...RESUMEN,
+        salientes: {
+          where: BLOQUEA_AHORA,
+          select: { destino: { select: RESUMEN } },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    return nodos.map(({ salientes, ...nodo }) => ({
+      nodo,
+      por: salientes.map(({ destino }) => destino),
+    }));
+  }
+
+  /** Los nodos abiertos con esa etiqueta (los trámites de cierre: `complemento:tramite`). */
+  async abiertosConEtiqueta(etiqueta: string): Promise<NodoResumen[]> {
+    return this.prisma.nodo.findMany({
+      where: { estado: EstadoNodo.ABIERTO, etiquetas: { has: etiqueta } },
+      select: RESUMEN,
+      orderBy: { titulo: 'asc' },
+    });
+  }
+
+  /** Los «para decir» abiertos que cuelgan de un ritual, con el nombre del ritual. */
+  async paraDecir() {
+    const items = await this.prisma.nodo.findMany({
+      where: {
+        tipo: TipoNodo.DAILY_ITEM,
+        estado: EstadoNodo.ABIERTO,
+        salientes: {
+          some: {
+            tipo: TipoConexion.EN_DAILY_DE,
+            destino: { externoOrigen: ORIGEN_RITUAL },
+          },
+        },
+      },
+      select: {
+        ...RESUMEN,
+        salientes: {
+          where: {
+            tipo: TipoConexion.EN_DAILY_DE,
+            destino: { externoOrigen: ORIGEN_RITUAL },
+          },
+          select: { destino: { select: { titulo: true } } },
+          take: 1,
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    return items.map(({ salientes, ...nodo }) => ({
+      nodo,
+      ritual: salientes[0]?.destino.titulo ?? '',
+    }));
   }
 
   /**

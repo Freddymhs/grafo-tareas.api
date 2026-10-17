@@ -1,7 +1,12 @@
 // Lee UNA FASE_*.md del método: número, título, Destraba, Dependencias, y su rol y etapa según `roles.yaml`
 // (`derivar-por-rol.ts`, la misma regla que `fases.html`/`calidad.html` y `test_roles.py`). Puro: texto → datos.
 import type { Roles } from '../../modules/roles/roles.types.js';
-import { derivarEtapa, rolDeFase, terminada } from './derivar-por-rol.js';
+import {
+  cierrePendiente,
+  derivarEtapa,
+  rolDeFase,
+  terminada,
+} from './derivar-por-rol.js';
 
 export interface FaseLeida {
   readonly numero: number;
@@ -16,6 +21,8 @@ export interface FaseLeida {
   readonly etapa: string;
   /** Todas las casillas de Understand, Tareas, QA y Cierre tildadas: la FASE queda en solo lectura. */
   readonly terminada: boolean;
+  /** Entregada y con casillas reales del cierre sin tildar (URL commit, Evidencias…); null = no entregada. */
+  readonly cierrePendiente: readonly string[] | null;
 }
 
 const NUMERO_DE_FASE = /^# FASE (\d+)\s*:?\s*(.*)$/m;
@@ -51,5 +58,6 @@ export function leerFase(
     dependencias: [...new Set(dependencias)],
     etapa: derivarEtapa(md, rol).columna,
     terminada: terminada(md),
+    cierrePendiente: cierrePendiente(md, rol),
   };
 }

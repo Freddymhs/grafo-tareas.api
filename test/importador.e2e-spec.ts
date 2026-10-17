@@ -55,7 +55,7 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
     expect(await ctx.prisma.nodo.count()).toBe(0);
   });
 
-  it('la primera corrida crea todo; la segunda no duplica nada (C3, D8)', async () => {
+  it('la primera corrida crea todo; la segunda no duplica ni reescribe nada (C3, D8)', async () => {
     const primera = await ctx.importador.importar('P1', false);
     expect(primera.nodos.actualizados).toBe(0);
     expect(primera.conexiones.existentes).toBe(0);
@@ -64,9 +64,20 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
     expect(nodosTrasPrimera).toBe(primera.nodos.nuevos);
     expect(conexionesTrasPrimera).toBe(primera.conexiones.nuevas);
 
+    const fechas = async () =>
+      (
+        await ctx.prisma.nodo.findMany({
+          select: { id: true, updatedAt: true },
+        })
+      )
+        .map(({ id, updatedAt }) => `${id}@${updatedAt.toISOString()}`)
+        .sort();
+    const antes = await fechas();
     const segunda = await ctx.importador.importar('P1', false);
     expect(segunda.nodos.nuevos).toBe(0);
-    expect(segunda.nodos.actualizados).toBe(primera.nodos.nuevos);
+    // Nada cambió en la fuente: no se reescribe nada, y updatedAt sigue diciendo cuándo cambió de verdad (FASE 10).
+    expect(segunda.nodos.actualizados).toBe(0);
+    expect(await fechas()).toEqual(antes);
     expect(segunda.conexiones.nuevas).toBe(0);
     expect(await ctx.prisma.nodo.count()).toBe(nodosTrasPrimera);
     expect(await ctx.prisma.conexion.count()).toBe(conexionesTrasPrimera);

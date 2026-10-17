@@ -21,6 +21,7 @@ nombra una herramienta son los importadores (`src/importadores/`, FASE 3). El CI
 GET/POST        nodos               PATCH/DELETE nodos/:id        PUT nodos/posiciones (lote, todo o nada)
 GET/POST        conexiones          DELETE conexiones/:id
 GET/POST        ramas               (ramas con cuántos nodos tiene cada una)
+GET             derivado/dia (terminé · en curso · detenido · para decir · trámites, FASE 10)
 GET             derivado/hoy-puedo  GET nodos/:id/bloqueado       GET nodos/:id/libera
 GET             etapas              roles   (GET nodos?rol=<clave>: los nodos de ese rol)
 GET/POST        nodos/:id/complementos   POST nodos/:id/escalar   POST nodos/:id/decidir   GET area

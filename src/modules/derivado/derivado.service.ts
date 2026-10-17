@@ -1,4 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import {
+  CLAVE_TRAMITE,
+  HORAS_DEL_PARTE,
+  LIMITE_EN_CURSO,
+  etiquetaDeComplemento,
+} from '../../common/constants/index.js';
 import { NotFoundError } from '../../common/exceptions/index.js';
 import { RolesService } from '../roles/roles.service.js';
 import { calcularLibera } from './calcular-libera.js';
@@ -7,6 +13,8 @@ import {
   DerivadoRepository,
   NodoResumen,
 } from './derivado.repository.js';
+
+const MS_POR_HORA = 60 * 60 * 1000;
 
 function agruparPorOrigen(bloqueos: readonly Bloqueo[]): Map<string, string[]> {
   const porOrigen = new Map<string, string[]>();
@@ -31,6 +39,33 @@ export class DerivadoService {
 
   async hoyPuedo() {
     return this.repository.hoyPuedo(this.roles.etiquetasDeNotas());
+  }
+
+  /** El parte del día (FASE 10): terminé, en curso, detenido y lo que hay para decir. */
+  async dia(desdeTexto: string | undefined) {
+    const desde = desdeTexto
+      ? new Date(desdeTexto)
+      : new Date(Date.now() - HORAS_DEL_PARTE * MS_POR_HORA);
+    const notas = this.roles.etiquetasDeNotas();
+    const [terminado, enCurso, detenido, paraDecir, tramites] =
+      await Promise.all([
+        this.repository.terminadas(desde, notas),
+        this.repository.enColumnas(this.roles.columnasEnCurso(), notas),
+        this.repository.detenidas(notas),
+        this.repository.paraDecir(),
+        this.repository.abiertosConEtiqueta(
+          etiquetaDeComplemento(CLAVE_TRAMITE),
+        ),
+      ]);
+    return {
+      desde,
+      limiteEnCurso: LIMITE_EN_CURSO,
+      terminado,
+      enCurso,
+      detenido,
+      paraDecir,
+      tramites,
+    };
   }
 
   async libera(id: string) {

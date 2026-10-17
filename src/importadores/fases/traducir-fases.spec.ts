@@ -2,7 +2,7 @@ import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
 import { ETAPAS_POR_DEFECTO } from '../../common/constants/grafo.constants';
 import { AbiertoLeido } from './leer-abiertos';
 import { FaseLeida } from './leer-fase';
-import { externoFase, traducirFases } from './traducir-fases';
+import { externoFase, externoTramite, traducirFases } from './traducir-fases';
 
 const fase = (parcial: Partial<FaseLeida> & { numero: number }): FaseLeida => ({
   titulo: `título ${parcial.numero}`,
@@ -11,6 +11,7 @@ const fase = (parcial: Partial<FaseLeida> & { numero: number }): FaseLeida => ({
   dependencias: [],
   etapa: 'ENTENDIMIENTO',
   terminada: false,
+  cierrePendiente: null,
   ...parcial,
 });
 
@@ -83,5 +84,53 @@ describe('traducirFases', () => {
     expect(() => traducirFases(fases, [], ['ENTENDIMIENTO'], 'grafo')).toThrow(
       '«EN CODIGO»',
     );
+  });
+
+  describe('trámites de cierre (FASE 10)', () => {
+    const TRAMITE = 'complemento:tramite';
+    const entregadas = [
+      fase({ numero: 7, cierrePendiente: ['URL commit', 'Evidencias'] }),
+      fase({ numero: 8, cierrePendiente: [] }),
+      fase({ numero: 9 }),
+    ];
+    const conTramites = traducirFases(
+      entregadas,
+      [],
+      ETAPAS_POR_DEFECTO,
+      'grafo',
+      TRAMITE,
+    );
+    const tramite = (numero: number) =>
+      conTramites.nodos.find(
+        ({ externoId }) => externoId === externoTramite(numero),
+      );
+
+    it('una FASE entregada con el cierre pendiente deja un trámite abierto que dice qué falta', () => {
+      expect(tramite(7)).toMatchObject({
+        titulo: 'FASE 7: falta URL commit, Evidencias',
+        estado: EstadoNodo.ABIERTO,
+        etiquetas: [TRAMITE],
+      });
+      expect(conTramites.conexiones).toContainEqual({
+        origenExternoId: externoTramite(7),
+        destinoExternoId: externoFase(7),
+        tipo: TipoConexion.PERTENECE_A,
+      });
+    });
+
+    it('con el cierre completo el trámite queda cerrado; sin entregar, no hay trámite', () => {
+      expect(tramite(8)?.estado).toBe(EstadoNodo.CERRADO);
+      expect(tramite(9)).toBeUndefined();
+    });
+
+    it('sin el trámite en el catálogo del área, no se crea ninguno', () => {
+      const sinCatalogo = traducirFases(
+        entregadas,
+        [],
+        ETAPAS_POR_DEFECTO,
+        'grafo',
+      );
+      expect(sinCatalogo.nodos).toHaveLength(entregadas.length);
+    });
   });
 });

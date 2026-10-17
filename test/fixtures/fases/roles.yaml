@@ -13,10 +13,25 @@ roles:
     qa: [Colección, Auditoría, Listo para PR]
     etapas:
       - { clave: entendimiento, columna: ENTENDIMIENTO, si: siempre }
-      - { clave: codigo, columna: EN CODIGO, si: tareas_alguna }
-      - { clave: coleccion, columna: Collection Created, si: { qa: Colección } }
-      - { clave: auditoria, columna: TESTEADO, si: { qa: Auditoría } }
-      - { clave: listo, columna: LISTO PARA PR, si: { qa: Listo para PR } }
+      - { clave: codigo, columna: EN CODIGO, si: tareas_alguna, curso: true }
+      - {
+          clave: coleccion,
+          columna: Collection Created,
+          si: { qa: Colección },
+          curso: true,
+        }
+      - {
+          clave: auditoria,
+          columna: TESTEADO,
+          si: { qa: Auditoría },
+          curso: true,
+        }
+      - {
+          clave: listo,
+          columna: LISTO PARA PR,
+          si: { qa: Listo para PR },
+          curso: true,
+        }
       - { clave: aprobado, columna: APROBADO, si: cierre_real }
       - { clave: cerrado, columna: CERRADO, si: terminada }
 
@@ -34,9 +49,19 @@ roles:
     qa: [Listo para PR]
     etapas:
       - { clave: entendimiento, columna: ENTENDIMIENTO, si: siempre }
-      - { clave: amarrar, columna: 'AMARRAR 🧰', si: { grupo: amarrar } }
-      - { clave: cambiar, columna: 'CAMBIAR 🧰', si: { grupo: cambiar } }
-      - { clave: red, columna: 'RED 🧰', si: { grupo: red } }
+      - {
+          clave: amarrar,
+          columna: 'AMARRAR 🧰',
+          si: { grupo: amarrar },
+          curso: true,
+        }
+      - {
+          clave: cambiar,
+          columna: 'CAMBIAR 🧰',
+          si: { grupo: cambiar },
+          curso: true,
+        }
+      - { clave: red, columna: 'RED 🧰', si: { grupo: red }, curso: true }
       - { clave: pr, columna: Pull Request, si: { qa: Listo para PR } }
       - { clave: aprobado, columna: APROBADO, si: cierre_real }
       - { clave: cerrado, columna: CERRADO, si: terminada }

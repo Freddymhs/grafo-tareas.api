@@ -4,6 +4,10 @@ import { Injectable } from '@nestjs/common';
 import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
 import { EtapasService } from '../../modules/nodos/etapas.service.js';
+import {
+  CLAVE_TRAMITE,
+  etiquetaDeComplemento,
+} from '../../common/constants/index.js';
 import { leerRoles } from '../../modules/roles/leer-roles.js';
 import type { Roles } from '../../modules/roles/roles.types.js';
 import { aplicarPlan, conectar, guardarNodo, Tx } from '../aplicar-plan.js';
@@ -57,9 +61,10 @@ export class ImportadorFasesService {
   ) {}
 
   async importar(opciones: OpcionesFases): Promise<ResumenFases> {
-    const fases = this.leerFases(
-      opciones.backlog,
-      this.leerRoles(opciones.roles),
+    const roles = this.leerRoles(opciones.roles);
+    const fases = this.leerFases(opciones.backlog, roles);
+    const conTramite = roles.complementos.some(
+      ({ clave }) => clave === CLAVE_TRAMITE,
     );
     const abiertos = opciones.tareas
       ? this.leerEntendimientos(opciones.tareas)
@@ -69,6 +74,7 @@ export class ImportadorFasesService {
       abiertos,
       this.etapas.lista(),
       opciones.proyecto,
+      conTramite ? etiquetaDeComplemento(CLAVE_TRAMITE) : null,
     );
     const base = {
       backlog: opciones.backlog,
@@ -169,10 +175,10 @@ export class ImportadorFasesService {
     };
     const vigentes: string[] = [];
     for (const duda of dudas) {
-      const { id, creado } = await guardarNodo(tx, origen, duda);
+      const { id, creado, cambio } = await guardarNodo(tx, origen, duda);
       vigentes.push(duda.externoId);
       if (creado) conteo.nuevos += 1;
-      else conteo.actualizados += 1;
+      else if (cambio) conteo.actualizados += 1;
       const tarea = await tx.nodo.findFirst({
         where: {
           tipo: TipoNodo.TAREA,

@@ -608,6 +608,37 @@
         "tags": ["Derivado"]
       }
     },
+    "/api/v1/derivado/dia": {
+      "get": {
+        "operationId": "DerivadoController_dia",
+        "parameters": [
+          {
+            "name": "desde",
+            "required": false,
+            "in": "query",
+            "description": "Desde cuándo cuenta «terminé» (por defecto, las últimas 24 h)",
+            "schema": {
+              "example": "2026-10-16T09:00:00-03:00",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiaResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "El parte del día: terminé, en curso (y si pasa del límite), detenido y para decir",
+        "tags": ["Derivado"]
+      }
+    },
     "/api/v1/nodos/{id}/bloqueado": {
       "get": {
         "operationId": "DerivadoController_bloqueado",
@@ -1461,6 +1492,108 @@
           }
         },
         "required": ["id", "tipo", "titulo", "estado", "etiquetas"]
+      },
+      "EnCursoDto": {
+        "type": "object",
+        "properties": {
+          "nodo": {
+            "$ref": "#/components/schemas/NodoResumenDto"
+          },
+          "etapa": {
+            "type": "string",
+            "example": "EN CODIGO"
+          },
+          "bloqueado": {
+            "type": "boolean"
+          }
+        },
+        "required": ["nodo", "etapa", "bloqueado"]
+      },
+      "DetenidoDto": {
+        "type": "object",
+        "properties": {
+          "nodo": {
+            "$ref": "#/components/schemas/NodoResumenDto"
+          },
+          "por": {
+            "description": "Qué lo frena",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NodoResumenDto"
+            }
+          }
+        },
+        "required": ["nodo", "por"]
+      },
+      "ParaDecirDto": {
+        "type": "object",
+        "properties": {
+          "nodo": {
+            "$ref": "#/components/schemas/NodoResumenDto"
+          },
+          "ritual": {
+            "type": "string",
+            "example": "Daily"
+          }
+        },
+        "required": ["nodo", "ritual"]
+      },
+      "DiaResponseDto": {
+        "type": "object",
+        "properties": {
+          "desde": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "limiteEnCurso": {
+            "type": "number",
+            "description": "Más de esto en curso se avisa"
+          },
+          "terminado": {
+            "description": "Tareas y FASE cerradas desde `desde`",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NodoResumenDto"
+            }
+          },
+          "enCurso": {
+            "description": "Abiertas en una etapa `curso` de roles.yaml",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnCursoDto"
+            }
+          },
+          "detenido": {
+            "description": "Abiertas en el tablero (con etapa) y bloqueadas",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DetenidoDto"
+            }
+          },
+          "paraDecir": {
+            "description": "«Para decir» abiertos, con su ritual",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParaDecirDto"
+            }
+          },
+          "tramites": {
+            "description": "Trámites de cierre pendientes (URL commit, evidencias…) que dejó importar:fases",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NodoResumenDto"
+            }
+          }
+        },
+        "required": [
+          "desde",
+          "limiteEnCurso",
+          "terminado",
+          "enCurso",
+          "detenido",
+          "paraDecir",
+          "tramites"
+        ]
       },
       "BloqueadoResponseDto": {
         "type": "object",

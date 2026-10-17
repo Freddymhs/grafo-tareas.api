@@ -20,6 +20,14 @@ describe('leerRoles', () => {
     ]);
   });
 
+  it('`curso` marca el trabajo en curso; sin la clave, no lo es', () => {
+    const [producto] = leerRoles(TEXTO).roles;
+    const enCurso = producto?.etapas
+      .filter(({ curso }) => curso)
+      .map(({ clave }) => clave);
+    expect(enCurso).toEqual(['codigo', 'coleccion', 'auditoria', 'listo']);
+  });
+
   it('lee el catálogo de complementos; accionable por defecto, escalera solo en las dudas', () => {
     const { complementos } = leerRoles(TEXTO);
     expect(complementos).toHaveLength(12);

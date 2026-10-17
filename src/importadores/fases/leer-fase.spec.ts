@@ -32,6 +32,24 @@ describe('leerFase', () => {
     expect(leer('FASE_5_CALIDAD.md').etapa).toBe('CAMBIAR 🧰');
   });
 
+  it('cierre pendiente: entregada → las casillas reales sin tildar; sin entregar, o sin cierre real (tracker: none) → null', () => {
+    expect(leer('FASE_3_LISTA.md').cierrePendiente).toEqual([
+      'URL commit',
+      'Evidencias',
+      'Wiki',
+    ]);
+    expect(leer('FASE_4_CERRADA.md').cierrePendiente).toEqual([]);
+    expect(leer('FASE_2_EN_CODIGO.md').cierrePendiente).toBeNull();
+    const entregadaSinTracker = md('FASE_2_EN_CODIGO.md').replace(
+      '- [ ] Listo para PR',
+      '- [x] Listo para PR',
+    );
+    expect(
+      leerFase('FASE_2_EN_CODIGO.md', entregadaSinTracker, ROLES)
+        .cierrePendiente,
+    ).toBeNull();
+  });
+
   it('sin `# FASE n` ni número en el nombre, falla', () => {
     expect(() => leerFase('notas.md', '# Notas\n', ROLES)).toThrow('no tiene');
   });

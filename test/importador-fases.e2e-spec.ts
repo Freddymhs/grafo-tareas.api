@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -20,6 +20,8 @@ const OPCIONES = {
 };
 const FASES_EN_FIXTURE = 5;
 const ABIERTOS_EN_FIXTURE = 2;
+/** FASE 3 (lista para PR, cierre sin tildar) y FASE 4 (cierre completo): un trámite cada una (FASE 10). */
+const TRAMITES_EN_FIXTURE = 2;
 
 describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
   const ctx = {} as {
@@ -67,11 +69,14 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
   it('crea las FASE con su etapa y la etiqueta de su rol, no toca la FASE 2 de Todoist y conecta las dudas a su tarjeta', async () => {
     const resumen = await ctx.importador.importar(OPCIONES);
     expect(resumen.nodos).toEqual({
-      nuevos: FASES_EN_FIXTURE + ABIERTOS_EN_FIXTURE,
+      nuevos: FASES_EN_FIXTURE + ABIERTOS_EN_FIXTURE + TRAMITES_EN_FIXTURE,
       actualizados: 0,
     });
     // DEPENDE_DE: 2→1, 3→2, 4→3, 5→2 (la FASE 9 citada no está en el directorio) + BLOQUEADA_POR por cada ABIERTO
-    expect(resumen.conexiones.nuevas).toBe(4 + ABIERTOS_EN_FIXTURE);
+    // + PERTENECE_A de cada trámite a su FASE
+    expect(resumen.conexiones.nuevas).toBe(
+      4 + ABIERTOS_EN_FIXTURE + TRAMITES_EN_FIXTURE,
+    );
     expect(resumen.dudasSueltas).toBe(0);
 
     const fases = await ctx.prisma.nodo.findMany({
@@ -100,6 +105,14 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
         },
       },
     });
+    const tramites = await ctx.prisma.nodo.findMany({
+      where: { externoOrigen: ORIGEN, externoId: { startsWith: 'tramite:' } },
+      orderBy: { externoId: 'asc' },
+    });
+    expect(tramites.map(({ titulo, estado }) => [titulo, estado])).toEqual([
+      ['FASE 3: falta URL commit, Evidencias, Wiki', EstadoNodo.ABIERTO],
+      ['FASE 4: cierre oficial completo', EstadoNodo.CERRADO],
+    ]);
     expect(deTodoist.etapa).toBeNull(); // intacta: puede ser la FASE 2 de otro orquestador
 
     const tarea = await ctx.prisma.nodo.findFirstOrThrow({
@@ -150,5 +163,29 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
         where: { tipo: TipoNodo.FASE, externoOrigen: ORIGEN },
       }),
     ).toBe(FASES_EN_FIXTURE);
+  });
+
+  it('al tildar el cierre en la FASE y reimportar, su trámite se cierra solo', async () => {
+    const backlog = join(mkdtempSync(join(tmpdir(), 'backlog-')), 'backlog');
+    cpSync(OPCIONES.backlog, backlog, { recursive: true });
+    const archivo = join(backlog, 'FASE_3_LISTA.md');
+    const tildado = readFileSync(archivo, 'utf8')
+      .replace('- [ ] URL commit', '- [x] URL commit')
+      .replace('- [ ] Evidencias', '- [x] Evidencias')
+      .replace('- [ ] Wiki actualizada', '- [x] Wiki actualizada');
+    writeFileSync(archivo, tildado);
+    await ctx.importador.importar({ ...OPCIONES, backlog, tareas: null });
+    const tramite = await ctx.prisma.nodo.findUniqueOrThrow({
+      where: {
+        externoOrigen_externoId: {
+          externoOrigen: ORIGEN,
+          externoId: 'tramite:fase:3',
+        },
+      },
+    });
+    expect([tramite.titulo, tramite.estado]).toEqual([
+      'FASE 3: cierre oficial completo',
+      EstadoNodo.CERRADO,
+    ]);
   });
 });
