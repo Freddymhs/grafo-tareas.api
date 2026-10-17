@@ -19,6 +19,7 @@ import {
   GuardarPosicionesDto,
   ListarNodosDto,
   NodoResponseDto,
+  PaginaNodosDto,
   UpdateNodoDto,
 } from './dto/index.js';
 import { NodosService } from './nodos.service.js';
@@ -29,8 +30,10 @@ export class NodosController {
   constructor(private readonly service: NodosService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar nodos, filtrando por tipo o estado' })
-  @ApiResponse({ status: 200, type: [NodoResponseDto] })
+  @ApiOperation({
+    summary: 'Listar nodos: por tipo, estado, etapa, etiqueta, rama o texto',
+  })
+  @ApiResponse({ status: 200, type: PaginaNodosDto })
   findAll(@Query() query: ListarNodosDto) {
     return this.service.findAll(query);
   }

@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { EstadoNodo, Nodo, Prisma, TipoNodo } from '@prisma/client';
+import {
+  EstadoNodo,
+  Nodo,
+  Prisma,
+  TipoConexion,
+  TipoNodo,
+} from '@prisma/client';
 import { BaseRepository } from '../../database/base.repository.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { PosicionNodoDto } from './dto/index.js';
@@ -10,6 +16,7 @@ export interface FiltroNodos {
   /** '' (vacía) = los que no tienen etapa; undefined = cualquiera. */
   readonly etapa?: string;
   readonly etiqueta?: string;
+  readonly rama?: string;
   readonly q?: string;
 }
 
@@ -19,12 +26,21 @@ function whereDe({
   estado,
   etapa,
   etiqueta,
+  rama,
   q,
 }: FiltroNodos): Prisma.NodoWhereInput {
   const porEtapa =
     etapa === undefined ? {} : { etapa: etapa === '' ? null : etapa };
   const porEtiqueta =
     etiqueta === undefined ? {} : { etiquetas: { has: etiqueta } };
+  const porRama =
+    rama === undefined
+      ? {}
+      : {
+          salientes: {
+            some: { tipo: TipoConexion.PERTENECE_A, destinoId: rama },
+          },
+        };
   const porTexto =
     q === undefined
       ? {}
@@ -36,7 +52,7 @@ function whereDe({
             },
           ],
         };
-  return { tipo, estado, ...porEtapa, ...porEtiqueta, ...porTexto };
+  return { tipo, estado, ...porEtapa, ...porEtiqueta, ...porRama, ...porTexto };
 }
 
 @Injectable()

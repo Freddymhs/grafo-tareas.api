@@ -55,3 +55,12 @@ export class NodoResponseDto extends NodoResumenDto {
   @ApiProperty()
   updatedAt!: Date;
 }
+
+/** Lo que devuelve GET /nodos: una página. Declarado así para que Orval genere el tipo verdadero. */
+export class PaginaNodosDto {
+  @ApiProperty({ type: [NodoResponseDto] })
+  data!: NodoResponseDto[];
+
+  @ApiProperty({ description: 'Total que cumple el filtro, sin paginar' })
+  total!: number;
+}

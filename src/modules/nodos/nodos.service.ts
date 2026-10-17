@@ -24,8 +24,8 @@ export class NodosService {
   ) {}
 
   async findAll(query: ListarNodosDto) {
-    const { offset, limit, tipo, estado, etapa, etiqueta, q } = query;
-    const filtro = { tipo, estado, etapa, etiqueta, q };
+    const { offset, limit, tipo, estado, etapa, etiqueta, rama, q } = query;
+    const filtro = { tipo, estado, etapa, etiqueta, rama, q };
     const [data, total] = await Promise.all([
       this.repository.listar(filtro, offset, limit),
       this.repository.contar(filtro),

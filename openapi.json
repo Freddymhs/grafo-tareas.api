@@ -37,6 +37,7 @@
             "in": "query",
             "schema": {
               "minimum": 1,
+              "maximum": 500,
               "default": 20,
               "type": "number"
             }
@@ -88,6 +89,16 @@
             }
           },
           {
+            "name": "rama",
+            "required": false,
+            "in": "query",
+            "description": "Solo los nodos que PERTENECEN_A esta rama",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
             "name": "q",
             "required": false,
             "in": "query",
@@ -104,16 +115,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/NodoResponseDto"
-                  }
+                  "$ref": "#/components/schemas/PaginaNodosDto"
                 }
               }
             }
           }
         },
-        "summary": "Listar nodos, filtrando por tipo o estado",
+        "summary": "Listar nodos: por tipo, estado, etapa, etiqueta, rama o texto",
         "tags": ["Nodos"]
       },
       "post": {
@@ -742,6 +750,22 @@
           "updatedAt"
         ]
       },
+      "PaginaNodosDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NodoResponseDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "Total que cumple el filtro, sin paginar"
+          }
+        },
+        "required": ["data", "total"]
+      },
       "PosicionNodoDto": {
         "type": "object",
         "properties": {
@@ -1003,7 +1027,8 @@
             "type": "string"
           },
           "color": {
-            "type": "object",
+            "type": "string",
+            "nullable": true,
             "example": "#3b82f6"
           },
           "estado": {
@@ -1015,7 +1040,7 @@
             "description": "Nodos que PERTENECEN_A esta rama"
           }
         },
-        "required": ["id", "titulo", "color", "estado", "miembros"]
+        "required": ["id", "titulo", "estado", "miembros"]
       },
       "CreateRamaDto": {
         "type": "object",

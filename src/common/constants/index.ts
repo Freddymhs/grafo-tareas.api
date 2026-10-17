@@ -9,4 +9,5 @@ export {
   PRIORIDAD_MAXIMA,
   LARGO_MAXIMO_ETIQUETA,
   LARGO_MAXIMO_BUSQUEDA,
+  LIMITE_MAXIMO_PAGINA,
 } from './grafo.constants';

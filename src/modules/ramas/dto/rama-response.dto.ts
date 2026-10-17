@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EstadoNodo } from '@prisma/client';
 
 export class RamaResponseDto {
@@ -8,7 +8,7 @@ export class RamaResponseDto {
   @ApiProperty()
   titulo!: string;
 
-  @ApiProperty({ example: '#3b82f6' })
+  @ApiPropertyOptional({ nullable: true, type: String, example: '#3b82f6' })
   color!: string | null;
 
   @ApiProperty({ enum: EstadoNodo })

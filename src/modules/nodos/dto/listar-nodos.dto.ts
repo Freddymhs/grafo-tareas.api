@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
 } from 'class-validator';
 import { LARGO_MAXIMO_BUSQUEDA } from '../../../common/constants/index.js';
@@ -34,6 +35,14 @@ export class ListarNodosDto extends PaginationQueryDto {
   @IsString()
   @IsNotEmpty()
   etiqueta?: string;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Solo los nodos que PERTENECEN_A esta rama',
+  })
+  @IsOptional()
+  @IsUUID()
+  rama?: string;
 
   @ApiPropertyOptional({
     example: '25327',

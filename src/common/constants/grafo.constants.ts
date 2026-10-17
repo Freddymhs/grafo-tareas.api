@@ -34,3 +34,5 @@ export const PRIORIDAD_MINIMA = 1;
 export const PRIORIDAD_MAXIMA = 4;
 export const LARGO_MAXIMO_ETIQUETA = 50;
 export const LARGO_MAXIMO_BUSQUEDA = 200;
+/** Un listado no devuelve más que esto por página (el tablero pide 500 y le alcanza). */
+export const LIMITE_MAXIMO_PAGINA = 500;
