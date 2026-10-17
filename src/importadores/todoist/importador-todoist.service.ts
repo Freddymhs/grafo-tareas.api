@@ -3,6 +3,7 @@ import { PrismaService } from '../../database/prisma.service.js';
 import { EtapasService } from '../../modules/nodos/etapas.service.js';
 import { TodoistClient } from './todoist.client.js';
 import { aplicarPlan, Tx } from '../aplicar-plan.js';
+import { simular } from '../simulacro.js';
 import { Plan, traducir } from './traducir.js';
 
 export interface ResumenImportacion {
@@ -33,19 +34,15 @@ export class ImportadorTodoistService {
     const plan = traducir(tareas, secciones, this.etapas.lista());
     const base = { proyectoId, seco, tareasLeidas: tareas.length };
     if (seco) {
-      return { ...base, ...this.contarSinEscribir(plan) };
+      return {
+        ...base,
+        ...(await simular(this.prisma, (tx) => this.aplicar(tx, plan))),
+      };
     }
     const aplicado = await this.prisma.$transaction((tx) =>
       this.aplicar(tx, plan),
     );
     return { ...base, ...aplicado };
-  }
-
-  private contarSinEscribir(plan: Plan) {
-    return {
-      nodos: { nuevos: plan.nodos.length, actualizados: 0 },
-      conexiones: { nuevas: plan.conexiones.length, existentes: 0 },
-    };
   }
 
   private async aplicar(tx: Tx, plan: Plan) {

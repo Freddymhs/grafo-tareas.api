@@ -83,6 +83,31 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
     expect(await ctx.prisma.conexion.count()).toBe(conexionesTrasPrimera);
   });
 
+  it('--seco cuenta contra la base: tras importar dice 0 nuevos; un cambio a mano se cuenta y no se pisa', async () => {
+    const nodos = await ctx.prisma.nodo.count();
+    const sinCambios = await ctx.importador.importar('P1', true);
+    expect(sinCambios.nodos.nuevos).toBe(0);
+    expect(sinCambios.nodos.actualizados).toBe(0);
+    expect(sinCambios.conexiones.nuevas).toBe(0);
+
+    const tarea = await ctx.prisma.nodo.findFirstOrThrow({
+      where: { tipo: TipoNodo.TAREA },
+    });
+    await ctx.prisma.nodo.update({
+      where: { id: tarea.id },
+      data: { titulo: 'tocado a mano' },
+    });
+    const conUnCambio = await ctx.importador.importar('P1', true);
+    expect(conUnCambio.nodos.actualizados).toBe(1);
+    const despues = await ctx.prisma.nodo.findUniqueOrThrow({
+      where: { id: tarea.id },
+    });
+    expect(despues.titulo).toBe('tocado a mano');
+    expect(await ctx.prisma.nodo.count()).toBe(nodos);
+
+    await ctx.importador.importar('P1', false);
+  });
+
   it('lo importado se ve por el dominio: la rama 🟢 existe con su color y Tomás es una PERSONA', async () => {
     const rama = await ctx.prisma.nodo.findUnique({
       where: {

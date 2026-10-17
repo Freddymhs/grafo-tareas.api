@@ -11,6 +11,7 @@ import {
 import { leerRoles } from '../../modules/roles/leer-roles.js';
 import type { Roles } from '../../modules/roles/roles.types.js';
 import { aplicarPlan, conectar, guardarNodo, Tx } from '../aplicar-plan.js';
+import { simular } from '../simulacro.js';
 import { AbiertoLeido, leerAbiertos } from './leer-abiertos.js';
 import { FaseLeida, leerFase } from './leer-fase.js';
 import { DudaPlan, PlanFases, traducirFases } from './traducir-fases.js';
@@ -90,23 +91,12 @@ export class ImportadorFasesService {
       fasesLeidas: fases.length,
       abiertosLeidos: abiertos.length,
     };
-    if (opciones.seco) {
-      return {
-        ...base,
-        nodos: {
-          nuevos: plan.nodos.length + plan.dudas.length,
-          actualizados: 0,
-        },
-        conexiones: { nuevas: plan.conexiones.length, existentes: 0 },
-        dudasCerradas: 0,
-        dudasSueltas: 0,
-        adoptadas: 0,
-      };
-    }
     const conTareas = opciones.tareas !== null;
-    const aplicado = await this.prisma.$transaction((tx) =>
-      this.aplicar(tx, plan, conTareas, opciones.adoptar),
-    );
+    const aplicar = (tx: Tx) =>
+      this.aplicar(tx, plan, conTareas, opciones.adoptar);
+    const aplicado = opciones.seco
+      ? await simular(this.prisma, aplicar)
+      : await this.prisma.$transaction(aplicar);
     return { ...base, ...aplicado };
   }
 

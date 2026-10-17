@@ -130,6 +130,14 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
     expect(bloqueos).toBe(ABIERTOS_EN_FIXTURE);
   });
 
+  it('--seco cuenta contra la base: tras importar dice 0 nuevos y no escribe', async () => {
+    const nodos = await ctx.prisma.nodo.count();
+    const seco = await ctx.importador.importar({ ...OPCIONES, seco: true });
+    expect(seco.nodos.nuevos).toBe(0);
+    expect(seco.conexiones.nuevas).toBe(0);
+    expect(await ctx.prisma.nodo.count()).toBe(nodos);
+  });
+
   it('la segunda corrida no duplica; un ABIERTO que desaparece cierra su DUDA', async () => {
     const segunda = await ctx.importador.importar(OPCIONES);
     expect(segunda.nodos.nuevos).toBe(0);
