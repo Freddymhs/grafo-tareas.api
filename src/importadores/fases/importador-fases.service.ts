@@ -14,7 +14,21 @@ import { aplicarPlan, conectar, guardarNodo, Tx } from '../aplicar-plan.js';
 import { simular } from '../simulacro.js';
 import { AbiertoLeido, leerAbiertos } from './leer-abiertos.js';
 import { FaseLeida, leerFase } from './leer-fase.js';
-import { DudaPlan, PlanFases, traducirFases } from './traducir-fases.js';
+import {
+  DudaPlan,
+  esPadres,
+  externoFase,
+  Padres,
+  PlanFases,
+  SIN_PADRES,
+  traducirFases,
+} from './traducir-fases.js';
+
+/** Una FASE del backlog y la task del tracker que documenta: para colgar de ella las tarjetas que la citan. */
+interface TaskDeFase {
+  readonly externoId: string;
+  readonly task: string;
+}
 
 export interface OpcionesFases {
   /** Carpeta con las FASE_*.md (`docs/backlog` del orquestador). */
@@ -30,6 +44,8 @@ export interface OpcionesFases {
    * nodos se adoptan —pasan a este origen, con su id y sus conexiones— en vez de duplicarse (C10, FASE 11).
    */
   readonly adoptar: string | null;
+  /** JSON `{ tareas: { <task>: <hu> }, padres: { <hu>: <título> } }` leído del tracker (FASE 13); null = sin HU. */
+  readonly padres: string | null;
   readonly seco: boolean;
 }
 
@@ -47,6 +63,8 @@ export interface ResumenFases {
   readonly dudasSueltas: number;
   /** «FASE n» de `adoptar` que pasaron a este proyecto. */
   readonly adoptadas: number;
+  /** Tarjetas que citan la task de una FASE y quedaron colgando de ella en esta corrida (R3, FASE 13). */
+  readonly tarjetasEnganchadas: number;
 }
 
 const ES_FASE = /^FASE_\d+_.*\.md$/;
@@ -83,6 +101,10 @@ export class ImportadorFasesService {
       this.etapas.lista(),
       opciones.proyecto,
       conTramite ? etiquetaDeComplemento(CLAVE_TRAMITE) : null,
+      opciones.padres ? this.leerPadres(opciones.padres) : SIN_PADRES,
+    );
+    const tasks = fases.flatMap(({ numero, task }) =>
+      task ? [{ externoId: externoFase(numero), task }] : [],
     );
     const base = {
       backlog: opciones.backlog,
@@ -93,7 +115,7 @@ export class ImportadorFasesService {
     };
     const conTareas = opciones.tareas !== null;
     const aplicar = (tx: Tx) =>
-      this.aplicar(tx, plan, conTareas, opciones.adoptar);
+      this.aplicar(tx, plan, conTareas, opciones.adoptar, tasks);
     const aplicado = opciones.seco
       ? await simular(this.prisma, aplicar)
       : await this.prisma.$transaction(aplicar);
@@ -107,6 +129,18 @@ export class ImportadorFasesService {
       );
     }
     return leerRoles(readFileSync(archivo, 'utf8'));
+  }
+
+  /** El mapa de padres viene de afuera (lo arma bin/importar-en-produccion): se valida la forma antes de usarlo. */
+  private leerPadres(archivo: string): Padres {
+    if (!existsSync(archivo)) throw new Error(`no existe ${archivo}`);
+    const leido: unknown = JSON.parse(readFileSync(archivo, 'utf8'));
+    if (!esPadres(leido)) {
+      throw new Error(
+        `${archivo}: se esperaba { tareas: { <task>: <hu> }, padres: { <hu>: <título> } } con textos`,
+      );
+    }
+    return leido;
   }
 
   private leerFases(backlog: string, roles: Roles): readonly FaseLeida[] {
@@ -136,6 +170,7 @@ export class ImportadorFasesService {
     plan: PlanFases,
     conTareas: boolean,
     adoptar: string | null,
+    tasks: readonly TaskDeFase[],
   ) {
     // Nunca se adopta por título: «FASE 6» de Todoist puede ser de otro orquestador (real 2026-10-17, la FASE 6 del
     // SAG). Solo si el que importa dice de qué origen son sus FASE (`adoptar`), y siempre por externo.
@@ -152,6 +187,11 @@ export class ImportadorFasesService {
     const dudas = conTareas
       ? await this.aplicarDudas(tx, plan.origen, plan.dudas)
       : SIN_DUDAS;
+    const tarjetasEnganchadas = await this.engancharTarjetas(
+      tx,
+      fases.idPorExterno,
+      tasks,
+    );
     return {
       nodos: {
         nuevos: fases.nodos.nuevos + dudas.nuevos,
@@ -164,7 +204,42 @@ export class ImportadorFasesService {
       dudasCerradas: dudas.cerradas,
       dudasSueltas: dudas.sueltas,
       adoptadas,
+      tarjetasEnganchadas,
     };
+  }
+
+  /**
+   * R3 (FASE 13): la tarjeta de una task (`[25476] …`, o que la cita en el título) PERTENECE_A su FASE. No se
+   * fusionan: la tarjeta es la proyección del tablero y la FASE el documento; D10 las marca a las dos a propósito.
+   * Se busca el id como número entero (25476 no engancha 254761). Devuelve las conexiones nuevas.
+   */
+  private async engancharTarjetas(
+    tx: Tx,
+    idPorExterno: ReadonlyMap<string, string>,
+    tasks: readonly TaskDeFase[],
+  ): Promise<number> {
+    const nuevas: boolean[] = [];
+    for (const { externoId, task } of tasks) {
+      const faseId = idPorExterno.get(externoId);
+      if (!faseId) continue;
+      const citaLaTask = new RegExp(`(^|\\D)${task}(\\D|$)`);
+      const candidatas = await tx.nodo.findMany({
+        where: { tipo: TipoNodo.TAREA, titulo: { contains: task } },
+        select: { id: true, titulo: true },
+      });
+      for (const { id } of candidatas.filter(({ titulo }) =>
+        citaLaTask.test(titulo),
+      )) {
+        nuevas.push(
+          await conectar(tx, {
+            origenId: id,
+            destinoId: faseId,
+            tipo: TipoConexion.PERTENECE_A,
+          }),
+        );
+      }
+    }
+    return nuevas.filter(Boolean).length;
   }
 
   /**

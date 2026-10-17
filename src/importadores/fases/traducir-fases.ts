@@ -1,6 +1,7 @@
 // FASE_*.md + entendimiento.md → plan del grafo (puro). Cada FASE es un nodo FASE con su etapa derivada de
 // las casillas y la etiqueta de su rol (C11); `**Dependencias**` son conexiones DEPENDE_DE entre FASEs; cada punto ABIERTO es una DUDA.
 import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { externoHistoria, nodoHistoria } from '../plan.js';
 import type { ConexionPlan, NodoPlan, Plan } from '../plan.js';
 import { AbiertoLeido } from './leer-abiertos.js';
 import { FaseLeida } from './leer-fase.js';
@@ -26,6 +27,28 @@ export interface DudaPlan extends NodoPlan {
   /** Prefijo del título de la TAREA que esta duda frena; se resuelve al aplicar. */
   readonly tareaPrefijo: string;
 }
+
+/**
+ * La task de cada FASE → su HU, y el título de cada HU: lo LEE el tracker (`bin/importar-en-produccion`), no la
+ * prosa de la cabecera — medido 2026-10-17: solo 21 de 35 FASE nombran su HU, y con cinco redacciones distintas.
+ */
+export interface Padres {
+  readonly tareas: Readonly<Record<string, string>>;
+  readonly padres: Readonly<Record<string, string>>;
+}
+export const SIN_PADRES: Padres = { tareas: {}, padres: {} };
+
+const esMapaDeTextos = (valor: unknown): valor is Record<string, string> =>
+  typeof valor === 'object' &&
+  valor !== null &&
+  !Array.isArray(valor) &&
+  Object.values(valor).every((v) => typeof v === 'string');
+
+export const esPadres = (valor: unknown): valor is Padres =>
+  typeof valor === 'object' &&
+  valor !== null &&
+  esMapaDeTextos((valor as Record<string, unknown>)['tareas']) &&
+  esMapaDeTextos((valor as Record<string, unknown>)['padres']);
 
 export interface PlanFases extends Plan {
   readonly dudas: readonly DudaPlan[];
@@ -121,15 +144,25 @@ export function traducirFases(
   proyecto: string,
   /** La etiqueta del complemento trámite; null si el catálogo del área no lo tiene (no se crean trámites). */
   etiquetaTramite: string | null = null,
+  padres: Padres = SIN_PADRES,
 ): PlanFases {
   const numeros = new Set(fases.map(({ numero }) => numero));
   const tramites = fases.flatMap((fase) => {
     const tramite = etiquetaTramite ? tramiteDe(fase, etiquetaTramite) : null;
     return tramite ? [{ fase: fase.numero, tramite }] : [];
   });
+  // R1-R2 (FASE 13): la FASE PERTENECE_A la HU padre de su task; una HU por padre aunque la citen varias FASE.
+  const deHu = fases.flatMap((fase) => {
+    const hu = fase.task ? padres.tareas[fase.task] : undefined;
+    return hu ? [{ fase: fase.numero, hu }] : [];
+  });
+  const historias = [...new Set(deHu.map(({ hu }) => hu))].map((hu) =>
+    nodoHistoria(hu, padres.padres[hu] ?? null, false),
+  );
   const nodos = [
     ...fases.map((fase) => nodoDeFase(fase, etapas)),
     ...tramites.map(({ tramite }) => tramite),
+    ...historias,
   ];
   // Una dependencia a una FASE que no está en el directorio queda suelta: el plan solo conecta lo que trae.
   const conexiones: ConexionPlan[] = fases.flatMap((fase) =>
@@ -146,10 +179,15 @@ export function traducirFases(
     destinoExternoId: externoFase(fase),
     tipo: TipoConexion.PERTENECE_A,
   }));
+  const aSuHu: ConexionPlan[] = deHu.map(({ fase, hu }) => ({
+    origenExternoId: externoFase(fase),
+    destinoExternoId: externoHistoria(hu),
+    tipo: TipoConexion.PERTENECE_A,
+  }));
   return {
     origen: origenFases(proyecto),
     nodos,
-    conexiones: [...conexiones, ...deTramites],
+    conexiones: [...conexiones, ...deTramites, ...aSuHu],
     dudas: abiertos.map(nodoDeAbierto),
   };
 }

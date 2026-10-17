@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { ORIGEN_TRACKER, externoHistoria } from '../plan';
 import {
+  externoCarril,
   externoFase,
   externoPersona,
   externoRama,
@@ -161,5 +163,84 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
 
   it('es determinista: el mismo fixture da el mismo plan', () => {
     expect(traducir(tareas, secciones, ETAPAS)).toEqual(plan);
+  });
+});
+
+describe('R4 (FASE 13) · las piezas del Draft (fixture real: 3 tarjetas de la HU 20379)', () => {
+  const draft = leer<TareaTodoist[]>('draft-tasks.json');
+  const seccionesDraft = leer<SeccionTodoist[]>('draft-sections.json');
+  const planDraft = traducir(draft, seccionesDraft, ETAPAS);
+  const pieza = (patron: RegExp) => {
+    const tarea = draft.find(({ content }) => patron.test(content));
+    const encontrado = planDraft.nodos.find((n) => n.externoId === tarea?.id);
+    if (!tarea || !encontrado) throw new Error(`falta la pieza ${patron}`);
+    return encontrado;
+  };
+  const hacia = (externoId: string) =>
+    planDraft.conexiones
+      .filter(
+        (c) =>
+          c.origenExternoId === externoId &&
+          c.tipo === TipoConexion.PERTENECE_A,
+      )
+      .map((c) => c.destinoExternoId);
+
+  it('la pieza lleva las etiquetas pieza, su ronda y si está por crear o descartada', () => {
+    expect(pieza(/0\.4 ·/).etiquetas).toEqual([
+      'pieza',
+      'ronda:2',
+      'por-crear',
+    ]);
+    expect(pieza(/1\.3 ·/).etiquetas).toEqual([
+      'pieza',
+      'ronda:3',
+      'descartada',
+    ]);
+    expect(pieza(/\[26309\]/).etiquetas).toEqual(['pieza', 'ronda:5']);
+  });
+
+  it('cuelga de su HU (la de la cabecera, aunque el título ya no la diga) y de su carril', () => {
+    const tomada = pieza(/\[26309\]/);
+    expect(hacia(tomada.externoId)).toEqual(
+      expect.arrayContaining([
+        externoHistoria('20379'),
+        externoCarril('20379', 'C · Recepción'),
+        externoRama('🟢'),
+      ]),
+    );
+    expect(hacia(pieza(/1\.3 ·/).externoId)).toEqual([
+      externoHistoria('20379'),
+      externoCarril('20379', 'A · Bandeja'),
+    ]);
+  });
+
+  it('la HU es la compartida (origen tracker) y el tablero no le pisa el título: solo la crea si falta', () => {
+    const hu = planDraft.nodos.filter(({ tipo }) => tipo === TipoNodo.HISTORIA);
+    expect(hu).toHaveLength(1);
+    expect(hu[0]).toMatchObject({
+      externoId: externoHistoria('20379'),
+      titulo: 'HU 20379',
+      origen: ORIGEN_TRACKER,
+      soloSiFalta: true,
+    });
+  });
+
+  it('cada carril es una RAMA «HU · carril» con color, una sola vez aunque tenga varias piezas', () => {
+    const carriles = planDraft.nodos.filter(({ externoId }) =>
+      externoId.startsWith('carril:'),
+    );
+    expect(carriles.map(({ titulo }) => titulo).sort()).toEqual([
+      '20379 · A · Bandeja',
+      '20379 · C · Recepción',
+    ]);
+    expect(
+      carriles.every(({ tipo, color }) => tipo === TipoNodo.RAMA && color),
+    ).toBe(true);
+  });
+
+  it('una tarea de TRABAJO sin cabecera de reparto no es pieza', () => {
+    expect(
+      plan.nodos.some(({ etiquetas }) => etiquetas.includes('pieza')),
+    ).toBe(false);
   });
 });

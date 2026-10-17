@@ -44,7 +44,10 @@ export async function guardarNodo(
   externoOrigen: string,
   nodo: NodoPlan,
 ) {
-  const externo = { externoOrigen, externoId: nodo.externoId };
+  const externo = {
+    externoOrigen: nodo.origen ?? externoOrigen,
+    externoId: nodo.externoId,
+  };
   const datos: DatosDelPlan = {
     titulo: nodo.titulo,
     descripcion: nodo.descripcion,
@@ -60,7 +63,7 @@ export async function guardarNodo(
     select: { id: true, ...CAMPOS_DEL_PLAN },
   });
   if (existente) {
-    const cambio = !iguales(existente, datos);
+    const cambio = !nodo.soloSiFalta && !iguales(existente, datos);
     if (cambio) {
       await tx.nodo.update({ where: { id: existente.id }, data: datos });
     }

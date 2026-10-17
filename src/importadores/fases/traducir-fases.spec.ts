@@ -2,6 +2,7 @@ import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
 import { ETAPAS_POR_DEFECTO } from '../../common/constants/grafo.constants';
 import { AbiertoLeido } from './leer-abiertos';
 import { FaseLeida } from './leer-fase';
+import { ORIGEN_TRACKER, externoHistoria } from '../plan';
 import { externoFase, externoTramite, traducirFases } from './traducir-fases';
 
 const fase = (parcial: Partial<FaseLeida> & { numero: number }): FaseLeida => ({
@@ -134,6 +135,77 @@ describe('traducirFases', () => {
         'grafo',
       );
       expect(sinCatalogo.nodos).toHaveLength(entregadas.length);
+    });
+  });
+  describe('HU (FASE 13, R1-R2): cada FASE cuelga de la HU padre de su task', () => {
+    const padres = {
+      tareas: { '24972': '19565', '24973': '19565', '25476': '20379' },
+      padres: { '19565': 'Registrar Toma de Muestras', '20379': 'Dashboard' },
+    };
+    const conTask = [
+      fase({ numero: 10, task: '24972' }),
+      fase({ numero: 9, task: '24973' }),
+      fase({ numero: 32, task: '25476' }),
+      fase({ numero: 36, task: null }),
+      fase({ numero: 40, task: '99999' }),
+    ];
+    const plan = traducirFases(
+      conTask,
+      [],
+      ETAPAS_POR_DEFECTO,
+      'sag',
+      null,
+      padres,
+    );
+    const historias = plan.nodos.filter(
+      ({ tipo }) => tipo === TipoNodo.HISTORIA,
+    );
+
+    it('una HU por padre, con su título real y de origen tracker; ésta manda (soloSiFalta: false)', () => {
+      expect(historias.map(({ externoId }) => externoId).sort()).toEqual([
+        externoHistoria('19565'),
+        externoHistoria('20379'),
+      ]);
+      const hu = historias.find(
+        ({ externoId }) => externoId === externoHistoria('19565'),
+      );
+      expect(hu).toMatchObject({
+        titulo: 'HU 19565 · Registrar Toma de Muestras',
+        origen: ORIGEN_TRACKER,
+        soloSiFalta: false,
+      });
+    });
+
+    it('la FASE PERTENECE_A su HU; sin task o sin padre conocido, queda sin HU', () => {
+      const deHu = plan.conexiones.filter(
+        ({ tipo, destinoExternoId }) =>
+          tipo === TipoConexion.PERTENECE_A &&
+          destinoExternoId.startsWith('hu:'),
+      );
+      expect(deHu).toEqual([
+        {
+          origenExternoId: externoFase(10),
+          destinoExternoId: externoHistoria('19565'),
+          tipo: TipoConexion.PERTENECE_A,
+        },
+        {
+          origenExternoId: externoFase(9),
+          destinoExternoId: externoHistoria('19565'),
+          tipo: TipoConexion.PERTENECE_A,
+        },
+        {
+          origenExternoId: externoFase(32),
+          destinoExternoId: externoHistoria('20379'),
+          tipo: TipoConexion.PERTENECE_A,
+        },
+      ]);
+    });
+
+    it('sin mapa de padres, no hay HU (el mapa sale del tracker, no de la prosa de la FASE)', () => {
+      const sinMapa = traducirFases(conTask, [], ETAPAS_POR_DEFECTO, 'sag');
+      expect(sinMapa.nodos.some(({ tipo }) => tipo === TipoNodo.HISTORIA)).toBe(
+        false,
+      );
     });
   });
 });

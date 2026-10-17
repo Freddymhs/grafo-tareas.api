@@ -1,6 +1,7 @@
 # FASE 2: EN CÓDIGO — UNA TAREA HECHA, COLECCIÓN NO APLICA
 
 **Destraba**: el flujo
+**Azure**: task 24972, hija del PBI 19565 · Sprint 6
 **Dependencias**: **FASE 1** (la decisión) · FASE 9 (no existe en el directorio)
 
 ## Understand

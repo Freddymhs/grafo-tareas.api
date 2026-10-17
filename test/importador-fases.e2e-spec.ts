@@ -7,6 +7,7 @@ import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/database/prisma.service';
 import { ImportadorFasesService } from './../src/importadores/fases/importador-fases.service';
 import { origenFases } from './../src/importadores/fases/traducir-fases';
+import { ORIGEN_TRACKER, externoHistoria } from './../src/importadores/plan';
 
 const FIXTURES = join(__dirname, 'fixtures/fases');
 const PROYECTO = 'prueba';
@@ -16,6 +17,7 @@ const OPCIONES = {
   tareas: join(FIXTURES, 'Tareas'),
   roles: join(FIXTURES, 'roles.yaml'),
   adoptar: null,
+  padres: null,
   proyecto: PROYECTO,
   seco: false,
 };
@@ -98,7 +100,12 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
         EstadoNodo.ABIERTO,
         ['producto'],
       ],
-      ['FASE 2 · En Codigo', 'EN CODIGO', EstadoNodo.ABIERTO, ['producto']],
+      [
+        'FASE 2 · En Codigo · 24972',
+        'EN CODIGO',
+        EstadoNodo.ABIERTO,
+        ['producto'],
+      ],
       ['FASE 3 · Lista', 'LISTO PARA PR', EstadoNodo.ABIERTO, ['producto']],
       ['FASE 4 · Cerrada', 'CERRADO', EstadoNodo.CERRADO, ['producto']],
       ['FASE 5 · Calidad', 'CAMBIAR 🧰', EstadoNodo.ABIERTO, ['calidad']],
@@ -291,5 +298,56 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
     const origenes = entrantes.map(({ origenId }) => origenId);
     expect(origenes).toContain(tareaReimportada.id);
     expect(origenes.filter((id) => id === yaConectada)).toHaveLength(1);
+  });
+  it('FASE 13: con --padres la FASE cuelga de su HU (título real) y la tarjeta que cita su task, de la FASE', async () => {
+    const padres = join(mkdtempSync(join(tmpdir(), 'padres-')), 'padres.json');
+    writeFileSync(
+      padres,
+      JSON.stringify({
+        tareas: { '24972': '19565' },
+        padres: { '19565': 'Registrar Toma de Muestras' },
+      }),
+    );
+    const tarjeta = await ctx.prisma.nodo.create({
+      data: {
+        tipo: TipoNodo.TAREA,
+        titulo: '[24972] Backend - exponer mezclas',
+      },
+    });
+    const otraTask = await ctx.prisma.nodo.create({
+      data: { tipo: TipoNodo.TAREA, titulo: 'cita la 249721, que es otra' },
+    });
+    const opciones = { ...OPCIONES, tareas: null, padres };
+
+    const resumen = await ctx.importador.importar(opciones);
+
+    expect(resumen.tarjetasEnganchadas).toBe(1);
+    const hu = await ctx.prisma.nodo.findUniqueOrThrow({
+      where: {
+        externoOrigen_externoId: {
+          externoOrigen: ORIGEN_TRACKER,
+          externoId: externoHistoria('19565'),
+        },
+      },
+    });
+    expect(hu).toMatchObject({
+      tipo: TipoNodo.HISTORIA,
+      titulo: 'HU 19565 · Registrar Toma de Muestras',
+    });
+    const fase2 = await ctx.prisma.nodo.findUniqueOrThrow({
+      where: {
+        externoOrigen_externoId: { externoOrigen: ORIGEN, externoId: 'fase:2' },
+      },
+    });
+    const pertenece = (origenId: string, destinoId: string) =>
+      ctx.prisma.conexion.count({
+        where: { origenId, destinoId, tipo: TipoConexion.PERTENECE_A },
+      });
+    expect(await pertenece(fase2.id, hu.id)).toBe(1);
+    expect(await pertenece(tarjeta.id, fase2.id)).toBe(1);
+    expect(await pertenece(otraTask.id, fase2.id)).toBe(0);
+
+    const segunda = await ctx.importador.importar(opciones);
+    expect(segunda.tarjetasEnganchadas).toBe(0);
   });
 });
