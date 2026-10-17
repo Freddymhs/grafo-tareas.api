@@ -22,6 +22,8 @@ export interface EtapaDeRol {
   readonly si: Condicion;
   /** Trabajo en curso (FASE 10): cuenta en «en curso» del parte y en el límite de dos a la vez. */
   readonly curso: boolean;
+  /** Una línea que explica la columna (FASE 11), como bajo cada título de fases.html. */
+  readonly que: string | null;
 }
 
 export interface GrupoDeTareas {

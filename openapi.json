@@ -1266,6 +1266,22 @@
           }
         }
       },
+      "ColumnaDeRolDto": {
+        "type": "object",
+        "properties": {
+          "columna": {
+            "type": "string",
+            "example": "AMARRAR 🧰"
+          },
+          "que": {
+            "type": "string",
+            "nullable": true,
+            "example": "línea base y tests contra el código sin tocar",
+            "description": "Qué significa la columna"
+          }
+        },
+        "required": ["columna", "que"]
+      },
       "RolResponseDto": {
         "type": "object",
         "properties": {
@@ -1286,9 +1302,16 @@
             "items": {
               "type": "string"
             }
+          },
+          "etapas": {
+            "description": "Las mismas columnas, con lo que significa cada una",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ColumnaDeRolDto"
+            }
           }
         },
-        "required": ["clave", "nombre", "para", "columnas"]
+        "required": ["clave", "nombre", "para", "columnas", "etapas"]
       },
       "ComplementoDeCatalogoDto": {
         "type": "object",

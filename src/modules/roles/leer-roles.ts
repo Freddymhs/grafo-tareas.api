@@ -55,6 +55,7 @@ const rol = Joi.object({
         columna: Joi.string().required(),
         si: condicion.required(),
         curso: Joi.boolean().default(false),
+        que: Joi.string().allow(null).default(null),
       }),
     )
     .min(1)

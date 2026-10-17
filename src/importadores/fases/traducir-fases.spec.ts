@@ -6,6 +6,9 @@ import { externoFase, externoTramite, traducirFases } from './traducir-fases';
 
 const fase = (parcial: Partial<FaseLeida> & { numero: number }): FaseLeida => ({
   titulo: `título ${parcial.numero}`,
+  nombre: '',
+  task: null,
+  avance: '',
   destraba: null,
   rol: 'producto',
   dependencias: [],

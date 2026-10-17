@@ -17,6 +17,7 @@ interface Envuelto<T> {
 interface Rol {
   clave: string;
   columnas: string[];
+  etapas: { columna: string; que: string | null }[];
 }
 interface Pagina {
   data: { titulo: string }[];
@@ -84,6 +85,10 @@ describe('Roles (e2e) — GET /roles, GET /etapas con las columnas de los roles 
       'calidad',
     ]);
     expect(body.data.roles[1]?.columnas).toContain('CAMBIAR 🧰');
+    const etapas = body.data.roles[1]?.etapas ?? [];
+    expect(etapas.find(({ columna }) => columna === 'AMARRAR 🧰')?.que).toBe(
+      'línea base y tests contra el código sin tocar',
+    );
   });
 
   it('toda columna de un rol está en GET /etapas', async () => {

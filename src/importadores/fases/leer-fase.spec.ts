@@ -50,6 +50,26 @@ describe('leerFase', () => {
     ).toBeNull();
   });
 
+  it('nombre del archivo y task de **Azure** como fases.html; avance por rol', () => {
+    const calidad = leer('FASE_5_CALIDAD.md');
+    expect(calidad.nombre).toBe('Calidad');
+    expect(calidad.avance).toBe(
+      'entender ✓ · amarrar 1/1 · cambiar 1/2 · red 0/1 · PR ✗ · falta URL commit',
+    );
+    expect(leer('FASE_3_LISTA.md').avance).toBe(
+      'entender ✓ · tareas 1/1 · colección ✓ · auditoría ✓ · PR ✓ · falta URL commit, Evidencias, Wiki',
+    );
+    expect(leer('FASE_2_EN_CODIGO.md').avance).toContain('colección —');
+    const conTask = md('FASE_1_ENTENDIENDO.md').replace(
+      '**Destraba**',
+      '**Azure**: task **26307** «algo»\n**Destraba**',
+    );
+    expect(leerFase('FASE_1_ENTENDIENDO.md', conTask, ROLES).task).toBe(
+      '26307',
+    );
+    expect(leer('FASE_1_ENTENDIENDO.md').task).toBeNull();
+  });
+
   it('sin `# FASE n` ni número en el nombre, falla', () => {
     expect(() => leerFase('notas.md', '# Notas\n', ROLES)).toThrow('no tiene');
   });

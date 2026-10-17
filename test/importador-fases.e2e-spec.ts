@@ -15,6 +15,7 @@ const OPCIONES = {
   backlog: join(FIXTURES, 'backlog'),
   tareas: join(FIXTURES, 'Tareas'),
   roles: join(FIXTURES, 'roles.yaml'),
+  adoptar: null,
   proyecto: PROYECTO,
   seco: false,
 };
@@ -91,11 +92,16 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
         etiquetas,
       ]),
     ).toEqual([
-      ['FASE 1', 'ENTENDIMIENTO', EstadoNodo.ABIERTO, ['producto']],
-      ['FASE 2', 'EN CODIGO', EstadoNodo.ABIERTO, ['producto']],
-      ['FASE 3', 'LISTO PARA PR', EstadoNodo.ABIERTO, ['producto']],
-      ['FASE 4', 'CERRADO', EstadoNodo.CERRADO, ['producto']],
-      ['FASE 5', 'CAMBIAR 🧰', EstadoNodo.ABIERTO, ['calidad']],
+      [
+        'FASE 1 · Entendiendo',
+        'ENTENDIMIENTO',
+        EstadoNodo.ABIERTO,
+        ['producto'],
+      ],
+      ['FASE 2 · En Codigo', 'EN CODIGO', EstadoNodo.ABIERTO, ['producto']],
+      ['FASE 3 · Lista', 'LISTO PARA PR', EstadoNodo.ABIERTO, ['producto']],
+      ['FASE 4 · Cerrada', 'CERRADO', EstadoNodo.CERRADO, ['producto']],
+      ['FASE 5 · Calidad', 'CAMBIAR 🧰', EstadoNodo.ABIERTO, ['calidad']],
     ]);
     const deTodoist = await ctx.prisma.nodo.findUniqueOrThrow({
       where: {
@@ -187,5 +193,46 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
       'FASE 3: cierre oficial completo',
       EstadoNodo.CERRADO,
     ]);
+  });
+
+  it('con --adoptar todoist, la «FASE 2» de Todoist pasa a este proyecto: mismo nodo, sus conexiones, sin duplicar', async () => {
+    const deTodoist = await ctx.prisma.nodo.findUniqueOrThrow({
+      where: {
+        externoOrigen_externoId: {
+          externoOrigen: 'todoist',
+          externoId: 'fase:2',
+        },
+      },
+    });
+    const tarea = await ctx.prisma.nodo.create({
+      data: { tipo: TipoNodo.TAREA, titulo: 'tarea de la FASE 2' },
+    });
+    await ctx.prisma.conexion.create({
+      data: {
+        origenId: tarea.id,
+        destinoId: deTodoist.id,
+        tipo: TipoConexion.PERTENECE_A,
+      },
+    });
+    const resumen = await ctx.importador.importar({
+      ...OPCIONES,
+      proyecto: 'sag',
+      tareas: null,
+      adoptar: 'todoist',
+    });
+    expect(resumen.adoptadas).toBe(1);
+    const adoptada = await ctx.prisma.nodo.findUniqueOrThrow({
+      where: { id: deTodoist.id },
+      include: { entrantes: true },
+    });
+    expect(adoptada.externoOrigen).toBe(origenFases('sag'));
+    expect(adoptada.titulo).toContain('FASE 2 · En Codigo');
+    expect(adoptada.entrantes.map(({ origenId }) => origenId)).toContain(
+      tarea.id,
+    );
+    const fase2DeSag = await ctx.prisma.nodo.count({
+      where: { externoOrigen: origenFases('sag'), externoId: 'fase:2' },
+    });
+    expect(fase2DeSag).toBe(1);
   });
 });

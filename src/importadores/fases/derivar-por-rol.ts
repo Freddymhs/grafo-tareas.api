@@ -103,6 +103,78 @@ export function cierrePendiente(
   return reales.filter((nombre) => casilla(' ', nombre));
 }
 
+const CASILLA_HECHA = /^\s*- \[x\]/gm;
+const CASILLA_CUALQUIERA = /^\s*- \[[ x~]\]/gm;
+const contar = (texto: string, patron: RegExp) =>
+  (texto.match(patron) ?? []).length;
+const fraccion = (texto: string) =>
+  `${contar(texto, CASILLA_HECHA)}/${contar(texto, CASILLA_CUALQUIERA)}`;
+const ETIQUETA_CORTA: Readonly<Record<string, string>> = {
+  'Listo para PR': 'PR',
+};
+
+/** ✓ hecha · — no aplica · ✗ pendiente: la marca de una casilla de QA, como en fases.html. */
+function marca(texto: string | null, etiqueta: string): string {
+  const linea = (texto ?? '').match(
+    new RegExp(`^- \\[([ x])\\] ${escapar(etiqueta)}\\b(.*)$`, 'm'),
+  );
+  if ((linea?.[2] ?? '').includes(NO_APLICA)) return '—';
+  return linea?.[1] === 'x' ? '✓' : '✗';
+}
+
+/**
+ * La línea de avance de una FASE, la de las tarjetas de fases.html / calidad.html (FASE 11):
+ * `entender ✓ · amarrar 15/15 · cambiar 3/3 · red 4/4 · PR ✗ · falta URL commit, Evidencias, Wiki`.
+ */
+export function avance(md: string, rol: Rol): string {
+  const understand = seccion(md, 'Understand') ?? '';
+  const entendida =
+    contar(understand, CASILLA_CUALQUIERA) > 0 &&
+    contar(understand, CASILLA_HECHA) ===
+      contar(understand, CASILLA_CUALQUIERA);
+  // En el orden de las etapas (amarrar, cambiar, red), no en el de calce de los grupos (cambiar va último: «.»).
+  const enOrden = [
+    ...rol.etapas.flatMap(({ si }) =>
+      typeof si === 'object' && 'grupo' in si ? [si.grupo] : [],
+    ),
+    ...rol.grupos.map(({ clave }) => clave),
+  ];
+  const grupos = [...new Set(enOrden)];
+  const tareas =
+    grupos.length > 0
+      ? grupos.map((clave) => {
+          const delGrupo = tareasDelGrupo(md, rol, clave);
+          return contar(delGrupo, CASILLA_CUALQUIERA) > 0
+            ? `${clave} ${fraccion(delGrupo)}`
+            : `${clave} —`;
+        })
+      : [`tareas ${fraccion(seccion(md, 'Tareas') ?? '')}`];
+  const qa = seccion(md, 'QA');
+  const deQa = rol.qa.map(
+    (casilla) =>
+      `${ETIQUETA_CORTA[casilla] ?? casilla.toLowerCase()} ${marca(qa, casilla)}`,
+  );
+  const cierre = seccion(md, CIERRE) ?? '';
+  const reales = CASILLAS_DE_CIERRE_REAL.filter((nombre) =>
+    new RegExp(`^- \\[[ x]\\] ${escapar(nombre)}\\b`, 'm').test(cierre),
+  );
+  const faltan = reales.filter((nombre) =>
+    new RegExp(`^- \\[ \\] ${escapar(nombre)}\\b`, 'm').test(cierre),
+  );
+  const deCierre =
+    reales.length === 0
+      ? []
+      : faltan.length > 0
+        ? [`falta ${faltan.join(', ')}`]
+        : ['cierre ✓'];
+  return [
+    `entender ${entendida ? '✓' : '✗'}`,
+    ...tareas,
+    ...deQa,
+    ...deCierre,
+  ].join(' · ');
+}
+
 /** La última etapa cuya condición se cumple; si ninguna, la primera. */
 export function derivarEtapa(md: string, rol: Rol): EtapaDeRol {
   const cumplidas = rol.etapas.filter(({ si }) => cumple(si, md, rol));

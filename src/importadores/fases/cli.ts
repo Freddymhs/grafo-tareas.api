@@ -7,7 +7,7 @@ import { AppModule } from '../../app.module';
 import { ImportadorFasesService } from './importador-fases.service';
 
 const USO =
-  'uso: importar:fases -- --backlog <carpeta con FASE_*.md> [--tareas <carpeta Tareas/>] [--roles <roles.yaml>] [--proyecto <nombre>] [--seco]';
+  'uso: importar:fases -- --backlog <carpeta con FASE_*.md> [--tareas <carpeta Tareas/>] [--roles <roles.yaml>] [--proyecto <nombre>] [--adoptar <origen>] [--seco]';
 /** `<orquestador>/docs/backlog`: el proyecto por defecto es el nombre del orquestador. */
 const DEL_BACKLOG_AL_ORQUESTADOR = '../..';
 /** `<orquestador>/docs/roles.yaml`: el del área, al lado del backlog. */
@@ -22,6 +22,18 @@ function valorDe(argv: readonly string[], bandera: string): string | null {
     process.exit(EXIT_USO);
   }
   return valor ? resolve(valor) : null;
+}
+
+/** Un valor que no es ruta (el nombre de un origen). */
+function textoDe(argv: readonly string[], bandera: string): string | null {
+  const indice = argv.indexOf(bandera);
+  if (indice < 0) return null;
+  const valor = argv[indice + 1];
+  if (!valor || valor.startsWith('--')) {
+    console.error(USO);
+    process.exit(EXIT_USO);
+  }
+  return valor;
 }
 
 function leerArgumentos(argv: readonly string[]) {
@@ -43,6 +55,7 @@ function leerArgumentos(argv: readonly string[]) {
     backlog,
     tareas: valorDe(argv, '--tareas'),
     roles: valorDe(argv, '--roles') ?? resolve(backlog, ROLES_DEL_AREA),
+    adoptar: textoDe(argv, '--adoptar'),
     proyecto,
     seco: argv.includes('--seco'),
   };

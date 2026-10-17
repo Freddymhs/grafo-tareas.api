@@ -47,16 +47,22 @@ function nodoDeFase(fase: FaseLeida, etapas: readonly string[]): NodoPlan {
   const encabezado = fase.titulo
     ? `${tituloFase(fase.numero)}: ${fase.titulo}`
     : null;
+  // La primera línea es el avance: la tarjeta de la PWA la muestra como fases.html (FASE 11).
   const descripcion = [
+    fase.avance,
     encabezado,
     fase.destraba ? `Destraba: ${fase.destraba}` : null,
   ]
-    .filter((linea) => linea !== null)
+    .filter((linea) => linea !== null && linea !== '')
     .join('\n');
+  // «FASE 23 · Sonar Errores Microservicios · 26307»: nombre y task como fases.html, no «FASE 23» sola.
+  const titulo = [tituloFase(fase.numero), fase.nombre, fase.task]
+    .filter((parte) => parte !== null && parte !== '')
+    .join(' · ');
   return {
     externoId: externoFase(fase.numero),
     tipo: TipoNodo.FASE,
-    titulo: tituloFase(fase.numero),
+    titulo,
     descripcion: descripcion || null,
     estado: fase.terminada ? EstadoNodo.CERRADO : EstadoNodo.ABIERTO,
     color: null,

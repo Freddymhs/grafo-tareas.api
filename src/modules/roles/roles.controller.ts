@@ -22,6 +22,7 @@ export class RolesController {
         nombre,
         para,
         columnas: etapas.map(({ columna }) => columna),
+        etapas: etapas.map(({ columna, que }) => ({ columna, que })),
       })),
       complementos: complementos.map((c) => ({ ...c })),
     };

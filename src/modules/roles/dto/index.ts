@@ -1,4 +1,5 @@
 export {
+  ColumnaDeRolDto,
   ComplementoDeCatalogoDto,
   RolesResponseDto,
   RolResponseDto,

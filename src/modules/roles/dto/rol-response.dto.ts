@@ -1,5 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+export class ColumnaDeRolDto {
+  @ApiProperty({ example: 'AMARRAR 🧰' })
+  columna!: string;
+
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    example: 'línea base y tests contra el código sin tocar',
+    description: 'Qué significa la columna',
+  })
+  que!: string | null;
+}
+
 export class RolResponseDto {
   @ApiProperty({ example: 'calidad' })
   clave!: string;
@@ -16,6 +29,12 @@ export class RolResponseDto {
       'Las columnas de su tablero, en orden (todas están en GET /etapas)',
   })
   columnas!: string[];
+
+  @ApiProperty({
+    type: [ColumnaDeRolDto],
+    description: 'Las mismas columnas, con lo que significa cada una',
+  })
+  etapas!: ColumnaDeRolDto[];
 }
 
 export class ComplementoDeCatalogoDto {

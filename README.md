@@ -67,7 +67,9 @@ casillas según `roles.yaml` (por defecto `../docs/roles.yaml`, o `--roles <arch
 `Tareas/<id>/entendimiento.md` es una DUDA que deja a la TAREA `[<id>]…` `BLOQUEADA_POR` ella, y se cierra sola cuando
 desaparece del archivo (solo cuando se pasa `--tareas`: sin él, las dudas ya importadas no se tocan). Idempotente por
 `externo { fases-md:<proyecto>, fase:n | abierto:<id>:n }`; el proyecto es el nombre del orquestador o `--proyecto`, así
-las FASE de dos orquestadores no se pisan. Solo lee los archivos.
+las FASE de dos orquestadores no se pisan. Cada FASE se titula `FASE n · Nombre · task` y la primera línea de su descripción es el avance de fases.html. Con
+`--adoptar todoist`, la «FASE n» que dejó Todoist pasa a ser la del `.md` (mismo nodo, sus conexiones): lo que se usa para
+el Laboratorio. Solo lee los archivos.
 
 ## Importar desde Todoist (FASE 3) — una vez, como migración
 

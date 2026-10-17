@@ -24,6 +24,11 @@ export interface OpcionesFases {
   readonly roles: string;
   /** El orquestador dueño de esas FASE: separa sus nodos de los de otro proyecto. */
   readonly proyecto: string;
+  /**
+   * Otro origen cuyas «FASE n» son de ESTE proyecto (p. ej. `todoist` para el Laboratorio: TRABAJO es el SAG): esos
+   * nodos se adoptan —pasan a este origen, con su id y sus conexiones— en vez de duplicarse (C10, FASE 11).
+   */
+  readonly adoptar: string | null;
   readonly seco: boolean;
 }
 
@@ -39,6 +44,8 @@ export interface ResumenFases {
   readonly dudasCerradas: number;
   /** Dudas cuya task no tiene tarjeta `[<id>]` en el grafo: quedan sin conexión. */
   readonly dudasSueltas: number;
+  /** «FASE n» de `adoptar` que pasaron a este proyecto. */
+  readonly adoptadas: number;
 }
 
 const ES_FASE = /^FASE_\d+_.*\.md$/;
@@ -93,11 +100,12 @@ export class ImportadorFasesService {
         conexiones: { nuevas: plan.conexiones.length, existentes: 0 },
         dudasCerradas: 0,
         dudasSueltas: 0,
+        adoptadas: 0,
       };
     }
     const conTareas = opciones.tareas !== null;
     const aplicado = await this.prisma.$transaction((tx) =>
-      this.aplicar(tx, plan, conTareas),
+      this.aplicar(tx, plan, conTareas, opciones.adoptar),
     );
     return { ...base, ...aplicado };
   }
@@ -133,9 +141,17 @@ export class ImportadorFasesService {
       });
   }
 
-  private async aplicar(tx: Tx, plan: PlanFases, conTareas: boolean) {
-    // Un nodo FASE por origen: NO se adopta el `FASE n` que dejó Todoist, porque ese puede ser de otro
-    // orquestador (real 2026-10-17: la FASE 6 del SAG). Hasta que el grafo sepa de proyectos, conviven.
+  private async aplicar(
+    tx: Tx,
+    plan: PlanFases,
+    conTareas: boolean,
+    adoptar: string | null,
+  ) {
+    // Nunca se adopta por título: «FASE 6» de Todoist puede ser de otro orquestador (real 2026-10-17, la FASE 6 del
+    // SAG). Solo si el que importa dice de qué origen son sus FASE (`adoptar`), y siempre por externo.
+    const adoptadas = adoptar
+      ? await this.adoptar(tx, adoptar, plan.origen, plan.nodos)
+      : 0;
     const fases = await aplicarPlan(
       tx,
       plan.origen,
@@ -157,7 +173,35 @@ export class ImportadorFasesService {
       },
       dudasCerradas: dudas.cerradas,
       dudasSueltas: dudas.sueltas,
+      adoptadas,
     };
+  }
+
+  /** Cada FASE del plan que existe en `desde` (mismo `fase:n`) y todavía no en `origen` pasa a `origen`. */
+  private async adoptar(
+    tx: Tx,
+    desde: string,
+    origen: string,
+    nodos: PlanFases['nodos'],
+  ): Promise<number> {
+    const deFases = nodos.filter(({ tipo }) => tipo === TipoNodo.FASE);
+    // En serie: la transacción interactiva usa una sola conexión.
+    const adoptados: number[] = [];
+    for (const { externoId } of deFases) {
+      const propio = await tx.nodo.findUnique({
+        where: {
+          externoOrigen_externoId: { externoOrigen: origen, externoId },
+        },
+        select: { id: true },
+      });
+      if (propio) continue;
+      const { count } = await tx.nodo.updateMany({
+        where: { externoOrigen: desde, externoId, tipo: TipoNodo.FASE },
+        data: { externoOrigen: origen },
+      });
+      adoptados.push(count);
+    }
+    return adoptados.reduce((total, n) => total + n, 0);
   }
 
   /** Cada punto ABIERTO frena a su task: TAREA `[<id>]…` BLOQUEADA_POR la DUDA. Lo que ya no está abierto se cierra. */

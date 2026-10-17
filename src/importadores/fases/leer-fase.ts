@@ -2,6 +2,7 @@
 // (`derivar-por-rol.ts`, la misma regla que `fases.html`/`calidad.html` y `test_roles.py`). Puro: texto → datos.
 import type { Roles } from '../../modules/roles/roles.types.js';
 import {
+  avance,
   cierrePendiente,
   derivarEtapa,
   rolDeFase,
@@ -12,6 +13,12 @@ export interface FaseLeida {
   readonly numero: number;
   /** El título del `# FASE n: …` sin el prefijo. */
   readonly titulo: string;
+  /** El nombre corto, del archivo (`FASE_23_SONAR_ERRORES.md` → «Sonar Errores»), como en fases.html. */
+  readonly nombre: string;
+  /** La task del tracker (`**Azure**: task 26307`), si la FASE la nombra. */
+  readonly task: string | null;
+  /** La línea de avance de fases.html: entender ✓ · amarrar 15/15 · … · falta URL commit. */
+  readonly avance: string;
   readonly destraba: string | null;
   /** La clave del rol en `roles.yaml` (de `**Tipo**:`, o el defecto). */
   readonly rol: string;
@@ -27,6 +34,17 @@ export interface FaseLeida {
 
 const NUMERO_DE_FASE = /^# FASE (\d+)\s*:?\s*(.*)$/m;
 const NUMERO_EN_NOMBRE = /^FASE_(\d+)_/;
+const NOMBRE_EN_ARCHIVO = /^FASE_\d+_(.+)\.md$/;
+/** La task del tracker en la cabecera (la misma regla que `bin/fases` del Laboratorio). */
+const TASK = /^\*\*Azure\*\*:?\D*(\d{5,6})/m;
+
+/** `SONAR_ERRORES_MICROSERVICIOS` → «Sonar Errores Microservicios». */
+const nombreDeArchivo = (archivo: string) =>
+  (archivo.match(NOMBRE_EN_ARCHIVO)?.[1] ?? '')
+    .split('_')
+    .filter((palabra) => palabra.length > 0)
+    .map((palabra) => palabra.charAt(0) + palabra.slice(1).toLowerCase())
+    .join(' ');
 const CAMPO = (nombre: string) =>
   new RegExp(`^\\*\\*${nombre}\\*\\*:\\s*(.*)$`, 'm');
 const FASES_CITADAS = /FASE\s+(\d+)/g;
@@ -53,6 +71,9 @@ export function leerFase(
   return {
     numero,
     titulo: (encabezado?.[2] ?? '').trim(),
+    nombre: nombreDeArchivo(nombreArchivo),
+    task: md.match(TASK)?.[1] ?? null,
+    avance: avance(md, rol),
     destraba: md.match(CAMPO('Destraba'))?.[1]?.trim() ?? null,
     rol: rol.clave,
     dependencias: [...new Set(dependencias)],
