@@ -1,3 +1,4 @@
+import { opcionesCors } from '@config/cors.js';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   FastifyAdapter,
@@ -28,6 +29,7 @@ interface Libera {
 
 const PREFIJO = '/api/v1';
 const UUID_INEXISTENTE = '00000000-0000-4000-8000-000000000000';
+const ORIGEN_WEB = 'http://localhost:3001';
 
 describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres tareas', () => {
   // Lo llena beforeAll una sola vez: un holder en vez de `let` (regla §0).
@@ -66,6 +68,7 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
       new FastifyAdapter(),
     );
     ctx.app.setGlobalPrefix('api/v1');
+    ctx.app.enableCors(opcionesCors([ORIGEN_WEB]));
     await ctx.app.init();
     await ctx.app.getHttpAdapter().getInstance().ready();
     ctx.prisma = ctx.app.get(PrismaService);
@@ -206,6 +209,46 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
       payload: { posiciones: [{ id: UUID_INEXISTENTE, x: 0, y: 0, z: 0 }] },
     });
     expect(roto.statusCode).toBe(404);
+  });
+
+  it('el preflight CORS de la PWA acepta PATCH y DELETE (por defecto @fastify/cors solo deja GET,HEAD,POST)', async () => {
+    const preflight = async (metodo: string) => {
+      const res = await ctx.app.inject({
+        method: 'OPTIONS',
+        url: `${PREFIJO}/nodos/${ids.t1}`,
+        headers: {
+          origin: ORIGEN_WEB,
+          'access-control-request-method': metodo,
+        },
+      });
+      return String(res.headers['access-control-allow-methods'] ?? '');
+    };
+    expect(await preflight('PATCH')).toContain('PATCH');
+    expect(await preflight('DELETE')).toContain('DELETE');
+  });
+
+  it('mover de etapa: una de GET /etapas entra, null vuelve a la entrada, vacía se rechaza', async () => {
+    const etapas = await get<string[]>('/etapas');
+    const [primera] = etapas.body.data;
+    const patch = (etapa: string | null) =>
+      ctx.app.inject({
+        method: 'PATCH',
+        url: `${PREFIJO}/nodos/${ids.t1}`,
+        payload: { etapa },
+      });
+
+    expect((await patch(primera)).statusCode).toBe(200);
+    expect(
+      (await get<{ etapa: string | null }>(`/nodos/${ids.t1}`)).body.data.etapa,
+    ).toBe(primera);
+
+    expect((await patch(null)).statusCode).toBe(200);
+    expect(
+      (await get<{ etapa: string | null }>(`/nodos/${ids.t1}`)).body.data.etapa,
+    ).toBeNull();
+
+    expect((await patch('')).statusCode).toBe(400);
+    expect((await patch('NO_EXISTE')).statusCode).toBe(400);
   });
 
   it('cerrar la duda libera la tarea; borrar un nodo borra sus conexiones', async () => {

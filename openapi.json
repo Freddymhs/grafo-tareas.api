@@ -926,11 +926,6 @@
             "enum": ["ABIERTO", "CERRADO"],
             "default": "ABIERTO"
           },
-          "etapa": {
-            "type": "string",
-            "example": "ENTENDIMIENTO",
-            "description": "Columna del tablero: una de GET /etapas. Sin etapa = entrada"
-          },
           "etiquetas": {
             "example": ["daily", "propuesta"],
             "type": "array",
@@ -954,6 +949,12 @@
             "type": "string",
             "example": "#3b82f6",
             "description": "Solo para nodos RAMA"
+          },
+          "etapa": {
+            "type": "string",
+            "example": "ENTENDIMIENTO",
+            "nullable": true,
+            "description": "Columna del tablero: una de GET /etapas. null = vuelve a la entrada"
           }
         }
       },

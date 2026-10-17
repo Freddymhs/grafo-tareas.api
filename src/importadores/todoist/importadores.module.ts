@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { NodosModule } from '../../modules/nodos/nodos.module.js';
+import { ImportadorFasesService } from '../fases/importador-fases.service.js';
 import { ImportadorTodoistService } from './importador-todoist.service.js';
 import { FETCH, TodoistClient } from './todoist.client.js';
 
@@ -10,7 +11,8 @@ import { FETCH, TodoistClient } from './todoist.client.js';
     { provide: FETCH, useValue: fetch },
     TodoistClient,
     ImportadorTodoistService,
+    ImportadorFasesService,
   ],
-  exports: [ImportadorTodoistService],
+  exports: [ImportadorTodoistService, ImportadorFasesService],
 })
 export class ImportadoresModule {}

@@ -37,8 +37,22 @@ pnpm install && pnpm prisma:generate && pnpm prisma:migrate
 pnpm build && pnpm start:prod           # http://localhost:3000/docs
 ```
 
-Gates: `pnpm type-check` · `pnpm lint` · `pnpm test` (unit, repos mockeados) · `pnpm test:e2e` (contra `grafo_tareas_test`:
+Gates: `pnpm type-check` · `pnpm lint` · `pnpm test` (unit, repos mockeados) · `pnpm test:e2e` (contra `grafo_tareas_test`: — el nombre de la base lo fuerza `test/setup-e2e.ts`, no `.env`
 el escenario del concepto —Tomás, una duda W2 y tres tareas— de punta a punta).
+
+## Importar los `FASE_*.md` del método (FASE 5) — cada vez que cambian las casillas
+
+```bash
+pnpm importar:fases -- --backlog ../docs/backlog --tareas ../Tareas --seco   # cuenta, no escribe
+pnpm importar:fases -- --backlog ../docs/backlog --tareas ../Tareas          # aplica en una transacción
+```
+
+Cada `FASE_n_*.md` es un nodo FASE «FASE n» con la etapa derivada de sus casillas (las mismas reglas que `fases.html` /
+`calidad.html` del Laboratorio) y `DEPENDE_DE` por su **Dependencias**; cada viñeta de `## ⚠️ ABIERTO` en
+`Tareas/<id>/entendimiento.md` es una DUDA que deja a la TAREA `[<id>]…` `BLOQUEADA_POR` ella, y se cierra sola cuando
+desaparece del archivo (solo cuando se pasa `--tareas`: sin él, las dudas ya importadas no se tocan). Idempotente por
+`externo { fases-md:<proyecto>, fase:n | abierto:<id>:n }`; el proyecto es el nombre del orquestador o `--proyecto`, así
+las FASE de dos orquestadores no se pisan. Solo lee los archivos.
 
 ## Importar desde Todoist (FASE 3) — una vez, como migración
 

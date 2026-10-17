@@ -1,0 +1,107 @@
+// FASE_*.md + entendimiento.md → plan del grafo (puro). Cada FASE es un nodo FASE con su etapa derivada de
+// las casillas; `**Dependencias**` son conexiones DEPENDE_DE entre FASEs; cada punto ABIERTO es una DUDA.
+import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { ETAPA_DEL_METODO } from '../../common/constants/grafo.constants.js';
+import type { ConexionPlan, NodoPlan, Plan } from '../plan.js';
+import { AbiertoLeido } from './leer-abiertos.js';
+import { FaseLeida } from './leer-fase.js';
+
+export const ORIGEN_FASES = 'fases-md';
+/**
+ * El origen lleva el proyecto: `fase:3` del Laboratorio y `fase:3` de grafo-tareas son nodos distintos. Sin él,
+ * importar el backlog de otro orquestador reescribía las FASE de éste (mismo `externo`).
+ */
+export const origenFases = (proyecto: string) => `${ORIGEN_FASES}:${proyecto}`;
+export const ETIQUETA_ABIERTO = 'abierto';
+export const externoFase = (numero: number) => `fase:${numero}`;
+export const externoAbierto = (taskId: string, orden: number) =>
+  `abierto:${taskId}:${orden}`;
+/** El título que el importador de Todoist también usa para una FASE: así los dos apuntan al mismo nodo. */
+export const tituloFase = (numero: number) => `FASE ${numero}`;
+/** La tarjeta de una task en el tablero empieza así (contrato `tablero.tarjeta`). */
+export const prefijoTarea = (taskId: string) => `[${taskId}]`;
+
+export interface DudaPlan extends NodoPlan {
+  /** Prefijo del título de la TAREA que esta duda frena; se resuelve al aplicar. */
+  readonly tareaPrefijo: string;
+}
+
+export interface PlanFases extends Plan {
+  readonly dudas: readonly DudaPlan[];
+}
+
+function nombreDeEtapa(clave: FaseLeida['etapa'], etapas: readonly string[]) {
+  const nombre = ETAPA_DEL_METODO[clave];
+  if (!etapas.includes(nombre)) {
+    throw new Error(
+      `La etapa «${nombre}» (clave ${clave}) no está en ETAPAS de la API: agregarla o no se puede importar la FASE`,
+    );
+  }
+  return nombre;
+}
+
+function nodoDeFase(fase: FaseLeida, etapas: readonly string[]): NodoPlan {
+  const encabezado = fase.titulo
+    ? `${tituloFase(fase.numero)}: ${fase.titulo}`
+    : null;
+  const descripcion = [
+    encabezado,
+    fase.destraba ? `Destraba: ${fase.destraba}` : null,
+  ]
+    .filter((linea) => linea !== null)
+    .join('\n');
+  return {
+    externoId: externoFase(fase.numero),
+    tipo: TipoNodo.FASE,
+    titulo: tituloFase(fase.numero),
+    descripcion: descripcion || null,
+    estado: fase.terminada ? EstadoNodo.CERRADO : EstadoNodo.ABIERTO,
+    color: null,
+    etapa: nombreDeEtapa(fase.etapa, etapas),
+    etiquetas: fase.calidad ? ['calidad'] : [],
+    prioridad: null,
+    vence: null,
+  };
+}
+
+function nodoDeAbierto(abierto: AbiertoLeido): DudaPlan {
+  return {
+    externoId: externoAbierto(abierto.taskId, abierto.orden),
+    tipo: TipoNodo.DUDA,
+    titulo: abierto.titulo,
+    descripcion: abierto.texto,
+    estado: EstadoNodo.ABIERTO,
+    color: null,
+    etapa: null,
+    etiquetas: [ETIQUETA_ABIERTO],
+    prioridad: null,
+    vence: null,
+    tareaPrefijo: prefijoTarea(abierto.taskId),
+  };
+}
+
+export function traducirFases(
+  fases: readonly FaseLeida[],
+  abiertos: readonly AbiertoLeido[],
+  etapas: readonly string[],
+  proyecto: string,
+): PlanFases {
+  const numeros = new Set(fases.map(({ numero }) => numero));
+  const nodos = fases.map((fase) => nodoDeFase(fase, etapas));
+  // Una dependencia a una FASE que no está en el directorio queda suelta: el plan solo conecta lo que trae.
+  const conexiones: ConexionPlan[] = fases.flatMap((fase) =>
+    fase.dependencias
+      .filter((numero) => numeros.has(numero))
+      .map((numero) => ({
+        origenExternoId: externoFase(fase.numero),
+        destinoExternoId: externoFase(numero),
+        tipo: TipoConexion.DEPENDE_DE,
+      })),
+  );
+  return {
+    origen: origenFases(proyecto),
+    nodos,
+    conexiones,
+    dudas: abiertos.map(nodoDeAbierto),
+  };
+}

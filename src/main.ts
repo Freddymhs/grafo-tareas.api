@@ -7,6 +7,7 @@ import { SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
 import helmet from '@fastify/helmet';
+import { opcionesCors } from '@config/cors.js';
 import { ENV_KEYS } from '@config/env.constants.js';
 import { SWAGGER_CONFIG } from '@config/swagger.js';
 import { AppModule } from './app.module';
@@ -29,10 +30,7 @@ async function bootstrap() {
   const corsOrigins = config
     .get<string>(ENV_KEYS.CORS_ORIGINS, 'http://localhost:3001')
     .split(',');
-  app.enableCors({
-    origin: corsOrigins,
-    credentials: true,
-  });
+  app.enableCors(opcionesCors(corsOrigins));
 
   const document = SwaggerModule.createDocument(app, SWAGGER_CONFIG);
   SwaggerModule.setup('docs', app, document);
