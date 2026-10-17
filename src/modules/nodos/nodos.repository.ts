@@ -7,6 +7,36 @@ import { PosicionNodoDto } from './dto/index.js';
 export interface FiltroNodos {
   readonly tipo?: TipoNodo;
   readonly estado?: EstadoNodo;
+  /** '' (vacía) = los que no tienen etapa; undefined = cualquiera. */
+  readonly etapa?: string;
+  readonly etiqueta?: string;
+  readonly q?: string;
+}
+
+/** Traduce el filtro del dominio al where de Prisma. */
+function whereDe({
+  tipo,
+  estado,
+  etapa,
+  etiqueta,
+  q,
+}: FiltroNodos): Prisma.NodoWhereInput {
+  const porEtapa =
+    etapa === undefined ? {} : { etapa: etapa === '' ? null : etapa };
+  const porEtiqueta =
+    etiqueta === undefined ? {} : { etiquetas: { has: etiqueta } };
+  const porTexto =
+    q === undefined
+      ? {}
+      : {
+          OR: [
+            { titulo: { contains: q, mode: Prisma.QueryMode.insensitive } },
+            {
+              descripcion: { contains: q, mode: Prisma.QueryMode.insensitive },
+            },
+          ],
+        };
+  return { tipo, estado, ...porEtapa, ...porEtiqueta, ...porTexto };
 }
 
 @Injectable()
@@ -29,7 +59,7 @@ export class NodosRepository extends BaseRepository<
     take: number,
   ): Promise<Nodo[]> {
     return this.prisma.nodo.findMany({
-      where: filtro,
+      where: whereDe(filtro),
       skip,
       take,
       orderBy: { createdAt: 'asc' },
@@ -37,7 +67,7 @@ export class NodosRepository extends BaseRepository<
   }
 
   async contar(filtro: FiltroNodos): Promise<number> {
-    return this.prisma.nodo.count({ where: filtro });
+    return this.prisma.nodo.count({ where: whereDe(filtro) });
   }
 
   async contarExistentes(ids: readonly string[]): Promise<number> {

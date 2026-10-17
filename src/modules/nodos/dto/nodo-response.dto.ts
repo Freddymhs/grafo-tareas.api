@@ -16,6 +16,18 @@ export class NodoResumenDto {
 
   @ApiPropertyOptional({ nullable: true, type: String })
   color!: string | null;
+
+  @ApiPropertyOptional({ nullable: true, type: String })
+  etapa!: string | null;
+
+  @ApiProperty({ type: [String] })
+  etiquetas!: string[];
+
+  @ApiPropertyOptional({ nullable: true, type: Number })
+  prioridad!: number | null;
+
+  @ApiPropertyOptional({ nullable: true, type: String, format: 'date' })
+  vence!: Date | null;
 }
 
 export class NodoResponseDto extends NodoResumenDto {

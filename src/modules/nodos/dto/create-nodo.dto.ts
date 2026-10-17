@@ -1,16 +1,24 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EstadoNodo, TipoNodo } from '@prisma/client';
 import {
+  ArrayUnique,
+  IsDateString,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
+  Max,
   MaxLength,
+  Min,
 } from 'class-validator';
 import {
+  LARGO_MAXIMO_ETIQUETA,
   LARGO_MAXIMO_TITULO,
   PATRON_COLOR_HEX,
+  PRIORIDAD_MAXIMA,
+  PRIORIDAD_MINIMA,
 } from '../../../common/constants/index.js';
 
 export class CreateNodoDto {
@@ -33,6 +41,43 @@ export class CreateNodoDto {
   @IsOptional()
   @IsEnum(EstadoNodo)
   estado?: EstadoNodo;
+
+  @ApiPropertyOptional({
+    example: 'ENTENDIMIENTO',
+    description: 'Columna del tablero: una de GET /etapas. Sin etapa = entrada',
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  etapa?: string;
+
+  @ApiPropertyOptional({ example: ['daily', 'propuesta'], type: [String] })
+  @IsOptional()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  @MaxLength(LARGO_MAXIMO_ETIQUETA, { each: true })
+  @ArrayUnique()
+  etiquetas?: string[];
+
+  @ApiPropertyOptional({
+    example: 2,
+    minimum: PRIORIDAD_MINIMA,
+    maximum: PRIORIDAD_MAXIMA,
+    description: '1 = la más urgente',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(PRIORIDAD_MINIMA)
+  @Max(PRIORIDAD_MAXIMA)
+  prioridad?: number;
+
+  @ApiPropertyOptional({
+    example: '2026-10-20',
+    description: 'Fecha YYYY-MM-DD',
+  })
+  @IsOptional()
+  @IsDateString()
+  vence?: string;
 
   @ApiPropertyOptional({
     example: '#3b82f6',

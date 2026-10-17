@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
+import { EtapasService } from '../../modules/nodos/etapas.service.js';
 import { TodoistClient } from './todoist.client.js';
 import { ConexionPlan, NodoPlan, Plan, traducir } from './traducir.js';
 
@@ -19,6 +20,7 @@ export class ImportadorTodoistService {
   constructor(
     private readonly todoist: TodoistClient,
     private readonly prisma: PrismaService,
+    private readonly etapas: EtapasService,
   ) {}
 
   /** Lee Todoist (nunca escribe allá), traduce, y aplica el plan en UNA transacción: queda entero o no queda. */
@@ -30,7 +32,7 @@ export class ImportadorTodoistService {
       this.todoist.tareas(proyectoId),
       this.todoist.secciones(proyectoId),
     ]);
-    const plan = traducir(tareas, secciones);
+    const plan = traducir(tareas, secciones, this.etapas.lista());
     const base = { proyectoId, seco, tareasLeidas: tareas.length };
     if (seco) {
       return { ...base, ...this.contarSinEscribir(plan) };
@@ -78,6 +80,10 @@ export class ImportadorTodoistService {
       descripcion: nodo.descripcion,
       estado: nodo.estado,
       color: nodo.color,
+      etapa: nodo.etapa,
+      etiquetas: [...nodo.etiquetas],
+      prioridad: nodo.prioridad,
+      vence: nodo.vence ? new Date(nodo.vence) : null,
     };
     if (existente) {
       await tx.nodo.update({ where: { id: existente.id }, data: datos });

@@ -43,6 +43,12 @@ model Nodo {
   /// De dónde se importó (texto libre: todoist, azure, github…) y su id allá. La API no conoce la lista (C3).
   externoOrigen String?    @map("externo_origen")
   externoId     String?    @map("externo_id")
+  /// Columna del tablero (una de ETAPAS, C9); null = entrada. Tiene sentido en TAREA e HISTORIA.
+  etapa         String?
+  etiquetas     String[]   @default([])
+  /// 1 = la más urgente … 4 = sin prioridad (los p1-p4 de Todoist).
+  prioridad     Int?
+  vence         DateTime?  @db.Date
   /// Posición en el mapa 3D, persistida para que el mapa no cambie entre sesiones (C2).
   posX          Float?     @map("pos_x")
   posY          Float?     @map("pos_y")
@@ -55,6 +61,7 @@ model Nodo {
 
   @@unique([externoOrigen, externoId])
   @@index([tipo, estado])
+  @@index([etapa])
   @@map("nodos")
 }
 

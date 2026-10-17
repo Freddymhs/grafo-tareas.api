@@ -1,6 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { EstadoNodo, TipoNodo } from '@prisma/client';
-import { IsEnum, IsOptional } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
+import { LARGO_MAXIMO_BUSQUEDA } from '../../../common/constants/index.js';
 import { PaginationQueryDto } from '../../../common/dto/index.js';
 
 export class ListarNodosDto extends PaginationQueryDto {
@@ -13,4 +20,28 @@ export class ListarNodosDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(EstadoNodo)
   estado?: EstadoNodo;
+
+  @ApiPropertyOptional({
+    example: 'ENTENDIMIENTO',
+    description: 'Columna del tablero; vacía ("") = sin etapa',
+  })
+  @IsOptional()
+  @IsString()
+  etapa?: string;
+
+  @ApiPropertyOptional({ example: 'daily' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  etiqueta?: string;
+
+  @ApiPropertyOptional({
+    example: '25327',
+    description: 'Busca en título y descripción, sin distinguir mayúsculas',
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(LARGO_MAXIMO_BUSQUEDA)
+  q?: string;
 }

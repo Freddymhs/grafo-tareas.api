@@ -5,6 +5,7 @@ import {
   NotFoundError,
   ValidationError,
 } from '../../common/exceptions/domain.exceptions';
+import { EtapasService } from './etapas.service';
 import { NodosRepository } from './nodos.repository';
 import { NodosService } from './nodos.service';
 
@@ -36,6 +37,8 @@ const mockRepository = {
   guardarPosiciones: jest.fn().mockResolvedValue(1),
 };
 
+const mockEtapas = { validar: jest.fn(), lista: () => [] };
+
 describe('NodosService', () => {
   /** Un módulo nuevo por test: sin `let` ni estado compartido entre casos (regla §0). */
   const armar = async () => {
@@ -44,6 +47,7 @@ describe('NodosService', () => {
       providers: [
         NodosService,
         { provide: NodosRepository, useValue: mockRepository },
+        { provide: EtapasService, useValue: mockEtapas },
       ],
     }).compile();
     return module.get(NodosService);

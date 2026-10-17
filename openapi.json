@@ -67,6 +67,35 @@
               "type": "string",
               "enum": ["ABIERTO", "CERRADO"]
             }
+          },
+          {
+            "name": "etapa",
+            "required": false,
+            "in": "query",
+            "description": "Columna del tablero; vacía (\"\") = sin etapa",
+            "schema": {
+              "example": "ENTENDIMIENTO",
+              "type": "string"
+            }
+          },
+          {
+            "name": "etiqueta",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "daily",
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Busca en título y descripción, sin distinguir mayúsculas",
+            "schema": {
+              "example": "25327",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -283,6 +312,29 @@
         },
         "summary": "Borrar un nodo y sus conexiones",
         "tags": ["Nodos"]
+      }
+    },
+    "/api/v1/etapas": {
+      "get": {
+        "operationId": "EtapasController_lista",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Las columnas del tablero, en orden",
+        "tags": ["Etapas"]
       }
     },
     "/api/v1/conexiones": {
@@ -628,6 +680,25 @@
             "type": "string",
             "nullable": true
           },
+          "etapa": {
+            "type": "string",
+            "nullable": true
+          },
+          "etiquetas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "prioridad": {
+            "type": "number",
+            "nullable": true
+          },
+          "vence": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
           "descripcion": {
             "type": "string",
             "nullable": true
@@ -661,7 +732,15 @@
             "type": "string"
           }
         },
-        "required": ["id", "tipo", "titulo", "estado", "createdAt", "updatedAt"]
+        "required": [
+          "id",
+          "tipo",
+          "titulo",
+          "estado",
+          "etiquetas",
+          "createdAt",
+          "updatedAt"
+        ]
       },
       "PosicionNodoDto": {
         "type": "object",
@@ -767,6 +846,30 @@
             "enum": ["ABIERTO", "CERRADO"],
             "default": "ABIERTO"
           },
+          "etapa": {
+            "type": "string",
+            "example": "ENTENDIMIENTO",
+            "description": "Columna del tablero: una de GET /etapas. Sin etapa = entrada"
+          },
+          "etiquetas": {
+            "example": ["daily", "propuesta"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "prioridad": {
+            "type": "number",
+            "example": 2,
+            "minimum": 1,
+            "maximum": 4,
+            "description": "1 = la más urgente"
+          },
+          "vence": {
+            "type": "string",
+            "example": "2026-10-20",
+            "description": "Fecha YYYY-MM-DD"
+          },
           "color": {
             "type": "string",
             "example": "#3b82f6",
@@ -798,6 +901,30 @@
             "type": "string",
             "enum": ["ABIERTO", "CERRADO"],
             "default": "ABIERTO"
+          },
+          "etapa": {
+            "type": "string",
+            "example": "ENTENDIMIENTO",
+            "description": "Columna del tablero: una de GET /etapas. Sin etapa = entrada"
+          },
+          "etiquetas": {
+            "example": ["daily", "propuesta"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "prioridad": {
+            "type": "number",
+            "example": 2,
+            "minimum": 1,
+            "maximum": 4,
+            "description": "1 = la más urgente"
+          },
+          "vence": {
+            "type": "string",
+            "example": "2026-10-20",
+            "description": "Fecha YYYY-MM-DD"
           },
           "color": {
             "type": "string",
@@ -934,9 +1061,28 @@
           "color": {
             "type": "string",
             "nullable": true
+          },
+          "etapa": {
+            "type": "string",
+            "nullable": true
+          },
+          "etiquetas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "prioridad": {
+            "type": "number",
+            "nullable": true
+          },
+          "vence": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
           }
         },
-        "required": ["id", "tipo", "titulo", "estado"]
+        "required": ["id", "tipo", "titulo", "estado", "etiquetas"]
       },
       "BloqueadoResponseDto": {
         "type": "object",

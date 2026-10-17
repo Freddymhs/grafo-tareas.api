@@ -26,7 +26,21 @@ export interface NodoPlan {
   readonly descripcion: string | null;
   readonly estado: EstadoNodo;
   readonly color: string | null;
+  readonly etapa: string | null;
+  readonly etiquetas: readonly string[];
+  readonly prioridad: number | null;
+  readonly vence: string | null;
 }
+
+/** Un nodo sintetizado (rama, fase, persona) no tiene tablero: sin etapa, etiquetas ni fecha. */
+const SIN_TABLERO = {
+  descripcion: null,
+  estado: EstadoNodo.ABIERTO,
+  etapa: null,
+  etiquetas: [] as const,
+  prioridad: null,
+  vence: null,
+};
 
 export interface ConexionPlan {
   readonly origenExternoId: string;
@@ -90,17 +104,23 @@ function estadoDe(tarea: TareaTodoist, seccion: string | null): EstadoNodo {
     : EstadoNodo.ABIERTO;
 }
 
-/** D1: lo que el grafo no modela queda escrito en la descripción, no se pierde. */
-function descripcionDe(tarea: TareaTodoist, seccion: string | null): string {
-  const prioridad = `p${PRIORIDAD_TODOIST_MAXIMA + 1 - tarea.priority}`;
-  const datos = [
-    seccion ? `sección: ${seccion}` : null,
-    tarea.labels.length > 0 ? `etiquetas: ${tarea.labels.join(', ')}` : null,
-    `prioridad: ${prioridad}`,
-    tarea.due ? `vence: ${tarea.due.date}` : null,
-  ].filter((dato): dato is string => dato !== null);
-  const pie = `[Todoist] ${datos.join(' · ')}`;
-  return tarea.description ? `${tarea.description}\n\n${pie}` : pie;
+/** D1 (ampliada por C9): etapa, etiquetas, prioridad y fecha van a su campo. La sección que no es una etapa
+ *  conocida se escribe al pie de la descripción para no perderla. */
+function descripcionDe(
+  tarea: TareaTodoist,
+  seccion: string | null,
+  etapa: string | null,
+): string | null {
+  const seccionPerdida =
+    seccion !== null && etapa === null ? `[Todoist] sección: ${seccion}` : null;
+  const partes = [tarea.description, seccionPerdida].filter(
+    (parte): parte is string => !!parte,
+  );
+  return partes.length > 0 ? partes.join('\n\n') : null;
+}
+
+function prioridadDe(tarea: TareaTodoist): number {
+  return PRIORIDAD_TODOIST_MAXIMA + 1 - tarea.priority;
 }
 
 function emojisDe(content: string): string[] {
@@ -126,6 +146,7 @@ function personaBloqueante(content: string): string | null {
 export function traducir(
   tareas: readonly TareaTodoist[],
   secciones: readonly SeccionTodoist[],
+  etapas: readonly string[],
 ): Plan {
   const nombreSeccion = new Map(secciones.map(({ id, name }) => [id, name]));
   const idsTareas = new Set(tareas.map(({ id }) => id));
@@ -136,13 +157,19 @@ export function traducir(
     const seccion = tarea.section_id
       ? (nombreSeccion.get(tarea.section_id) ?? null)
       : null;
+    // C9: la sección es la etapa del tablero si está en la lista; si no, queda al pie de la descripción.
+    const etapa = seccion !== null && etapas.includes(seccion) ? seccion : null;
     return {
       externoId: tarea.id,
       tipo: TipoNodo.TAREA,
       titulo: tarea.content,
-      descripcion: descripcionDe(tarea, seccion),
+      descripcion: descripcionDe(tarea, seccion, etapa),
       estado: estadoDe(tarea, seccion),
       color: null,
+      etapa,
+      etiquetas: [...tarea.labels],
+      prioridad: prioridadDe(tarea),
+      vence: tarea.due?.date ?? null,
     };
   });
 
@@ -152,8 +179,7 @@ export function traducir(
         externoId: externoRama(emoji),
         tipo: TipoNodo.RAMA,
         titulo: emoji,
-        descripcion: null,
-        estado: EstadoNodo.ABIERTO,
+        ...SIN_TABLERO,
         color: COLOR_POR_EMOJI[emoji] ?? null,
       });
       return {
@@ -167,8 +193,7 @@ export function traducir(
         externoId: externoFase(numero),
         tipo: TipoNodo.FASE,
         titulo: `FASE ${numero}`,
-        descripcion: null,
-        estado: EstadoNodo.ABIERTO,
+        ...SIN_TABLERO,
         color: null,
       });
       return {
@@ -183,8 +208,7 @@ export function traducir(
         externoId: externoPersona(persona),
         tipo: TipoNodo.PERSONA,
         titulo: persona,
-        descripcion: null,
-        estado: EstadoNodo.ABIERTO,
+        ...SIN_TABLERO,
         color: null,
       });
     }

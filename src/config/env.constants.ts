@@ -8,6 +8,8 @@ export const ENV_KEYS = {
   THROTTLE_LIMIT: 'THROTTLE_LIMIT',
   /** Solo la lee el importador de Todoist (FASE 3). Nunca se loguea. */
   TODOIST_API_KEY: 'TODOIST_API_KEY',
+  /** Columnas del tablero separadas por coma; sin ella, ETAPAS_POR_DEFECTO. */
+  ETAPAS: 'ETAPAS',
 } as const;
 
 export type EnvKey = (typeof ENV_KEYS)[keyof typeof ENV_KEYS];

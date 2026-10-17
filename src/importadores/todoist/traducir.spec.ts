@@ -16,7 +16,12 @@ const leer = <T>(archivo: string): T =>
 
 const tareas = leer<TareaTodoist[]>('tasks.json');
 const secciones = leer<SeccionTodoist[]>('sections.json');
-const plan = traducir(tareas, secciones);
+const ETAPAS = [
+  'ENTENDIMIENTO',
+  'CERRADO',
+  '🔎 Precheck fin de sprint (archivadas)',
+];
+const plan = traducir(tareas, secciones, ETAPAS);
 
 const tarea = (patron: RegExp) => {
   const encontrada = tareas.find(({ content }) => patron.test(content));
@@ -38,13 +43,23 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
     tareas.forEach((t) => expect(nodo(t.id)?.titulo).toBe(t.content));
   });
 
-  it('D1 · la descripción conserva sección, etiquetas, prioridad y fecha', () => {
-    const conDaily = tarea(/./);
-    const alguna = tareas.find((t) => t.labels.includes('daily')) ?? conDaily;
-    const descripcion = nodo(alguna.id)?.descripcion ?? '';
-    expect(descripcion).toContain('[Todoist]');
-    expect(descripcion).toContain('etiquetas: ');
-    expect(descripcion).toMatch(/prioridad: p[1-4]/);
+  it('D1 · etapa, etiquetas, prioridad y fecha van a su campo (C9); la sección desconocida queda en la descripción', () => {
+    // El fixture trae etiquetas `board` (no `daily`): se mira lo que hay, no lo que se supone.
+    const conEtiquetas = tareas.find((t) => t.labels.length > 0);
+    const enEtapa = tareas.find((t) => t.section_id !== null);
+    expect(conEtiquetas).toBeDefined();
+    expect(enEtapa).toBeDefined();
+    expect(nodo(conEtiquetas?.id ?? '')?.etiquetas).toEqual(
+      conEtiquetas?.labels,
+    );
+    expect(nodo(enEtapa?.id ?? '')?.etapa).not.toBeNull();
+    tareas.forEach((t) => {
+      const n = nodo(t.id);
+      expect(n?.prioridad).toBeGreaterThanOrEqual(1);
+      expect(n?.prioridad).toBeLessThanOrEqual(4);
+      expect(n?.vence).toBe(t.due?.date ?? null);
+      expect(n?.descripcion ?? '').not.toContain('etiquetas:');
+    });
   });
 
   it('D2 · CERRADO en las secciones cerradas; ABIERTO en las demás', () => {
@@ -145,6 +160,6 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
   });
 
   it('es determinista: el mismo fixture da el mismo plan', () => {
-    expect(traducir(tareas, secciones)).toEqual(plan);
+    expect(traducir(tareas, secciones, ETAPAS)).toEqual(plan);
   });
 });

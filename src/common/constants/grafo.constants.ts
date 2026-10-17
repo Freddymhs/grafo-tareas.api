@@ -14,3 +14,23 @@ export const TIPOS_ACCIONABLES: readonly TipoNodo[] = [TipoNodo.TAREA];
 export const PATRON_COLOR_HEX = /^#[0-9a-fA-F]{6}$/;
 export const LARGO_MAXIMO_TITULO = 500;
 export const MAXIMO_POSICIONES_POR_LOTE = 5000;
+
+/** Las columnas del tablero, en orden: las etapas del método (`tablero.secciones` en refs.yaml, PORTAR.md) con los
+ *  nombres que Freddy usa en su tablero. C9 (2026-10-16): lista fija. `ETAPAS` en el entorno la reemplaza (coma). */
+export const ETAPAS_POR_DEFECTO: readonly string[] = [
+  'ENTENDIMIENTO',
+  '❓ DUDAS EN ESPERA',
+  'AMARRAR 🧰',
+  'CAMBIAR 🧰',
+  'RED 🧰',
+  'TESTEADO',
+  'LISTO PARA PR',
+  'Pull Request',
+  'APROBADO',
+  'CERRADO',
+  '🔎 Precheck fin de sprint (archivadas)',
+];
+export const PRIORIDAD_MINIMA = 1;
+export const PRIORIDAD_MAXIMA = 4;
+export const LARGO_MAXIMO_ETIQUETA = 50;
+export const LARGO_MAXIMO_BUSQUEDA = 200;

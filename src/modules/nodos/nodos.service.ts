@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TipoNodo } from '@prisma/client';
+import { EtapasService } from './etapas.service.js';
 import {
   ConflictError,
   NotFoundError,
@@ -17,11 +18,14 @@ const RECURSO = 'Nodo';
 
 @Injectable()
 export class NodosService {
-  constructor(private readonly repository: NodosRepository) {}
+  constructor(
+    private readonly repository: NodosRepository,
+    private readonly etapas: EtapasService,
+  ) {}
 
   async findAll(query: ListarNodosDto) {
-    const { offset, limit, tipo, estado } = query;
-    const filtro = { tipo, estado };
+    const { offset, limit, tipo, estado, etapa, etiqueta, q } = query;
+    const filtro = { tipo, estado, etapa, etiqueta, q };
     const [data, total] = await Promise.all([
       this.repository.listar(filtro, offset, limit),
       this.repository.contar(filtro),
@@ -39,6 +43,7 @@ export class NodosService {
 
   async create(dto: CreateNodoDto) {
     this.validarColor(dto.tipo, dto.color);
+    this.etapas.validar(dto.etapa);
     await this.validarExterno(dto.externoOrigen, dto.externoId);
     return this.repository.create(dto);
   }
@@ -46,6 +51,7 @@ export class NodosService {
   async update(id: string, dto: UpdateNodoDto) {
     const nodo = await this.findOne(id);
     this.validarColor(nodo.tipo, dto.color);
+    this.etapas.validar(dto.etapa);
     return this.repository.update(id, dto);
   }
 
