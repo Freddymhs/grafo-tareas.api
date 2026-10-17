@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import { BaseRepository } from '../../database/base.repository.js';
 import { PrismaService } from '../../database/prisma.service.js';
+import type { FiltroRol } from '../roles/roles.service.js';
 import { PosicionNodoDto } from './dto/index.js';
 
 export interface FiltroNodos {
@@ -18,6 +19,7 @@ export interface FiltroNodos {
   readonly etiqueta?: string;
   readonly rama?: string;
   readonly q?: string;
+  readonly rol?: FiltroRol;
 }
 
 /** Traduce el filtro del dominio al where de Prisma. */
@@ -28,6 +30,7 @@ function whereDe({
   etiqueta,
   rama,
   q,
+  rol,
 }: FiltroNodos): Prisma.NodoWhereInput {
   const porEtapa =
     etapa === undefined ? {} : { etapa: etapa === '' ? null : etapa };
@@ -52,7 +55,24 @@ function whereDe({
             },
           ],
         };
-  return { tipo, estado, ...porEtapa, ...porEtiqueta, ...porRama, ...porTexto };
+  // Etiqueta y rol filtran el mismo campo: van en AND para que uno no pise al otro.
+  const porRol =
+    rol === undefined
+      ? []
+      : [
+          rol.tiene === undefined ? {} : { etiquetas: { has: rol.tiene } },
+          rol.sinNinguna === undefined
+            ? {}
+            : { NOT: { etiquetas: { hasSome: [...rol.sinNinguna] } } },
+        ];
+  return {
+    tipo,
+    estado,
+    ...porEtapa,
+    ...porRama,
+    ...porTexto,
+    AND: [porEtiqueta, ...porRol],
+  };
 }
 
 @Injectable()

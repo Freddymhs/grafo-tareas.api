@@ -37,6 +37,16 @@ export class ListarNodosDto extends PaginationQueryDto {
   etiqueta?: string;
 
   @ApiPropertyOptional({
+    example: 'calidad',
+    description:
+      'Solo los nodos de este rol (GET /roles): llevan su etiqueta; los del defecto, la de ningún otro',
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  rol?: string;
+
+  @ApiPropertyOptional({
     format: 'uuid',
     description: 'Solo los nodos que PERTENECEN_A esta rama',
   })

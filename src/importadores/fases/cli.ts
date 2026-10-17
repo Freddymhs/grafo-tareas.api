@@ -1,14 +1,17 @@
-// `pnpm importar:fases -- --backlog <docs/backlog> [--tareas <Tareas>] [--proyecto <nombre>] [--seco]` — los FASE_*.md del método al
-// grafo (FASE 5 tarea 3). Corre desde `dist` (los alias `.js` no los resuelve ts-node). `--seco` cuenta sin escribir.
+// `pnpm importar:fases -- --backlog <docs/backlog> [--tareas <Tareas>] [--roles <roles.yaml>] [--proyecto <nombre>] [--seco]` —
+// los FASE_*.md del método al grafo (FASE 5 tarea 3; el rol y la etapa salen del roles.yaml del área, FASE 8).
+// Corre desde `dist` (los alias `.js` no los resuelve ts-node). `--seco` cuenta sin escribir.
 import { basename, resolve } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../../app.module';
 import { ImportadorFasesService } from './importador-fases.service';
 
 const USO =
-  'uso: importar:fases -- --backlog <carpeta con FASE_*.md> [--tareas <carpeta Tareas/>] [--proyecto <nombre>] [--seco]';
+  'uso: importar:fases -- --backlog <carpeta con FASE_*.md> [--tareas <carpeta Tareas/>] [--roles <roles.yaml>] [--proyecto <nombre>] [--seco]';
 /** `<orquestador>/docs/backlog`: el proyecto por defecto es el nombre del orquestador. */
 const DEL_BACKLOG_AL_ORQUESTADOR = '../..';
+/** `<orquestador>/docs/roles.yaml`: el del área, al lado del backlog. */
+const ROLES_DEL_AREA = '../roles.yaml';
 const EXIT_USO = 64;
 
 function valorDe(argv: readonly string[], bandera: string): string | null {
@@ -39,6 +42,7 @@ function leerArgumentos(argv: readonly string[]) {
   return {
     backlog,
     tareas: valorDe(argv, '--tareas'),
+    roles: valorDe(argv, '--roles') ?? resolve(backlog, ROLES_DEL_AREA),
     proyecto,
     seco: argv.includes('--seco'),
   };

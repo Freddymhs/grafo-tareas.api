@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TipoNodo } from '@prisma/client';
 import { EtapasService } from './etapas.service.js';
+import { RolesService } from '../roles/roles.service.js';
 import {
   ConflictError,
   NotFoundError,
@@ -21,11 +22,14 @@ export class NodosService {
   constructor(
     private readonly repository: NodosRepository,
     private readonly etapas: EtapasService,
+    private readonly roles: RolesService,
   ) {}
 
   async findAll(query: ListarNodosDto) {
-    const { offset, limit, tipo, estado, etapa, etiqueta, rama, q } = query;
-    const filtro = { tipo, estado, etapa, etiqueta, rama, q };
+    const { offset, limit, tipo, estado, etapa, etiqueta, rama, q, rol } =
+      query;
+    const porRol = rol === undefined ? undefined : this.roles.filtroDe(rol);
+    const filtro = { tipo, estado, etapa, etiqueta, rama, q, rol: porRol };
     const [data, total] = await Promise.all([
       this.repository.listar(filtro, offset, limit),
       this.repository.contar(filtro),

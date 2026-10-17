@@ -14,6 +14,7 @@ const ORIGEN = origenFases(PROYECTO);
 const OPCIONES = {
   backlog: join(FIXTURES, 'backlog'),
   tareas: join(FIXTURES, 'Tareas'),
+  roles: join(FIXTURES, 'roles.yaml'),
   proyecto: PROYECTO,
   seco: false,
 };
@@ -63,7 +64,7 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
     ).toBe(0);
   });
 
-  it('crea las FASE con su etapa, no toca la FASE 2 de Todoist y conecta las dudas a su tarjeta', async () => {
+  it('crea las FASE con su etapa y la etiqueta de su rol, no toca la FASE 2 de Todoist y conecta las dudas a su tarjeta', async () => {
     const resumen = await ctx.importador.importar(OPCIONES);
     expect(resumen.nodos).toEqual({
       nuevos: FASES_EN_FIXTURE + ABIERTOS_EN_FIXTURE,
@@ -78,13 +79,18 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
       orderBy: { titulo: 'asc' },
     });
     expect(
-      fases.map(({ titulo, etapa, estado }) => [titulo, etapa, estado]),
+      fases.map(({ titulo, etapa, estado, etiquetas }) => [
+        titulo,
+        etapa,
+        estado,
+        etiquetas,
+      ]),
     ).toEqual([
-      ['FASE 1', 'ENTENDIMIENTO', EstadoNodo.ABIERTO],
-      ['FASE 2', 'EN CODIGO', EstadoNodo.ABIERTO],
-      ['FASE 3', 'LISTO PARA PR', EstadoNodo.ABIERTO],
-      ['FASE 4', 'CERRADO', EstadoNodo.CERRADO],
-      ['FASE 5', 'CAMBIAR 🧰', EstadoNodo.ABIERTO],
+      ['FASE 1', 'ENTENDIMIENTO', EstadoNodo.ABIERTO, ['producto']],
+      ['FASE 2', 'EN CODIGO', EstadoNodo.ABIERTO, ['producto']],
+      ['FASE 3', 'LISTO PARA PR', EstadoNodo.ABIERTO, ['producto']],
+      ['FASE 4', 'CERRADO', EstadoNodo.CERRADO, ['producto']],
+      ['FASE 5', 'CAMBIAR 🧰', EstadoNodo.ABIERTO, ['calidad']],
     ]);
     const deTodoist = await ctx.prisma.nodo.findUniqueOrThrow({
       where: {

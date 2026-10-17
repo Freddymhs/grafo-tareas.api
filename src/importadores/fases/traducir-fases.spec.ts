@@ -7,30 +7,30 @@ import { externoFase, traducirFases } from './traducir-fases';
 const fase = (parcial: Partial<FaseLeida> & { numero: number }): FaseLeida => ({
   titulo: `título ${parcial.numero}`,
   destraba: null,
-  calidad: false,
+  rol: 'producto',
   dependencias: [],
-  etapa: 'entendimiento',
+  etapa: 'ENTENDIMIENTO',
   terminada: false,
   ...parcial,
 });
 
 describe('traducirFases', () => {
   const fases = [
-    fase({ numero: 1, destraba: 'algo', etapa: 'codigo' }),
+    fase({ numero: 1, destraba: 'algo', etapa: 'EN CODIGO' }),
     fase({
       numero: 2,
       dependencias: [1, 9],
-      etapa: 'cerrado',
+      etapa: 'CERRADO',
       terminada: true,
     }),
-    fase({ numero: 3, calidad: true, etapa: 'cambiar' }),
+    fase({ numero: 3, rol: 'calidad', etapa: 'CAMBIAR 🧰' }),
   ];
   const abiertos: AbiertoLeido[] = [
     { taskId: '25699', orden: 1, titulo: 'duda', texto: 'duda larga' },
   ];
   const plan = traducirFases(fases, abiertos, ETAPAS_POR_DEFECTO, 'grafo');
 
-  it('cada FASE es un nodo FASE titulado «FASE n», con la etapa traducida y el destraba en la descripción', () => {
+  it('cada FASE es un nodo FASE titulado «FASE n», con su etapa, la etiqueta de su rol y el destraba en la descripción', () => {
     const [primera, segunda, tercera] = plan.nodos;
     expect(primera).toMatchObject({
       externoId: externoFase(1),
@@ -38,6 +38,7 @@ describe('traducirFases', () => {
       titulo: 'FASE 1',
       etapa: 'EN CODIGO',
       estado: EstadoNodo.ABIERTO,
+      etiquetas: ['producto'],
     });
     expect(primera?.descripcion).toBe('FASE 1: título 1\nDestraba: algo');
     expect(segunda).toMatchObject({

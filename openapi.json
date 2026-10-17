@@ -89,6 +89,16 @@
             }
           },
           {
+            "name": "rol",
+            "required": false,
+            "in": "query",
+            "description": "Solo los nodos de este rol (GET /roles): llevan su etiqueta; los del defecto, la de ningún otro",
+            "schema": {
+              "example": "calidad",
+              "type": "string"
+            }
+          },
+          {
             "name": "rama",
             "required": false,
             "in": "query",
@@ -121,7 +131,7 @@
             }
           }
         },
-        "summary": "Listar nodos: por tipo, estado, etapa, etiqueta, rama o texto",
+        "summary": "Listar nodos: por tipo, estado, etapa, etiqueta, rol, rama o texto",
         "tags": ["Nodos"]
       },
       "post": {
@@ -343,6 +353,26 @@
         },
         "summary": "Las columnas del tablero, en orden",
         "tags": ["Etapas"]
+      }
+    },
+    "/api/v1/roles": {
+      "get": {
+        "operationId": "RolesController_lista",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Los tipos de trabajo del área y las columnas de cada tablero",
+        "tags": ["Roles"]
       }
     },
     "/api/v1/conexiones": {
@@ -957,6 +987,47 @@
             "description": "Columna del tablero: una de GET /etapas. null = vuelve a la entrada"
           }
         }
+      },
+      "RolResponseDto": {
+        "type": "object",
+        "properties": {
+          "clave": {
+            "type": "string",
+            "example": "calidad"
+          },
+          "nombre": {
+            "type": "string",
+            "example": "Calidad"
+          },
+          "para": {
+            "type": "string"
+          },
+          "columnas": {
+            "description": "Las columnas de su tablero, en orden (todas están en GET /etapas)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["clave", "nombre", "para", "columnas"]
+      },
+      "RolesResponseDto": {
+        "type": "object",
+        "properties": {
+          "defecto": {
+            "type": "string",
+            "nullable": true,
+            "description": "El rol de lo que no declara ninguno; null si la API no tiene roles"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RolResponseDto"
+            }
+          }
+        },
+        "required": ["defecto", "roles"]
       },
       "ConexionResponseDto": {
         "type": "object",

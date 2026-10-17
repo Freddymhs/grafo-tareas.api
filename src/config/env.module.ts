@@ -15,6 +15,7 @@ export const EnvModule = ConfigModule.forRoot({
       .default('info'),
     THROTTLE_TTL: Joi.number().default(60),
     THROTTLE_LIMIT: Joi.number().default(100),
+    ROLES_ARCHIVO: Joi.string().allow('').optional(),
   }),
   validationOptions: { abortEarly: false },
 });

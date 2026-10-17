@@ -22,8 +22,14 @@ GET/POST        nodos               PATCH/DELETE nodos/:id        PUT nodos/posi
 GET/POST        conexiones          DELETE conexiones/:id
 GET/POST        ramas               (ramas con cuántos nodos tiene cada una)
 GET             derivado/hoy-puedo  GET nodos/:id/bloqueado       GET nodos/:id/libera
+GET             etapas              roles   (GET nodos?rol=<clave>: los nodos de ese rol)
 GET             health
 ```
+
+**Roles (FASE 8, C11).** Con `ROLES_ARCHIVO` apuntando al `docs/roles.yaml` del área, `GET /roles` da los tipos de
+trabajo y las columnas de cada tablero, y `GET /etapas` suma esas columnas a la lista del tablero (`ETAPAS`, C9). El
+rol de un nodo es una etiqueta con la clave del rol; sin ninguna, es el `defecto`. Sin `ROLES_ARCHIVO`, no hay roles y
+todo funciona como antes.
 
 `openapi.json` es el contrato versionado: la PWA y la VR generan sus tipos y hooks de ahí (Orval). Se regenera con
 `pnpm openapi:export` y el CI falla si quedó atrás del código.
@@ -47,8 +53,9 @@ pnpm importar:fases -- --backlog ../docs/backlog --tareas ../Tareas --seco   # c
 pnpm importar:fases -- --backlog ../docs/backlog --tareas ../Tareas          # aplica en una transacción
 ```
 
-Cada `FASE_n_*.md` es un nodo FASE «FASE n» con la etapa derivada de sus casillas (las mismas reglas que `fases.html` /
-`calidad.html` del Laboratorio) y `DEPENDE_DE` por su **Dependencias**; cada viñeta de `## ⚠️ ABIERTO` en
+Cada `FASE_n_*.md` es un nodo FASE «FASE n» con la etiqueta de su rol (`**Tipo**:`, o el defecto) y la etapa derivada de sus
+casillas según `roles.yaml` (por defecto `../docs/roles.yaml`, o `--roles <archivo>`; mismas reglas que `fases.html` /
+`calidad.html` y que `~/dotfiles/tests/test_roles.py`) y `DEPENDE_DE` por su **Dependencias**; cada viñeta de `## ⚠️ ABIERTO` en
 `Tareas/<id>/entendimiento.md` es una DUDA que deja a la TAREA `[<id>]…` `BLOQUEADA_POR` ella, y se cierra sola cuando
 desaparece del archivo (solo cuando se pasa `--tareas`: sin él, las dudas ya importadas no se tocan). Idempotente por
 `externo { fases-md:<proyecto>, fase:n | abierto:<id>:n }`; el proyecto es el nombre del orquestador o `--proyecto`, así

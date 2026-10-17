@@ -10,6 +10,8 @@ export const ENV_KEYS = {
   TODOIST_API_KEY: 'TODOIST_API_KEY',
   /** Columnas del tablero separadas por coma; sin ella, ETAPAS_POR_DEFECTO. */
   ETAPAS: 'ETAPAS',
+  /** El roles.yaml del área (C11); sin ella, la API no tiene roles: GET /roles vacío y GET /etapas = ETAPAS. */
+  ROLES_ARCHIVO: 'ROLES_ARCHIVO',
 } as const;
 
 export type EnvKey = (typeof ENV_KEYS)[keyof typeof ENV_KEYS];

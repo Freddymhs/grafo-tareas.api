@@ -38,23 +38,3 @@ export const LARGO_MAXIMO_ETIQUETA = 50;
 export const LARGO_MAXIMO_BUSQUEDA = 200;
 /** Un listado no devuelve más que esto por página (el tablero pide 500 y le alcanza). */
 export const LIMITE_MAXIMO_PAGINA = 500;
-
-/**
- * Las etapas del método por su clave (las de `tablero.secciones` del Laboratorio y las que `fases.html` /
- * `calidad.html` derivan de las casillas de una FASE_*.md). El importador de FASEs habla en claves y las
- * traduce acá; los nombres tienen que existir en ETAPAS.
- */
-export const ETAPA_DEL_METODO = {
-  entendimiento: 'ENTENDIMIENTO',
-  codigo: 'EN CODIGO',
-  coleccion: 'Collection Created',
-  auditoria: 'TESTEADO',
-  listo: 'LISTO PARA PR',
-  amarrar: 'AMARRAR 🧰',
-  cambiar: 'CAMBIAR 🧰',
-  red: 'RED 🧰',
-  pr: 'Pull Request',
-  aprobado: 'APROBADO',
-  cerrado: 'CERRADO',
-} as const;
-export type ClaveEtapa = keyof typeof ETAPA_DEL_METODO;

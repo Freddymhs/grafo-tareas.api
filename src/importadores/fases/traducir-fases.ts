@@ -1,7 +1,6 @@
 // FASE_*.md + entendimiento.md → plan del grafo (puro). Cada FASE es un nodo FASE con su etapa derivada de
-// las casillas; `**Dependencias**` son conexiones DEPENDE_DE entre FASEs; cada punto ABIERTO es una DUDA.
+// las casillas y la etiqueta de su rol (C11); `**Dependencias**` son conexiones DEPENDE_DE entre FASEs; cada punto ABIERTO es una DUDA.
 import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
-import { ETAPA_DEL_METODO } from '../../common/constants/grafo.constants.js';
 import type { ConexionPlan, NodoPlan, Plan } from '../plan.js';
 import { AbiertoLeido } from './leer-abiertos.js';
 import { FaseLeida } from './leer-fase.js';
@@ -30,14 +29,16 @@ export interface PlanFases extends Plan {
   readonly dudas: readonly DudaPlan[];
 }
 
-function nombreDeEtapa(clave: FaseLeida['etapa'], etapas: readonly string[]) {
-  const nombre = ETAPA_DEL_METODO[clave];
-  if (!etapas.includes(nombre)) {
+function etapaConocida(
+  { numero, etapa }: FaseLeida,
+  etapas: readonly string[],
+) {
+  if (!etapas.includes(etapa)) {
     throw new Error(
-      `La etapa «${nombre}» (clave ${clave}) no está en ETAPAS de la API: agregarla o no se puede importar la FASE`,
+      `FASE ${numero}: la etapa «${etapa}» no está en GET /etapas: el roles.yaml del área y el de la API (ROLES_ARCHIVO) no coinciden`,
     );
   }
-  return nombre;
+  return etapa;
 }
 
 function nodoDeFase(fase: FaseLeida, etapas: readonly string[]): NodoPlan {
@@ -57,8 +58,8 @@ function nodoDeFase(fase: FaseLeida, etapas: readonly string[]): NodoPlan {
     descripcion: descripcion || null,
     estado: fase.terminada ? EstadoNodo.CERRADO : EstadoNodo.ABIERTO,
     color: null,
-    etapa: nombreDeEtapa(fase.etapa, etapas),
-    etiquetas: fase.calidad ? ['calidad'] : [],
+    etapa: etapaConocida(fase, etapas),
+    etiquetas: [fase.rol],
     prioridad: null,
     vence: null,
   };

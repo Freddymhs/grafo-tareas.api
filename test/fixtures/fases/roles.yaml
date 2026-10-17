@@ -1,0 +1,42 @@
+# Fixture: dos roles del roles.yaml de la plantilla (~/dotfiles/workspace-template/docs/roles.yaml), copiados tal cual.
+# Lo usan los tests del importador de FASEs y de GET /roles. Si la plantilla cambia sus reglas, se recopian.
+version: 1
+defecto: producto
+
+roles:
+  producto:
+    nombre: Producto
+    para: Features y PBI — lo que mueve el trabajo
+    marcas: [producto, funcional]
+    plantilla: backlog/plantillas/plantilla-producto.md
+    grupos: {}
+    qa: [Colección, Auditoría, Listo para PR]
+    etapas:
+      - { clave: entendimiento, columna: ENTENDIMIENTO, si: siempre }
+      - { clave: codigo, columna: EN CODIGO, si: tareas_alguna }
+      - { clave: coleccion, columna: Collection Created, si: { qa: Colección } }
+      - { clave: auditoria, columna: TESTEADO, si: { qa: Auditoría } }
+      - { clave: listo, columna: LISTO PARA PR, si: { qa: Listo para PR } }
+      - { clave: aprobado, columna: APROBADO, si: cierre_real }
+      - { clave: cerrado, columna: CERRADO, si: terminada }
+
+  calidad:
+    nombre: Calidad
+    para: Refactor, Sonar, performance, logs, alertas y CI — sin cambiar contrato, con tests de rojo a verde
+    marcas: [calidad]
+    plantilla: backlog/plantillas/plantilla-calidad.md
+    grupos:
+      {
+        amarrar: 'amarrar|l[ií]nea base|arranque',
+        red: "^red\\b|cierre de la malla|retirar",
+        cambiar: '.',
+      }
+    qa: [Listo para PR]
+    etapas:
+      - { clave: entendimiento, columna: ENTENDIMIENTO, si: siempre }
+      - { clave: amarrar, columna: 'AMARRAR 🧰', si: { grupo: amarrar } }
+      - { clave: cambiar, columna: 'CAMBIAR 🧰', si: { grupo: cambiar } }
+      - { clave: red, columna: 'RED 🧰', si: { grupo: red } }
+      - { clave: pr, columna: Pull Request, si: { qa: Listo para PR } }
+      - { clave: aprobado, columna: APROBADO, si: cierre_real }
+      - { clave: cerrado, columna: CERRADO, si: terminada }

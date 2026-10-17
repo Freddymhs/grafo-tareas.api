@@ -31,7 +31,8 @@ export class NodosController {
 
   @Get()
   @ApiOperation({
-    summary: 'Listar nodos: por tipo, estado, etapa, etiqueta, rama o texto',
+    summary:
+      'Listar nodos: por tipo, estado, etapa, etiqueta, rol, rama o texto',
   })
   @ApiResponse({ status: 200, type: PaginaNodosDto })
   findAll(@Query() query: ListarNodosDto) {
