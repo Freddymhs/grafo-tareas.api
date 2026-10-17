@@ -639,6 +639,29 @@
         "tags": ["Derivado"]
       }
     },
+    "/api/v1/derivado/paginas": {
+      "get": {
+        "operationId": "DerivadoController_paginas",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaginaDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Las páginas de la VR: una por HU (su árbol y lo que la bloquea) y «Sin HU» al final",
+        "tags": ["Derivado"]
+      }
+    },
     "/api/v1/nodos/{id}/bloqueado": {
       "get": {
         "operationId": "DerivadoController_bloqueado",
@@ -1617,6 +1640,34 @@
           "paraDecir",
           "tramites"
         ]
+      },
+      "PaginaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "El id de la HU, o «sin-hu»"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "historiaId": {
+            "type": "string",
+            "nullable": true
+          },
+          "nodos": {
+            "description": "Los nodos de la página: el árbol de la HU y lo que bloquea a lo suyo (un salto)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "abiertas": {
+            "type": "number",
+            "description": "Tareas abiertas de la página"
+          }
+        },
+        "required": ["id", "titulo", "historiaId", "nodos", "abiertas"]
       },
       "BloqueadoResponseDto": {
         "type": "object",

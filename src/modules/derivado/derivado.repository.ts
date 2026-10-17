@@ -203,6 +203,19 @@ export class DerivadoRepository {
     });
   }
 
+  /** El grafo entero, en lo justo para armar las páginas (FASE 15): cada nodo y cada conexión, sin descripciones. */
+  async paraPaginas() {
+    const [nodos, conexiones] = await Promise.all([
+      this.prisma.nodo.findMany({
+        select: { id: true, tipo: true, titulo: true, estado: true },
+      }),
+      this.prisma.conexion.findMany({
+        select: { origenId: true, destinoId: true, tipo: true },
+      }),
+    ]);
+    return { nodos, conexiones };
+  }
+
   async resumenes(ids: readonly string[]): Promise<NodoResumen[]> {
     return this.prisma.nodo.findMany({
       where: { id: { in: [...ids] } },

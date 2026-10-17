@@ -8,6 +8,7 @@ import {
 import { NotFoundError } from '../../common/exceptions/index.js';
 import { RolesService } from '../roles/roles.service.js';
 import { calcularLibera } from './calcular-libera.js';
+import { calcularPaginas } from './calcular-paginas.js';
 import {
   Bloqueo,
   DerivadoRepository,
@@ -30,6 +31,12 @@ export class DerivadoService {
     private readonly repository: DerivadoRepository,
     private readonly roles: RolesService,
   ) {}
+
+  /** Una página por HU y «Sin HU» al final (FASE 15): qué muestra la VR en cada una. */
+  async paginas() {
+    const { nodos, conexiones } = await this.repository.paraPaginas();
+    return calcularPaginas(nodos, conexiones);
+  }
 
   async bloqueado(id: string) {
     await this.asegurarExiste(id);

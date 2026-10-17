@@ -8,6 +8,7 @@ import {
   DiaQueryDto,
   DiaResponseDto,
   LiberaResponseDto,
+  PaginaDto,
 } from './dto/index.js';
 
 /** Lo que se calcula sobre el grafo. Vive solo acá: la PWA y la VR lo muestran, no lo recalculan (C1). */
@@ -31,6 +32,16 @@ export class DerivadoController {
   @ApiResponse({ status: 200, type: DiaResponseDto })
   dia(@Query() { desde }: DiaQueryDto) {
     return this.service.dia(desde);
+  }
+
+  @Get('derivado/paginas')
+  @ApiOperation({
+    summary:
+      'Las páginas de la VR: una por HU (su árbol y lo que la bloquea) y «Sin HU» al final',
+  })
+  @ApiResponse({ status: 200, type: [PaginaDto] })
+  paginas() {
+    return this.service.paginas();
   }
 
   @Get('nodos/:id/bloqueado')

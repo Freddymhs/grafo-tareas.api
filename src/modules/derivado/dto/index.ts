@@ -1,3 +1,4 @@
+export { PaginaDto } from './pagina.dto';
 export {
   BloqueadoResponseDto,
   LiberaResponseDto,
