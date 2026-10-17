@@ -22,21 +22,21 @@ const mockRepository = {
 };
 
 describe('DerivadoService', () => {
-  let service: DerivadoService;
-
-  beforeEach(async () => {
+  /** Un módulo nuevo por test: sin `let` ni estado compartido entre casos (regla §0). */
+  const armar = async () => {
+    jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DerivadoService,
         { provide: DerivadoRepository, useValue: mockRepository },
       ],
     }).compile();
-    service = module.get(DerivadoService);
-    jest.clearAllMocks();
-  });
+    return module.get(DerivadoService);
+  };
 
   describe('bloqueado', () => {
     it('es true con al menos un bloqueador abierto, y los devuelve', async () => {
+      const service = await armar();
       mockRepository.bloqueadoresDe.mockResolvedValueOnce([
         resumen('duda', TipoNodo.DUDA),
       ]);
@@ -48,6 +48,7 @@ describe('DerivadoService', () => {
     });
 
     it('404 si el nodo no existe', async () => {
+      const service = await armar();
       mockRepository.existe.mockResolvedValueOnce(false);
 
       await expect(service.bloqueado('nada')).rejects.toThrow(NotFoundError);
@@ -56,6 +57,7 @@ describe('DerivadoService', () => {
 
   describe('libera', () => {
     it('cruza aguas abajo con los bloqueos vigentes y devuelve los nodos en el orden calculado', async () => {
+      const service = await armar();
       mockRepository.aguasAbajo.mockResolvedValueOnce(['duda', 't1', 't2']);
       mockRepository.bloqueosDe.mockResolvedValueOnce([
         { origenId: 'duda', destinoId: 'tomas' },
@@ -80,6 +82,7 @@ describe('DerivadoService', () => {
     });
 
     it('sin nada aguas abajo no consulta resúmenes de más', async () => {
+      const service = await armar();
       const resultado = await service.libera('solo');
 
       expect(resultado).toEqual({ directos: [], cadena: [] });

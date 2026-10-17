@@ -7,13 +7,9 @@ export const CONEXIONES_BLOQUEANTES: readonly TipoConexion[] = [
   TipoConexion.BLOQUEADA_POR,
 ];
 
-/** Lo que es trabajo propio: "hoy puedo…" solo lista esto. RAMA, PERSONA, DUDA y PR bloquean, no se hacen. */
-export const TIPOS_ACCIONABLES: readonly TipoNodo[] = [
-  TipoNodo.TAREA,
-  TipoNodo.HISTORIA,
-  TipoNodo.FASE,
-  TipoNodo.DAILY_ITEM,
-];
+/** "hoy puedo…" lista TAREAS (concepto § Modelo de dominio: tareas ABIERTAS no bloqueadas). FASE, RAMA, PERSONA, DUDA y PR
+ *  agrupan o bloquean, no se hacen. Medido 2026-10-16 con datos reales: con FASE adentro salían 96 de 80 tareas abiertas. */
+export const TIPOS_ACCIONABLES: readonly TipoNodo[] = [TipoNodo.TAREA];
 
 export const PATRON_COLOR_HEX = /^#[0-9a-fA-F]{6}$/;
 export const LARGO_MAXIMO_TITULO = 500;

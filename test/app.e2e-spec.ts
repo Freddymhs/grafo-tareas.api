@@ -13,27 +13,28 @@ interface HealthResponse {
 }
 
 describe('Health (e2e)', () => {
-  let app: NestFastifyApplication;
+  // Lo llena beforeAll una sola vez: un holder en vez de `let` (regla §0).
+  const ctx = {} as { app: NestFastifyApplication };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication<NestFastifyApplication>(
+    ctx.app = moduleFixture.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter(),
     );
-    app.setGlobalPrefix('api/v1');
-    await app.init();
-    await app.getHttpAdapter().getInstance().ready();
+    ctx.app.setGlobalPrefix('api/v1');
+    await ctx.app.init();
+    await ctx.app.getHttpAdapter().getInstance().ready();
   });
 
   afterAll(async () => {
-    await app.close();
+    await ctx.app.close();
   });
 
   it('GET /api/v1/health should return health status', async () => {
-    const response = await app.inject({
+    const response = await ctx.app.inject({
       method: 'GET',
       url: '/api/v1/health',
     });

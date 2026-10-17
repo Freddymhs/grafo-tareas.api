@@ -37,21 +37,21 @@ const mockRepository = {
 };
 
 describe('NodosService', () => {
-  let service: NodosService;
-
-  beforeEach(async () => {
+  /** Un módulo nuevo por test: sin `let` ni estado compartido entre casos (regla §0). */
+  const armar = async () => {
+    jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NodosService,
         { provide: NodosRepository, useValue: mockRepository },
       ],
     }).compile();
-    service = module.get(NodosService);
-    jest.clearAllMocks();
-  });
+    return module.get(NodosService);
+  };
 
   describe('create', () => {
     it('solo una RAMA lleva color', async () => {
+      const service = await armar();
       await expect(
         service.create({ tipo: TipoNodo.TAREA, titulo: 'x', color: '#ffffff' }),
       ).rejects.toThrow(ValidationError);
@@ -61,6 +61,7 @@ describe('NodosService', () => {
     });
 
     it('externoOrigen y externoId van juntos', async () => {
+      const service = await armar();
       await expect(
         service.create({
           tipo: TipoNodo.TAREA,
@@ -71,6 +72,7 @@ describe('NodosService', () => {
     });
 
     it('el mismo origen + id ya importado es un conflicto (C3)', async () => {
+      const service = await armar();
       mockRepository.buscarPorExterno.mockResolvedValueOnce(NODO);
 
       await expect(
@@ -88,6 +90,7 @@ describe('NodosService', () => {
     const posicion = { id: NODO.id, x: 0, y: 1.6, z: 0 };
 
     it('guarda y devuelve cuántas', async () => {
+      const service = await armar();
       await expect(
         service.guardarPosiciones({ posiciones: [posicion] }),
       ).resolves.toEqual({
@@ -96,12 +99,14 @@ describe('NodosService', () => {
     });
 
     it('rechaza un id repetido en el lote', async () => {
+      const service = await armar();
       await expect(
         service.guardarPosiciones({ posiciones: [posicion, posicion] }),
       ).rejects.toThrow(ValidationError);
     });
 
     it('404 si algún id no existe', async () => {
+      const service = await armar();
       mockRepository.contarExistentes.mockResolvedValueOnce(0);
 
       await expect(

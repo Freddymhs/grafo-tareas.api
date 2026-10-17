@@ -6,6 +6,8 @@ export const ENV_KEYS = {
   PINO_LOG_LEVEL: 'PINO_LOG_LEVEL',
   THROTTLE_TTL: 'THROTTLE_TTL',
   THROTTLE_LIMIT: 'THROTTLE_LIMIT',
+  /** Solo la lee el importador de Todoist (FASE 3). Nunca se loguea. */
+  TODOIST_API_KEY: 'TODOIST_API_KEY',
 } as const;
 
 export type EnvKey = (typeof ENV_KEYS)[keyof typeof ENV_KEYS];

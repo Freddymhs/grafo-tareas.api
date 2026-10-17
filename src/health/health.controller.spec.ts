@@ -15,19 +15,19 @@ const createMockReply = () => {
 };
 
 describe('HealthController', () => {
-  let controller: HealthController;
-
-  beforeEach(async () => {
+  /** Un módulo nuevo por test: sin `let` ni estado compartido (regla §0). */
+  const armar = async () => {
+    jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HealthController],
       providers: [{ provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
-    controller = module.get<HealthController>(HealthController);
-    jest.clearAllMocks();
-  });
+    return module.get<HealthController>(HealthController);
+  };
 
   it('should return 200 ok when DB is healthy', async () => {
+    const controller = await armar();
     mockPrisma.isHealthy.mockResolvedValue(true);
     const reply = createMockReply();
 
@@ -40,6 +40,7 @@ describe('HealthController', () => {
   });
 
   it('should return 503 degraded when DB is down', async () => {
+    const controller = await armar();
     mockPrisma.isHealthy.mockResolvedValue(false);
     const reply = createMockReply();
 

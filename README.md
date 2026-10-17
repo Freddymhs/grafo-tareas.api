@@ -40,6 +40,19 @@ pnpm build && pnpm start:prod           # http://localhost:3000/docs
 Gates: `pnpm type-check` · `pnpm lint` · `pnpm test` (unit, repos mockeados) · `pnpm test:e2e` (contra `grafo_tareas_test`:
 el escenario del concepto —Tomás, una duda W2 y tres tareas— de punta a punta).
 
+## Importar desde Todoist (FASE 3) — una vez, como migración
+
+```bash
+pnpm importar:todoist -- --proyecto <id-del-proyecto> --seco   # traduce y cuenta, no escribe
+pnpm importar:todoist -- --proyecto <id-del-proyecto>          # aplica el plan en una transacción
+```
+
+Lee con `TODOIST_API_KEY` (del entorno, nunca del repo) y **nunca escribe en Todoist**. Es idempotente: la segunda
+corrida actualiza y no duplica (`externo {todoist, id}`). Las reglas (secciones → estado, subtareas → el padre
+DEPENDE_DE las hijas, círculos → ramas, `FASE n` → nodo FASE, `BLOQUEO … esperando a <persona>` → ESPERA_RESPUESTA_DE)
+están en `src/importadores/todoist/traducir.ts`, una función pura con test sobre un fixture real
+(`test/fixtures/todoist/`), y se decidieron en `../docs/backlog/FASE_3_IMPORTADOR_TODOIST.md`.
+
 ## Convenciones
 
 - Un módulo por dominio (`src/modules/{nodos,conexiones,ramas,derivado}`), cada uno `controller → service → repository`.

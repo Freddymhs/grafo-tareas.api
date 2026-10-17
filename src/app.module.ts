@@ -11,6 +11,7 @@ import { NodosModule } from './modules/nodos/nodos.module';
 import { ConexionesModule } from './modules/conexiones/conexiones.module';
 import { RamasModule } from './modules/ramas/ramas.module';
 import { DerivadoModule } from './modules/derivado/derivado.module';
+import { ImportadoresModule } from './importadores/todoist/importadores.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { GLOBAL_VALIDATION_PIPE } from './common/pipes/validation.pipe';
@@ -52,6 +53,7 @@ import { GLOBAL_VALIDATION_PIPE } from './common/pipes/validation.pipe';
     ConexionesModule,
     RamasModule,
     DerivadoModule,
+    ImportadoresModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },

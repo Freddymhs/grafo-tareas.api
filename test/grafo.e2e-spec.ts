@@ -30,11 +30,11 @@ const PREFIJO = '/api/v1';
 const UUID_INEXISTENTE = '00000000-0000-4000-8000-000000000000';
 
 describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres tareas', () => {
-  let app: NestFastifyApplication;
-  let prisma: PrismaService;
+  // Lo llena beforeAll una sola vez: un holder en vez de `let` (regla §0).
+  const ctx = {} as { app: NestFastifyApplication; prisma: PrismaService };
 
   const post = async <T>(url: string, payload: object) => {
-    const res = await app.inject({
+    const res = await ctx.app.inject({
       method: 'POST',
       url: PREFIJO + url,
       payload,
@@ -45,7 +45,7 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
     };
   };
   const get = async <T>(url: string) => {
-    const res = await app.inject({ method: 'GET', url: PREFIJO + url });
+    const res = await ctx.app.inject({ method: 'GET', url: PREFIJO + url });
     return {
       status: res.statusCode,
       body: JSON.parse(res.body) as Envuelto<T>,
@@ -62,19 +62,19 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
-    app = moduleFixture.createNestApplication<NestFastifyApplication>(
+    ctx.app = moduleFixture.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter(),
     );
-    app.setGlobalPrefix('api/v1');
-    await app.init();
-    await app.getHttpAdapter().getInstance().ready();
-    prisma = app.get(PrismaService);
-    await prisma.conexion.deleteMany();
-    await prisma.nodo.deleteMany();
+    ctx.app.setGlobalPrefix('api/v1');
+    await ctx.app.init();
+    await ctx.app.getHttpAdapter().getInstance().ready();
+    ctx.prisma = ctx.app.get(PrismaService);
+    await ctx.prisma.conexion.deleteMany();
+    await ctx.prisma.nodo.deleteMany();
   });
 
   afterAll(async () => {
-    await app.close();
+    await ctx.app.close();
   });
 
   const ids: Record<string, string> = {};
@@ -186,7 +186,7 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
   });
 
   it('las posiciones se guardan en lote y se leen (C2); un id inexistente tumba el lote', async () => {
-    const guardar = await app.inject({
+    const guardar = await ctx.app.inject({
       method: 'PUT',
       url: `${PREFIJO}/nodos/posiciones`,
       payload: { posiciones: [{ id: ids.t1, x: 1, y: 1.6, z: -2 }] },
@@ -200,7 +200,7 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
       1, 1.6, -2,
     ]);
 
-    const roto = await app.inject({
+    const roto = await ctx.app.inject({
       method: 'PUT',
       url: `${PREFIJO}/nodos/posiciones`,
       payload: { posiciones: [{ id: UUID_INEXISTENTE, x: 0, y: 0, z: 0 }] },
@@ -209,7 +209,7 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
   });
 
   it('cerrar la duda libera la tarea; borrar un nodo borra sus conexiones', async () => {
-    const cerrar = await app.inject({
+    const cerrar = await ctx.app.inject({
       method: 'PATCH',
       url: `${PREFIJO}/nodos/${ids.duda}`,
       payload: { estado: EstadoNodo.CERRADO },
@@ -218,13 +218,13 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
     const t1 = await get<Bloqueado>(`/nodos/${ids.t1}/bloqueado`);
     expect(t1.body.data.bloqueado).toBe(false);
 
-    const borrar = await app.inject({
+    const borrar = await ctx.app.inject({
       method: 'DELETE',
       url: `${PREFIJO}/nodos/${ids.t3}`,
     });
     expect(borrar.statusCode).toBe(204);
     expect((await get(`/nodos/${ids.t3}`)).status).toBe(404);
-    const conexionesDeT3 = await prisma.conexion.count({
+    const conexionesDeT3 = await ctx.prisma.conexion.count({
       where: { OR: [{ origenId: ids.t3 }, { destinoId: ids.t3 }] },
     });
     expect(conexionesDeT3).toBe(0);
