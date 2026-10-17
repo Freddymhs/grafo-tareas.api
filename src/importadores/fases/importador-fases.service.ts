@@ -167,7 +167,12 @@ export class ImportadorFasesService {
     };
   }
 
-  /** Cada FASE del plan que existe en `desde` (mismo `fase:n`) y todavía no en `origen` pasa a `origen`. */
+  /**
+   * Cada FASE del plan que existe en `desde` (mismo `fase:n`) pasa a `origen`. Si `origen` ya tiene la suya —porque
+   * `desde` se reimportó después de una adopción y la volvió a crear—, la de `desde` se fusiona en la propia: sus
+   * conexiones pasan y la copia se borra. Sin esto, reimportar Todoist dejaba ~15 «FASE n» duplicadas con las tareas
+   * colgando de la copia (medido 2026-10-17, preparando el corte).
+   */
   private async adoptar(
     tx: Tx,
     desde: string,
@@ -178,20 +183,45 @@ export class ImportadorFasesService {
     // En serie: la transacción interactiva usa una sola conexión.
     const adoptados: number[] = [];
     for (const { externoId } of deFases) {
-      const propio = await tx.nodo.findUnique({
-        where: {
-          externoOrigen_externoId: { externoOrigen: origen, externoId },
-        },
-        select: { id: true },
-      });
-      if (propio) continue;
-      const { count } = await tx.nodo.updateMany({
-        where: { externoOrigen: desde, externoId, tipo: TipoNodo.FASE },
-        data: { externoOrigen: origen },
-      });
-      adoptados.push(count);
+      const propio = await this.faseDe(tx, origen, externoId);
+      const copia = await this.faseDe(tx, desde, externoId);
+      if (copia && propio) {
+        await this.fusionar(tx, copia.id, propio.id);
+        adoptados.push(1);
+      } else if (copia) {
+        await tx.nodo.update({
+          where: { id: copia.id },
+          data: { externoOrigen: origen },
+        });
+        adoptados.push(1);
+      }
     }
     return adoptados.reduce((total, n) => total + n, 0);
+  }
+
+  private faseDe(tx: Tx, externoOrigen: string, externoId: string) {
+    return tx.nodo.findFirst({
+      where: { externoOrigen, externoId, tipo: TipoNodo.FASE },
+      select: { id: true },
+    });
+  }
+
+  /** Las conexiones de `copia` pasan a `propia` (las que ya tiene no se duplican) y `copia` se borra. */
+  private async fusionar(tx: Tx, copia: string, propia: string) {
+    const conexiones = await tx.conexion.findMany({
+      where: { OR: [{ origenId: copia }, { destinoId: copia }] },
+    });
+    for (const { origenId, destinoId, tipo } of conexiones) {
+      const clave = {
+        origenId: origenId === copia ? propia : origenId,
+        destinoId: destinoId === copia ? propia : destinoId,
+        tipo,
+      };
+      const esConsigoMisma = clave.origenId === clave.destinoId;
+      if (!esConsigoMisma) await conectar(tx, clave);
+    }
+    // onDelete: Cascade se lleva las conexiones viejas de la copia.
+    await tx.nodo.delete({ where: { id: copia } });
   }
 
   /** Cada punto ABIERTO frena a su task: TAREA `[<id>]…` BLOQUEADA_POR la DUDA. Lo que ya no está abierto se cierra. */

@@ -243,4 +243,53 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
     });
     expect(fase2DeSag).toBe(1);
   });
+
+  it('si Todoist se reimporta y su «FASE 2» reaparece, adoptar la fusiona con la propia: un nodo, sus conexiones pasan sin duplicarse', async () => {
+    const propia = await ctx.prisma.nodo.findUniqueOrThrow({
+      where: {
+        externoOrigen_externoId: {
+          externoOrigen: origenFases('sag'),
+          externoId: 'fase:2',
+        },
+      },
+      include: { entrantes: true },
+    });
+    const yaConectada = propia.entrantes[0].origenId;
+    const copia = await ctx.prisma.nodo.create({
+      data: {
+        tipo: TipoNodo.FASE,
+        titulo: 'FASE 2',
+        externoOrigen: 'todoist',
+        externoId: 'fase:2',
+      },
+    });
+    const tareaReimportada = await ctx.prisma.nodo.create({
+      data: { tipo: TipoNodo.TAREA, titulo: 'tarea reimportada de la FASE 2' },
+    });
+    await ctx.prisma.conexion.createMany({
+      data: [tareaReimportada.id, yaConectada].map((origenId) => ({
+        origenId,
+        destinoId: copia.id,
+        tipo: TipoConexion.PERTENECE_A,
+      })),
+    });
+
+    const resumen = await ctx.importador.importar({
+      ...OPCIONES,
+      proyecto: 'sag',
+      tareas: null,
+      adoptar: 'todoist',
+    });
+
+    expect(resumen.adoptadas).toBe(1);
+    expect(
+      await ctx.prisma.nodo.findUnique({ where: { id: copia.id } }),
+    ).toBeNull();
+    const entrantes = await ctx.prisma.conexion.findMany({
+      where: { destinoId: propia.id, tipo: TipoConexion.PERTENECE_A },
+    });
+    const origenes = entrantes.map(({ origenId }) => origenId);
+    expect(origenes).toContain(tareaReimportada.id);
+    expect(origenes.filter((id) => id === yaConectada)).toHaveLength(1);
+  });
 });
