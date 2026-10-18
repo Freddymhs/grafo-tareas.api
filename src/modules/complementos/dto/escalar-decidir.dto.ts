@@ -16,7 +16,7 @@ export class EscalarDto {
 }
 
 export class DecidirDto {
-  @ApiProperty({ example: 'Tomás Carabantes' })
+  @ApiProperty({ example: 'Ana Pérez' })
   @IsString()
   @IsNotEmpty()
   quien!: string;

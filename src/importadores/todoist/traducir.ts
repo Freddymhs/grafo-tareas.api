@@ -23,6 +23,7 @@ export interface SeccionTodoist {
 
 export type { ConexionPlan, NodoPlan, Plan } from '../plan.js';
 import { ETAPA_TRAMITES } from '../../common/constants/grafo.constants.js';
+import type { Persona } from '../../modules/area/area.types.js';
 import { alrededorDePieza, esCarril, piezaDe } from '../pieza.js';
 import { SIN_TABLERO } from '../plan.js';
 import type { ConexionPlan, NodoPlan, Plan } from '../plan.js';
@@ -43,23 +44,6 @@ export const COLOR_POR_EMOJI: Readonly<Record<string, string>> = {
   '🟣': '#a855f7',
   '🟡': '#eab308',
   '🔴': '#ef4444',
-};
-
-/**
- * D6: cómo se escribe cada persona en Todoist → un solo nodo PERSONA (C8: «Tomás» a secas = Carabantes, a confirmar).
- * «Thomas» es Tomás Soto, el senior de backend (Freddy, 2026-10-18). Va primero: se toma la primera persona con un
- * alias en el texto, y «Tomás Soto» contiene «Tomás».
- */
-export const ALIAS_PERSONAS: Readonly<Record<string, readonly string[]>> = {
-  'Tomás Soto': ['Tomás Soto', 'Tomas Soto', 'Thomas', 'Soto'],
-  'Tomás Carabantes': [
-    'Tomás Carabantes',
-    'Tomas Carabantes',
-    'Tomás',
-    'Tomas',
-    'Carabantes',
-  ],
-  Fabián: ['Fabián', 'Fabian'],
 };
 
 const PATRON_BLOQUEO = /BLOQUEO|esperando a/i;
@@ -122,12 +106,16 @@ function fasesDe(texto: string): string[] {
 const piezaDeTarea = (tarea: TareaTodoist) =>
   piezaDe(tarea.content, tarea.description);
 
-function personaBloqueante(content: string): string | null {
+/** D6: a quién espera un bloqueo → un solo nodo PERSONA. La primera persona del área con un alias en el texto. */
+function personaBloqueante(
+  content: string,
+  personas: readonly Persona[],
+): string | null {
   if (!PATRON_BLOQUEO.test(content)) return null;
-  const candidata = Object.entries(ALIAS_PERSONAS).find(([, alias]) =>
+  const candidata = personas.find(({ alias }) =>
     alias.some((a) => content.includes(a)),
   );
-  return candidata ? candidata[0] : null;
+  return candidata?.nombre ?? null;
 }
 
 export function traducir(
@@ -143,6 +131,8 @@ export function traducir(
    * externo, y solo se crea si falta. Sin él, el tablero sintetiza su propia «FASE 22» y queda duplicada (C10).
    */
   origenFases: string | null = null,
+  /** Cómo se escribe cada persona (`personas:` del refs.yaml del área): son del cliente, no del código. */
+  personas: readonly Persona[] = [],
 ): Plan {
   const nombreSeccion = new Map(secciones.map(({ id, name }) => [id, name]));
   const idsTareas = new Set(tareas.map(({ id }) => id));
@@ -206,7 +196,7 @@ export function traducir(
         tipo: TipoConexion.PERTENECE_A,
       };
     });
-    const persona = personaBloqueante(tarea.content);
+    const persona = personaBloqueante(tarea.content, personas);
     if (persona) {
       sintetizar({
         externoId: externoPersona(persona),

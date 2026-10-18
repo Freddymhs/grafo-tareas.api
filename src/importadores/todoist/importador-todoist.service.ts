@@ -5,6 +5,7 @@ import {
   etiquetaDeComplemento,
 } from '../../common/constants/index.js';
 import { PrismaService } from '../../database/prisma.service.js';
+import { AreaService } from '../../modules/area/area.service.js';
 import { EtapasService } from '../../modules/nodos/etapas.service.js';
 import { RolesService } from '../../modules/roles/roles.service.js';
 import { TodoistClient } from './todoist.client.js';
@@ -30,6 +31,7 @@ export class ImportadorTodoistService {
     private readonly prisma: PrismaService,
     private readonly etapas: EtapasService,
     private readonly roles: RolesService,
+    private readonly area: AreaService,
   ) {}
 
   /** Lee Todoist (nunca escribe allá), traduce, y aplica el plan en UNA transacción: queda entero o no queda. */
@@ -56,6 +58,7 @@ export class ImportadorTodoistService {
       cara,
       conTramite ? etiquetaTramite : null,
       origenFases,
+      this.area.personas(),
     );
     const base = { proyectoId, seco, cara, tareasLeidas: tareas.length };
     if (seco) {

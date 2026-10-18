@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import type { Persona } from '../../modules/area/area.types';
 import { externoCarril } from '../pieza';
 import { ORIGEN_TRACKER, externoHistoria } from '../plan';
 import {
@@ -23,7 +24,32 @@ const ETAPAS = [
   'CERRADO',
   '🔎 Precheck fin de sprint (archivadas)',
 ];
-const plan = traducir(tareas, secciones, ETAPAS);
+/** Las personas del área (en producción, `personas:` del refs.yaml): primero la que contiene a otra. */
+const PERSONAS: readonly Persona[] = [
+  {
+    nombre: 'Tomás Soto',
+    alias: ['Tomás Soto', 'Tomas Soto', 'Thomas', 'Soto'],
+  },
+  {
+    nombre: 'Tomás Carabantes',
+    alias: [
+      'Tomás Carabantes',
+      'Tomas Carabantes',
+      'Tomás',
+      'Tomas',
+      'Carabantes',
+    ],
+  },
+];
+const plan = traducir(
+  tareas,
+  secciones,
+  ETAPAS,
+  Cara.REAL,
+  null,
+  null,
+  PERSONAS,
+);
 
 const tarea = (patron: RegExp) => {
   const encontrada = tareas.find(({ content }) => patron.test(content));
@@ -186,7 +212,15 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
   it('D6 · «Thomas» es Tomás Soto, no Carabantes (Freddy, 2026-10-18: «backend: Thomas/Tomás Soto»)', () => {
     const base = tarea(/BLOQUEO A2/);
     const esperaDe = (content: string) =>
-      traducir([{ ...base, id: 'espera', content }], secciones, ETAPAS)
+      traducir(
+        [{ ...base, id: 'espera', content }],
+        secciones,
+        ETAPAS,
+        Cara.REAL,
+        null,
+        null,
+        PERSONAS,
+      )
         .conexiones.filter(
           ({ origenExternoId, tipo }) =>
             origenExternoId === 'espera' &&
@@ -228,7 +262,21 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
   });
 
   it('es determinista: el mismo fixture da el mismo plan', () => {
-    expect(traducir(tareas, secciones, ETAPAS)).toEqual(plan);
+    expect(
+      traducir(tareas, secciones, ETAPAS, Cara.REAL, null, null, PERSONAS),
+    ).toEqual(plan);
+  });
+
+  it('D6 · sin personas en el área, una espera no inventa una PERSONA (agnóstico: los nombres son del cliente)', () => {
+    const sinArea = traducir(tareas, secciones, ETAPAS);
+    expect(
+      sinArea.nodos.filter(({ tipo }) => tipo === TipoNodo.PERSONA),
+    ).toEqual([]);
+    expect(
+      sinArea.conexiones.filter(
+        ({ tipo }) => tipo === TipoConexion.ESPERA_RESPUESTA_DE,
+      ),
+    ).toEqual([]);
   });
 
   it('FASE 15 t3 · las tarjetas de cierre oficial («falta URL commit y Evidencias») llevan la etiqueta de trámite; sin catálogo, ninguna', () => {

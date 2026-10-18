@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { Cara, TipoNodo } from '@prisma/client';
+import { AreaService } from './../src/modules/area/area.service';
 import { NodosService } from './../src/modules/nodos/nodos.service';
 import { PulidoService } from './../src/modules/pulido/pulido.service';
 import { AppModule } from './../src/app.module';
@@ -34,9 +36,16 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
   };
 
   beforeAll(async () => {
+    // El área del fixture: las personas salen de su refs.yaml, no del código (D6).
+    const config = {
+      get: (clave: string) =>
+        clave === 'REFS_ARCHIVO' ? join(FIXTURES, 'refs.yaml') : undefined,
+    } as unknown as ConfigService;
     ctx.app = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(TodoistClient)
       .useValue(todoistFalso)
+      .overrideProvider(AreaService)
+      .useValue(new AreaService(config))
       .compile();
     await ctx.app.init();
     ctx.prisma = ctx.app.get(PrismaService);

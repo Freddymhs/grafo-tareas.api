@@ -6,3 +6,7 @@ escalera:
     { antes: contrastar con el código, personas: [Analista, Senior Back] }
   codigo: { personas: [Senior Back, Analista] }
 rituales: { daily: Daily, uno-a-uno: '1:1 con el líder' }
+# Cómo se escribe cada persona en las tarjetas: la primera con un alias en el texto la nombra.
+personas:
+  Senior Back: [Senior Back, el senior]
+  Analista: [Analista, la analista]

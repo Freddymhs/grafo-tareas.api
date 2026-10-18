@@ -42,7 +42,7 @@ todo funciona como antes.
 **Complementos (FASE 9, C11).** Lo que cuelga de un PBI sin ser un rol: el catálogo está en el mismo `roles.yaml`
 (`complementos:`), cada uno es un nodo DUDA/TAREA/DAILY_ITEM con la etiqueta `complemento:<clave>` y `PERTENECE_A` su PBI.
 Una duda frena a su PBI; `escalar` la pasa al siguiente de la escalera del área y `decidir` la cierra dejando la
-decisión. Escaleras y rituales salen del `refs.yaml` del área (`REFS_ARCHIVO`, `GET /area`). Las notas (no
+decisión. Escaleras, rituales y personas salen del `refs.yaml` del área (`REFS_ARCHIVO`, `GET /area`). Las notas (no
 accionables) no entran en `hoy-puedo` y `GET /nodos?notas=ocultar` las saca del tablero.
 
 `openapi.json` es el contrato versionado: la PWA y la VR generan sus tipos y hooks de ahí (Orval). Se regenera con
@@ -86,7 +86,8 @@ pnpm importar:todoist -- --proyecto <id-del-proyecto>          # aplica el plan 
 
 Lee con `TODOIST_API_KEY` (del entorno, nunca del repo) y **nunca escribe en Todoist**. Es idempotente: la segunda
 corrida actualiza y no duplica (`externo {todoist, id}`). Las reglas (secciones → estado, subtareas → el padre
-DEPENDE_DE las hijas, círculos → ramas, `FASE n` → nodo FASE, `BLOQUEO … esperando a <persona>` → ESPERA_RESPUESTA_DE)
+DEPENDE_DE las hijas, círculos → ramas, `FASE n` → nodo FASE, `BLOQUEO … esperando a <persona>` → ESPERA_RESPUESTA_DE,
+con la persona reconocida por sus alias del `personas:` del `refs.yaml` del área: sin esa clave, no se crea ninguna)
 están en `src/importadores/todoist/traducir.ts`, una función pura con test sobre un fixture real
 (`test/fixtures/todoist/`), y se decidieron en `../docs/backlog/FASE_3_IMPORTADOR_TODOIST.md`.
 

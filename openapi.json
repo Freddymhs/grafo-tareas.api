@@ -2433,7 +2433,7 @@
         "properties": {
           "quien": {
             "type": "string",
-            "example": "Tomás Carabantes"
+            "example": "Ana Pérez"
           },
           "donde": {
             "type": "string",

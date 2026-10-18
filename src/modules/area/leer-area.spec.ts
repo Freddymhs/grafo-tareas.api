@@ -22,7 +22,21 @@ describe('leerArea', () => {
   });
 
   it('un refs.yaml sin escalera ni rituales da un área vacía', () => {
-    expect(leerArea('proyecto: x\n')).toEqual({ escaleras: [], rituales: [] });
+    expect(leerArea('proyecto: x\n')).toEqual({
+      escaleras: [],
+      rituales: [],
+      personas: [],
+    });
+  });
+
+  it('lee las personas en el orden del archivo, cada una con sus alias (son del área, no del código)', () => {
+    expect(leerArea(TEXTO).personas).toEqual([
+      { nombre: 'Senior Back', alias: ['Senior Back', 'el senior'] },
+      { nombre: 'Analista', alias: ['Analista', 'la analista'] },
+    ]);
+    expect(() =>
+      leerArea(TEXTO.replace('[Analista, la analista]', '[]')),
+    ).toThrow('refs.yaml inválido');
   });
 
   it('una escalera desconocida o sin personas falla con el motivo', () => {

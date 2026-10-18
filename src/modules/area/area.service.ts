@@ -3,12 +3,12 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ValidationError } from '../../common/exceptions/index.js';
 import { ENV_KEYS } from '../../config/env.constants.js';
-import type { Area, Escalera, Ritual } from './area.types.js';
+import type { Area, Escalera, Persona, Ritual } from './area.types.js';
 import { leerArea } from './leer-area.js';
 
-const SIN_AREA: Area = { escaleras: [], rituales: [] };
+const SIN_AREA: Area = { escaleras: [], rituales: [], personas: [] };
 
-/** Escaleras y rituales del área, leídos una vez al arrancar (como los roles). */
+/** Escaleras, rituales y personas del área, leídos una vez al arrancar (como los roles). */
 @Injectable()
 export class AreaService {
   private readonly area: Area;
@@ -20,6 +20,11 @@ export class AreaService {
 
   todo(): Area {
     return this.area;
+  }
+
+  /** Sin `personas:` en refs.yaml, ninguna: un importador no inventa a nadie. */
+  personas(): readonly Persona[] {
+    return this.area.personas;
   }
 
   escalera(clave: string): Escalera {

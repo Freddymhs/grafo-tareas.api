@@ -1,4 +1,4 @@
-// `refs.yaml` (texto) → lo que la API usa de él: escaleras y rituales. Puro. El resto de claves del archivo
+// `refs.yaml` (texto) → lo que la API usa de él: escaleras, rituales y personas. Puro. El resto de claves del archivo
 // (tracker, tablero, repos…) no es de la API y se ignora.
 import * as Joi from 'joi';
 import { parse } from 'yaml';
@@ -13,6 +13,7 @@ interface EscaleraCruda {
 interface RefsCrudo {
   readonly escalera: Readonly<Record<string, EscaleraCruda>>;
   readonly rituales: Readonly<Record<string, string>>;
+  readonly personas: Readonly<Record<string, readonly string[]>>;
 }
 
 const refs = Joi.object<RefsCrudo>({
@@ -28,6 +29,9 @@ const refs = Joi.object<RefsCrudo>({
     .unknown(false)
     .default({}),
   rituales: Joi.object().pattern(Joi.string(), Joi.string()).default({}),
+  personas: Joi.object()
+    .pattern(Joi.string(), Joi.array().items(Joi.string()).min(1).required())
+    .default({}),
 });
 
 export function leerArea(texto: string): Area {
@@ -38,8 +42,12 @@ export function leerArea(texto: string): Area {
   if (resultado.error) {
     throw new Error(`refs.yaml inválido: ${resultado.error.message}`);
   }
-  const { escalera, rituales } = resultado.value;
+  const { escalera, rituales, personas } = resultado.value;
   return {
+    personas: Object.entries(personas).map(([nombre, alias]) => ({
+      nombre,
+      alias,
+    })),
     escaleras: Object.entries(escalera).map(([clave, e]) => ({
       clave,
       antes: e.antes ?? null,
