@@ -1,5 +1,6 @@
 import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
 import { CONEXIONES_BLOQUEANTES } from '../../common/constants/index.js';
+import { arbolDe, hijosPorPertenencia } from './arbol.js';
 
 /** La página de lo que ninguna HU trae (notas, retros, onboarding): va última. */
 export const PAGINA_SIN_HU = 'sin-hu';
@@ -28,26 +29,6 @@ export interface Pagina {
   readonly abiertas: number;
 }
 
-/** Lo que cuelga de `raiz` siguiendo PERTENECE_A al revés: sus FASE, las tarjetas de esas FASE, las piezas… */
-function arbolDe(
-  raiz: string,
-  hijosDe: ReadonlyMap<string, readonly string[]>,
-): Set<string> {
-  // El conjunto crece hasta que nada nuevo pertenece: es el estado del recorrido. Un ciclo no lo cuelga.
-  const visitados = new Set<string>([raiz]);
-  const pendientes = [raiz];
-  while (pendientes.length > 0) {
-    const actual = pendientes.pop() ?? raiz;
-    (hijosDe.get(actual) ?? [])
-      .filter((hijo) => !visitados.has(hijo))
-      .forEach((hijo) => {
-        visitados.add(hijo);
-        pendientes.push(hijo);
-      });
-  }
-  return visitados;
-}
-
 /**
  * Las páginas de la VR (FASE 15): una por HU, para trabajar una a la vez. Una página trae su árbol (lo que le
  * PERTENECE_A, directo o a través de una FASE) más lo que bloquea a lo suyo, un salto: la duda, la persona, la tarea de
@@ -60,12 +41,7 @@ export function calcularPaginas(
 ): Pagina[] {
   const porId = new Map(nodos.map((nodo) => [nodo.id, nodo]));
   const esRama = (id: string) => porId.get(id)?.tipo === TipoNodo.RAMA;
-  const hijosDe = new Map<string, string[]>();
-  conexiones
-    .filter(({ tipo }) => tipo === TipoConexion.PERTENECE_A)
-    .forEach(({ origenId, destinoId }) => {
-      hijosDe.set(destinoId, [...(hijosDe.get(destinoId) ?? []), origenId]);
-    });
+  const hijosDe = hijosPorPertenencia(conexiones);
   const bloqueantes = conexiones.filter(({ tipo }) =>
     CONEXIONES_BLOQUEANTES.includes(tipo),
   );

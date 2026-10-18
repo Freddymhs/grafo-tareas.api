@@ -8,6 +8,7 @@ import {
 import { NotFoundError } from '../../common/exceptions/index.js';
 import { RolesService } from '../roles/roles.service.js';
 import { calcularLibera } from './calcular-libera.js';
+import { calcularFamilia } from './calcular-familia.js';
 import { calcularPaginas } from './calcular-paginas.js';
 import {
   Bloqueo,
@@ -36,6 +37,12 @@ export class DerivadoService {
   async paginas() {
     const { nodos, conexiones } = await this.repository.paraPaginas();
     return calcularPaginas(nodos, conexiones);
+  }
+
+  /** Lo que la VR ilumina al seleccionar un nodo (FASE 15): él, su árbol y con qué se conecta directo. */
+  async familia(id: string) {
+    await this.asegurarExiste(id);
+    return { ids: calcularFamilia(id, await this.repository.enlaces()) };
   }
 
   async bloqueado(id: string) {

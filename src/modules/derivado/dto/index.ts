@@ -1,3 +1,4 @@
+export { FamiliaResponseDto } from './familia.dto';
 export { PaginaDto } from './pagina.dto';
 export {
   BloqueadoResponseDto,

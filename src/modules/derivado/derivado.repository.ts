@@ -216,6 +216,13 @@ export class DerivadoRepository {
     return { nodos, conexiones };
   }
 
+  /** Todas las conexiones, en lo justo para recorrer el árbol (la familia de un nodo, FASE 15). */
+  async enlaces() {
+    return this.prisma.conexion.findMany({
+      select: { origenId: true, destinoId: true, tipo: true },
+    });
+  }
+
   async resumenes(ids: readonly string[]): Promise<NodoResumen[]> {
     return this.prisma.nodo.findMany({
       where: { id: { in: [...ids] } },

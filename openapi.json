@@ -662,6 +662,45 @@
         "tags": ["Derivado"]
       }
     },
+    "/api/v1/nodos/{id}/familia": {
+      "get": {
+        "operationId": "DerivadoController_familia",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamiliaResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Lo que se ilumina al seleccionar un nodo en la VR: él, lo que cuelga de él y con qué se conecta directo",
+        "tags": ["Derivado"]
+      }
+    },
     "/api/v1/nodos/{id}/bloqueado": {
       "get": {
         "operationId": "DerivadoController_bloqueado",
@@ -1668,6 +1707,19 @@
           }
         },
         "required": ["id", "titulo", "historiaId", "nodos", "abiertas"]
+      },
+      "FamiliaResponseDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "description": "El nodo, lo que cuelga de él (su árbol por PERTENECE_A) y con qué se conecta directo",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["ids"]
       },
       "BloqueadoResponseDto": {
         "type": "object",

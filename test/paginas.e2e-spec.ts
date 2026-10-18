@@ -115,4 +115,31 @@ describe('Las páginas de la VR (e2e, FASE 15) — una por HU, la API decide', (
     });
     expect(paginas.flatMap(({ nodos }) => nodos)).not.toContain(rama);
   });
+
+  it('GET /nodos/:id/familia: la HU ilumina su árbol; la tarjeta, con qué se conecta; un id que no existe da 404', async () => {
+    const familia = async (id: string) => {
+      const res = await ctx.app.inject({
+        method: 'GET',
+        url: `${PREFIJO}/nodos/${id}/familia`,
+      });
+      return {
+        status: res.statusCode,
+        ids: (
+          (JSON.parse(res.body) as Envuelto<{ ids?: string[] }>).data?.ids ?? []
+        ).sort(),
+      };
+    };
+    const { hu, fase, tarjeta, duda, rama } = ctx.ids;
+
+    expect(await familia(hu)).toEqual({
+      status: 200,
+      ids: [hu, fase, tarjeta].sort(),
+    });
+    expect((await familia(tarjeta)).ids).toEqual(
+      [tarjeta, fase, rama, duda].sort(),
+    );
+    expect((await familia('00000000-0000-4000-8000-000000000000')).status).toBe(
+      404,
+    );
+  });
 });

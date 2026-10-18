@@ -7,6 +7,7 @@ import {
   BloqueadoResponseDto,
   DiaQueryDto,
   DiaResponseDto,
+  FamiliaResponseDto,
   LiberaResponseDto,
   PaginaDto,
 } from './dto/index.js';
@@ -42,6 +43,17 @@ export class DerivadoController {
   @ApiResponse({ status: 200, type: [PaginaDto] })
   paginas() {
     return this.service.paginas();
+  }
+
+  @Get('nodos/:id/familia')
+  @ApiOperation({
+    summary:
+      'Lo que se ilumina al seleccionar un nodo en la VR: él, lo que cuelga de él y con qué se conecta directo',
+  })
+  @ApiResponse({ status: 200, type: FamiliaResponseDto })
+  @ApiResponse({ status: 404, type: ErrorResponseDto })
+  familia(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.familia(id);
   }
 
   @Get('nodos/:id/bloqueado')
