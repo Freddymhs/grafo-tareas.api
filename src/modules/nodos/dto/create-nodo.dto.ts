@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { EstadoNodo, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo, TipoNodo } from '@prisma/client';
 import {
   ArrayUnique,
   IsDateString,
@@ -41,6 +41,16 @@ export class CreateNodoDto {
   @IsOptional()
   @IsEnum(EstadoNodo)
   estado?: EstadoNodo;
+
+  @ApiPropertyOptional({
+    enum: Cara,
+    default: Cara.REAL,
+    description:
+      'De qué cara de su HU es (FASE 17): REAL = lo que se trabaja; PLAN = lo que se intuyó (Draft trabajo)',
+  })
+  @IsOptional()
+  @IsEnum(Cara)
+  cara?: Cara;
 
   @ApiPropertyOptional({
     example: 'ENTENDIMIENTO',

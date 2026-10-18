@@ -1,7 +1,8 @@
-import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
 import {
   PAGINA_SIN_HU,
   calcularPaginas,
+  paginaDelPlan,
   type ConexionDePagina,
   type NodoDePagina,
 } from './calcular-paginas';
@@ -10,7 +11,8 @@ const nodo = (
   id: string,
   tipo: TipoNodo,
   estado: EstadoNodo = EstadoNodo.ABIERTO,
-): NodoDePagina => ({ id, tipo, titulo: id, estado });
+  cara: Cara = Cara.REAL,
+): NodoDePagina => ({ id, tipo, titulo: id, estado, cara });
 const conexion = (
   origenId: string,
   tipo: TipoConexion,
@@ -137,5 +139,70 @@ describe('calcularPaginas — una página por HU (FASE 15, «la API decide»)', 
     );
     expect(conCiclo.map(({ id }) => id)).toEqual(['HU 1']);
     expect([...conCiclo[0].nodos].sort()).toEqual(['HU 1', 'x', 'y']);
+  });
+});
+
+describe('calcularPaginas — las dos caras de cada HU (FASE 17): lo real y el plan', () => {
+  const { PLAN } = Cara;
+  const { ABIERTO } = EstadoNodo;
+  const paginas = calcularPaginas(
+    [
+      ...nodos,
+      nodo('pieza-plan', TipoNodo.TAREA, ABIERTO, PLAN),
+      nodo('hija-plan', TipoNodo.TAREA, ABIERTO, PLAN),
+      nodo('plan-en-fase', TipoNodo.TAREA, ABIERTO, PLAN),
+      nodo('plan-suelto', TipoNodo.TAREA, ABIERTO, PLAN),
+    ],
+    [
+      ...conexiones,
+      conexion('pieza-plan', PERTENECE_A, 'HU 20379'),
+      conexion('hija-plan', PERTENECE_A, 'pieza-plan'),
+      conexion('plan-en-fase', PERTENECE_A, 'fase-b'),
+      conexion('pieza-plan', DEPENDE_DE, 'tarjeta-a'),
+    ],
+  );
+  const pagina = (id: string) => paginas.find((p) => p.id === id);
+  const contenido = (id: string) => [...(pagina(id)?.nodos ?? [])].sort();
+  const planDe20379 = paginaDelPlan('HU 20379');
+
+  it('la HU con plan tiene dos páginas seguidas del mismo libro, primero la real; sin plan, solo la real', () => {
+    expect(paginas.map(({ id, libro, cara }) => ({ id, libro, cara }))).toEqual(
+      [
+        { id: 'HU 19565', libro: 'HU 19565', cara: Cara.REAL },
+        { id: 'HU 20379', libro: 'HU 20379', cara: Cara.REAL },
+        { id: planDe20379, libro: 'HU 20379', cara: PLAN },
+        { id: PAGINA_SIN_HU, libro: PAGINA_SIN_HU, cara: Cara.REAL },
+        { id: paginaDelPlan(PAGINA_SIN_HU), libro: PAGINA_SIN_HU, cara: PLAN },
+      ],
+    );
+    expect(pagina(planDe20379)).toMatchObject({
+      titulo: 'HU 20379',
+      historiaId: 'HU 20379',
+    });
+  });
+
+  it('lo real no trae nada del plan, ni lo que cuelga de una FASE real', () => {
+    expect(contenido('HU 20379')).toEqual([
+      'HU 20379',
+      'fase-b',
+      'hija-de-b',
+      'tarjeta-b',
+    ]);
+  });
+
+  it('el plan trae la HU, sus piezas (aunque cuelguen de una FASE) y lo que cuelga de ellas; lo que necesitan cruza de cara, a un salto', () => {
+    expect(contenido(planDe20379)).toEqual([
+      'HU 20379',
+      'hija-plan',
+      'pieza-plan',
+      'plan-en-fase',
+      'tarjeta-a',
+    ]);
+    expect(pagina(planDe20379)?.abiertas).toBe(4);
+  });
+
+  it('una pieza del plan sin HU va a «Sin HU · plan», no a «Sin HU»', () => {
+    expect(contenido(PAGINA_SIN_HU)).toEqual(['nota-suelta']);
+    expect(contenido(paginaDelPlan(PAGINA_SIN_HU))).toEqual(['plan-suelto']);
   });
 });

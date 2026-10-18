@@ -14,6 +14,7 @@ const RESUMEN = {
   tipo: true,
   titulo: true,
   estado: true,
+  cara: true,
   color: true,
   etapa: true,
   etiquetas: true,
@@ -207,7 +208,13 @@ export class DerivadoRepository {
   async paraPaginas() {
     const [nodos, conexiones] = await Promise.all([
       this.prisma.nodo.findMany({
-        select: { id: true, tipo: true, titulo: true, estado: true },
+        select: {
+          id: true,
+          tipo: true,
+          titulo: true,
+          estado: true,
+          cara: true,
+        },
       }),
       this.prisma.conexion.findMany({
         select: { origenId: true, destinoId: true, tipo: true },

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
 import { ORIGEN_TRACKER, externoHistoria } from '../plan';
 import {
   externoCarril,
@@ -70,6 +70,22 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
       plan.nodos.find(({ externoId }) => externoId === id);
     expect(nodo(conFecha.id)?.fechaOrigen).toBe('2026-10-14T19:50:39.673000Z');
     expect(nodo(sinFecha.id)?.fechaOrigen ?? null).toBeNull();
+  });
+
+  it('la cara del proyecto va a cada tarea (FASE 17); lo sintetizado es de todos y no la lleva', () => {
+    const delDraft = traducir(tareas, secciones, ETAPAS, Cara.PLAN);
+    const [deTareas, sintetizados] = [
+      delDraft.nodos.filter(({ tipo }) => tipo === TipoNodo.TAREA),
+      delDraft.nodos.filter(({ tipo }) => tipo !== TipoNodo.TAREA),
+    ];
+    expect(deTareas.every(({ cara }) => cara === Cara.PLAN)).toBe(true);
+    expect(sintetizados.length).toBeGreaterThan(0);
+    expect(sintetizados.every(({ cara }) => cara === undefined)).toBe(true);
+    expect(
+      plan.nodos
+        .filter(({ tipo }) => tipo === TipoNodo.TAREA)
+        .every(({ cara }) => cara === Cara.REAL),
+    ).toBe(true);
   });
 
   it('D2 · CERRADO en las secciones cerradas; ABIERTO en las demás', () => {

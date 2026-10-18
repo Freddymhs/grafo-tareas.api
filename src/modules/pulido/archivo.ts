@@ -1,4 +1,5 @@
 import {
+  Cara,
   EstadoNodo,
   Prisma,
   TipoConexion,
@@ -23,6 +24,7 @@ export function nodoParaArchivo(nodo: Nodo): Prisma.InputJsonObject {
     titulo: nodo.titulo,
     descripcion: nodo.descripcion,
     estado: nodo.estado,
+    cara: nodo.cara,
     color: nodo.color,
     externoOrigen: nodo.externoOrigen,
     externoId: nodo.externoId,
@@ -72,6 +74,8 @@ export function nodoDelArchivo(archivo: unknown): Omit<Nodo, 'updatedAt'> {
     titulo,
     descripcion: texto(archivo['descripcion']),
     estado,
+    // Los descartes de antes de la FASE 17 no la guardaron: eran todos de lo real.
+    cara: esDe(Cara, archivo['cara']) ? archivo['cara'] : Cara.REAL,
     color: texto(archivo['color']),
     externoOrigen: texto(archivo['externoOrigen']),
     externoId: texto(archivo['externoId']),

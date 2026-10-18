@@ -4,6 +4,7 @@ const antes = {
   titulo: 'preguntas',
   descripcion: null,
   estado: 'ABIERTO',
+  cara: 'PLAN',
   etapa: 'ENTENDIMIENTO',
   etiquetas: ['retro'],
   prioridad: 4,
@@ -28,6 +29,12 @@ describe('diferencias — qué anota la bitácora de una edición (FASE 16)', ()
   it('lo que no viene no cuenta; la misma fecha en otro formato tampoco', () => {
     expect(diferencias(antes, { vence: '2026-10-20' })).toEqual([]);
     expect(diferencias(antes, {})).toEqual([]);
+  });
+
+  it('pasar del plan a lo real queda en la bitácora (FASE 17)', () => {
+    expect(diferencias(antes, { cara: 'REAL' })).toEqual([
+      { campo: 'cara', antes: 'PLAN', despues: 'REAL' },
+    ]);
   });
 
   it('vaciar un campo es un cambio', () => {

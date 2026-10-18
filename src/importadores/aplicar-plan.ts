@@ -89,9 +89,11 @@ export async function guardarNodo(
   // La fecha de origen solo se escribe si la fuente la trae: sin ella, el nodo conserva la suya.
   const fechaOrigen = nodo.fechaOrigen ? new Date(nodo.fechaOrigen) : null;
   const conFecha = fechaOrigen ? { fechaOrigen } : {};
+  // La cara (FASE 17), igual: la trae solo el importador que sabe de qué proyecto vino el nodo.
+  const conCara = nodo.cara ? { cara: nodo.cara } : {};
   const existente = await tx.nodo.findUnique({
     where: { externoOrigen_externoId: externo },
-    select: { id: true, fechaOrigen: true, ...CAMPOS_DEL_PLAN },
+    select: { id: true, fechaOrigen: true, cara: true, ...CAMPOS_DEL_PLAN },
   });
   if (existente) {
     const editados = new Set(
@@ -118,18 +120,24 @@ export async function guardarNodo(
     };
     const otraFecha =
       fechaOrigen !== null && !mismaFecha(existente.fechaOrigen, fechaOrigen);
+    // Movido de cara en el grafo (bitácora EDICION): el grafo manda, como con los demás campos.
+    const cara = editados.has('cara')
+      ? existente.cara
+      : (nodo.cara ?? existente.cara);
+    const otraCara = cara !== existente.cara;
     const cambio =
-      !nodo.soloSiFalta && (!iguales(existente, finales) || otraFecha);
+      !nodo.soloSiFalta &&
+      (!iguales(existente, finales) || otraFecha || otraCara);
     if (cambio) {
       await tx.nodo.update({
         where: { id: existente.id },
-        data: { ...finales, ...conFecha },
+        data: { ...finales, ...conFecha, cara },
       });
     }
     return { descartado: false, id: existente.id, creado: false, cambio };
   }
   const nuevo = await tx.nodo.create({
-    data: { ...datos, ...conFecha, tipo: nodo.tipo, ...externo },
+    data: { ...datos, ...conFecha, ...conCara, tipo: nodo.tipo, ...externo },
     select: { id: true },
   });
   return { descartado: false, id: nuevo.id, creado: true, cambio: true };

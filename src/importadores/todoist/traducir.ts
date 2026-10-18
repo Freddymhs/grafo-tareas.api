@@ -1,6 +1,6 @@
 // Todoist → plan de nodos y conexiones. Función PURA: no toca red ni base; el test corre sobre un fixture real.
 // Las reglas D1-D8 están en docs/backlog/FASE_3_IMPORTADOR_TODOIST.md y las decidió Freddy el 2026-10-16.
-import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
 
 export interface TareaTodoist {
   readonly id: string;
@@ -172,6 +172,8 @@ export function traducir(
   tareas: readonly TareaTodoist[],
   secciones: readonly SeccionTodoist[],
   etapas: readonly string[],
+  /** La cara del proyecto (FASE 17): «🚀 Draft trabajo» es el plan; lo demás, lo real. Solo la llevan sus tareas. */
+  cara: Cara = Cara.REAL,
 ): Plan {
   const nombreSeccion = new Map(secciones.map(({ id, name }) => [id, name]));
   const idsTareas = new Set(tareas.map(({ id }) => id));
@@ -197,6 +199,7 @@ export function traducir(
       prioridad: prioridadDe(tarea),
       vence: tarea.due?.date ?? null,
       fechaOrigen: tarea.added_at ?? null,
+      cara,
     };
   });
 

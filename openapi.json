@@ -1218,6 +1218,10 @@
             "type": "string",
             "enum": ["ABIERTO", "CERRADO"]
           },
+          "cara": {
+            "type": "string",
+            "enum": ["REAL", "PLAN"]
+          },
           "color": {
             "type": "string",
             "nullable": true
@@ -1284,6 +1288,7 @@
           "tipo",
           "titulo",
           "estado",
+          "cara",
           "etiquetas",
           "fechaOrigen",
           "createdAt",
@@ -1410,6 +1415,12 @@
             "enum": ["ABIERTO", "CERRADO"],
             "default": "ABIERTO"
           },
+          "cara": {
+            "type": "string",
+            "enum": ["REAL", "PLAN"],
+            "default": "REAL",
+            "description": "De qué cara de su HU es (FASE 17): REAL = lo que se trabaja; PLAN = lo que se intuyó (Draft trabajo)"
+          },
           "etapa": {
             "type": "string",
             "example": "ENTENDIMIENTO",
@@ -1465,6 +1476,12 @@
             "type": "string",
             "enum": ["ABIERTO", "CERRADO"],
             "default": "ABIERTO"
+          },
+          "cara": {
+            "type": "string",
+            "enum": ["REAL", "PLAN"],
+            "default": "REAL",
+            "description": "De qué cara de su HU es (FASE 17): REAL = lo que se trabaja; PLAN = lo que se intuyó (Draft trabajo)"
           },
           "etiquetas": {
             "example": ["daily", "propuesta"],
@@ -1726,6 +1743,10 @@
             "type": "string",
             "enum": ["ABIERTO", "CERRADO"]
           },
+          "cara": {
+            "type": "string",
+            "enum": ["REAL", "PLAN"]
+          },
           "color": {
             "type": "string",
             "nullable": true
@@ -1750,7 +1771,7 @@
             "format": "date"
           }
         },
-        "required": ["id", "tipo", "titulo", "estado", "etiquetas"]
+        "required": ["id", "tipo", "titulo", "estado", "cara", "etiquetas"]
       },
       "EnCursoDto": {
         "type": "object",
@@ -1859,7 +1880,15 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "El id de la HU, o «sin-hu»"
+            "description": "El id de la HU, o «sin-hu»; la cara plan lleva «:plan» al final"
+          },
+          "libro": {
+            "type": "string",
+            "description": "El libro: el id de la página real. Las dos caras de una HU comparten libro"
+          },
+          "cara": {
+            "type": "string",
+            "enum": ["REAL", "PLAN"]
           },
           "titulo": {
             "type": "string"
@@ -1880,7 +1909,15 @@
             "description": "Tareas abiertas de la página"
           }
         },
-        "required": ["id", "titulo", "historiaId", "nodos", "abiertas"]
+        "required": [
+          "id",
+          "libro",
+          "cara",
+          "titulo",
+          "historiaId",
+          "nodos",
+          "abiertas"
+        ]
       },
       "FamiliaResponseDto": {
         "type": "object",
@@ -2158,6 +2195,10 @@
             "type": "string",
             "enum": ["ABIERTO", "CERRADO"]
           },
+          "cara": {
+            "type": "string",
+            "enum": ["REAL", "PLAN"]
+          },
           "color": {
             "type": "string",
             "nullable": true
@@ -2229,6 +2270,7 @@
           "tipo",
           "titulo",
           "estado",
+          "cara",
           "etiquetas",
           "fechaOrigen",
           "createdAt",

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Cara } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
 import { EtapasService } from '../../modules/nodos/etapas.service.js';
 import { TodoistClient } from './todoist.client.js';
@@ -9,6 +10,8 @@ import { Plan, traducir } from './traducir.js';
 export interface ResumenImportacion {
   readonly proyectoId: string;
   readonly seco: boolean;
+  /** La cara que tomaron sus tareas (FASE 17). */
+  readonly cara: Cara;
   readonly tareasLeidas: number;
   /** Con los descartados en el grafo (FASE 16) y las conexiones que no se crean por tocarlos. */
   readonly nodos: ConteoAplicado['nodos'];
@@ -27,13 +30,14 @@ export class ImportadorTodoistService {
   async importar(
     proyectoId: string,
     seco: boolean,
+    cara: Cara = Cara.REAL,
   ): Promise<ResumenImportacion> {
     const [tareas, secciones] = await Promise.all([
       this.todoist.tareas(proyectoId),
       this.todoist.secciones(proyectoId),
     ]);
-    const plan = traducir(tareas, secciones, this.etapas.lista());
-    const base = { proyectoId, seco, tareasLeidas: tareas.length };
+    const plan = traducir(tareas, secciones, this.etapas.lista(), cara);
+    const base = { proyectoId, seco, cara, tareasLeidas: tareas.length };
     if (seco) {
       return {
         ...base,

@@ -23,6 +23,13 @@ enum EstadoNodo {
   CERRADO
 }
 
+/// FASE 17: de qué cara de su HU es un nodo. REAL = lo que se trabaja; PLAN = lo que se intuyó que había que hacer (las
+/// piezas del reparto). La decide el proyecto de origen al importar, y se mueve editando el nodo.
+enum Cara {
+  REAL
+  PLAN
+}
+
 /// DEPENDE_DE, ESPERA_RESPUESTA_DE y BLOQUEADA_POR bloquean al origen mientras el destino siga ABIERTO.
 enum TipoConexion {
   DEPENDE_DE
@@ -38,6 +45,7 @@ model Nodo {
   titulo        String
   descripcion   String?
   estado        EstadoNodo @default(ABIERTO)
+  cara          Cara       @default(REAL)
   /// Solo los nodos RAMA: el color de la rama, en hex (#rrggbb).
   color         String?
   /// De dónde se importó (texto libre: todoist, azure, github…) y su id allá. La API no conoce la lista (C3).

@@ -1,4 +1,10 @@
-import { EstadoNodo, TipoConexion, TipoNodo, type Nodo } from '@prisma/client';
+import {
+  Cara,
+  EstadoNodo,
+  TipoConexion,
+  TipoNodo,
+  type Nodo,
+} from '@prisma/client';
 import {
   conexionesDelArchivo,
   conexionesParaArchivo,
@@ -12,6 +18,7 @@ const nodo: Nodo = {
   titulo: 'preguntas',
   descripcion: 'Archivada el 06-10',
   estado: EstadoNodo.CERRADO,
+  cara: Cara.PLAN,
   color: null,
   externoOrigen: 'todoist',
   externoId: '6hhMVChrX8gjMWwc',
@@ -33,6 +40,12 @@ describe('el archivo de un descarte (FASE 16) — se puede deshacer tal cual', (
     const { updatedAt, ...sinActualizado } = nodo;
     expect(updatedAt).toBeInstanceOf(Date);
     expect(vuelto).toEqual(sinActualizado);
+  });
+
+  it('un descarte de antes de la FASE 17 (sin cara) vuelve a lo real', () => {
+    const { cara, ...sinCara } = nodoParaArchivo(nodo);
+    expect(cara).toBe(Cara.PLAN);
+    expect(nodoDelArchivo(sinCara).cara).toBe(Cara.REAL);
   });
 
   it('un archivo dañado no se restaura a ciegas', () => {

@@ -20,10 +20,14 @@ export function hijosPorPertenencia(
   return hijosDe;
 }
 
-/** Lo que cuelga de `raiz` siguiendo PERTENECE_A al revés: sus FASE, las tarjetas de esas FASE, las piezas… */
+/**
+ * Lo que cuelga de `raiz` siguiendo PERTENECE_A al revés: sus FASE, las tarjetas de esas FASE, las piezas… `entra`
+ * corta el recorrido: un hijo que no entra no se visita, y lo que cuelga solo de él tampoco (FASE 17, la cara real).
+ */
 export function arbolDe(
   raiz: string,
   hijosDe: ReadonlyMap<string, readonly string[]>,
+  entra: (id: string) => boolean = () => true,
 ): Set<string> {
   // El conjunto crece hasta que nada nuevo pertenece: es el estado del recorrido. Un ciclo no lo cuelga.
   const visitados = new Set<string>([raiz]);
@@ -31,7 +35,7 @@ export function arbolDe(
   while (pendientes.length > 0) {
     const actual = pendientes.pop() ?? raiz;
     (hijosDe.get(actual) ?? [])
-      .filter((hijo) => !visitados.has(hijo))
+      .filter((hijo) => !visitados.has(hijo) && entra(hijo))
       .forEach((hijo) => {
         visitados.add(hijo);
         pendientes.push(hijo);

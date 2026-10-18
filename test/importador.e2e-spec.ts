@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
-import { TipoNodo } from '@prisma/client';
+import { Cara, TipoNodo } from '@prisma/client';
 import { NodosService } from './../src/modules/nodos/nodos.service';
 import { PulidoService } from './../src/modules/pulido/pulido.service';
 import { AppModule } from './../src/app.module';
@@ -169,5 +169,42 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
       where: { id: aEditar.id },
     });
     expect(editado.titulo).toBe('Editado en el grafo');
+  });
+
+  it('la cara la da el proyecto (FASE 17): el Draft entra al plan, al pasar a TRABAJO vuelve a lo real, y lo movido en el grafo no se pisa', async () => {
+    const tareasEn = (cara: Cara) =>
+      ctx.prisma.nodo.count({
+        where: { externoOrigen: 'todoist', tipo: TipoNodo.TAREA, cara },
+      });
+    await ctx.importador.importar('DRAFT', false, Cara.PLAN);
+    const total = await ctx.prisma.nodo.count({
+      where: { externoOrigen: 'todoist', tipo: TipoNodo.TAREA },
+    });
+    expect(total).toBeGreaterThan(0);
+    expect(await tareasEn(Cara.PLAN)).toBe(total);
+    // Lo sintetizado (HU, ramas, personas) es de todos: no es plan.
+    expect(
+      await ctx.prisma.nodo.count({
+        where: { tipo: { not: TipoNodo.TAREA }, cara: Cara.PLAN },
+      }),
+    ).toBe(0);
+
+    const movida = await ctx.prisma.nodo.findFirstOrThrow({
+      where: { externoOrigen: 'todoist', tipo: TipoNodo.TAREA },
+      orderBy: { externoId: 'asc' },
+    });
+    await ctx.app.get(NodosService).update(movida.id, {
+      cara: Cara.REAL,
+      motivo: 'ya es trabajo',
+    });
+    await ctx.importador.importar('DRAFT', false, Cara.PLAN);
+    expect(
+      (await ctx.prisma.nodo.findUniqueOrThrow({ where: { id: movida.id } }))
+        .cara,
+    ).toBe(Cara.REAL);
+    expect(await tareasEn(Cara.PLAN)).toBe(total - 1);
+
+    await ctx.importador.importar('TRABAJO', false);
+    expect(await tareasEn(Cara.REAL)).toBe(total);
   });
 });

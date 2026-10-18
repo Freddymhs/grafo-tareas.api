@@ -8,6 +8,8 @@ export const CAMPOS_EDITABLES = [
   'prioridad',
   'vence',
   'color',
+  // FASE 17: pasar una pieza del plan a lo real (o al revés) es una edición más.
+  'cara',
 ] as const;
 export type CampoEditable = (typeof CAMPOS_EDITABLES)[number];
 

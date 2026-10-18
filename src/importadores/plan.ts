@@ -1,4 +1,4 @@
-import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
 
 /** Lo que todo importador produce antes de escribir: nodos y conexiones por `externoId`, aplicables en una transacción. */
 export interface NodoPlan {
@@ -14,6 +14,8 @@ export interface NodoPlan {
   readonly vence: string | null;
   /** Cuándo nació en su fuente (ISO). Sin ella, el nodo conserva la que ya tiene (o la de su creación acá). */
   readonly fechaOrigen?: string | null;
+  /** De qué cara de su HU es (FASE 17): la trae quien sabe de qué proyecto vino. Sin ella, el nodo conserva la suya. */
+  readonly cara?: Cara;
   /** Un nodo que varios importadores comparten (la HU) lleva su propio origen en vez del del plan. */
   readonly origen?: string;
   /** Solo se crea si no existe: quien sabe menos (el tablero, que solo ve «HU 20379») no pisa al que sabe más. */

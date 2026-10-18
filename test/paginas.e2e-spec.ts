@@ -5,7 +5,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { TipoConexion, TipoNodo } from '@prisma/client';
+import { Cara, TipoConexion, TipoNodo } from '@prisma/client';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/database/prisma.service';
 import { AreaService } from './../src/modules/area/area.service';
@@ -17,6 +17,8 @@ interface Envuelto<T> {
 }
 interface Pagina {
   id: string;
+  libro: string;
+  cara: Cara;
   titulo: string;
   historiaId: string | null;
   nodos: string[];
@@ -70,6 +72,15 @@ describe('Las páginas de la VR (e2e, FASE 15) — una por HU, la API decide', (
     const duda = await crear(TipoNodo.DUDA, '¿el limit acepta 1 a 100?');
     const rama = await crear(TipoNodo.RAMA, '🔵');
     const nota = await crear(TipoNodo.TAREA, '01-oct · retro');
+    // FASE 17: una pieza del Draft de la HU 20379 es su plan, no su trabajo.
+    const pieza = await prisma.nodo.create({
+      data: {
+        tipo: TipoNodo.TAREA,
+        titulo: '2️⃣ 20379 · 0.4 · Catálogo',
+        cara: Cara.PLAN,
+      },
+    });
+    await conectar(pieza.id, TipoConexion.PERTENECE_A, otra.id);
     await conectar(fase.id, TipoConexion.PERTENECE_A, hu.id);
     await conectar(tarjeta.id, TipoConexion.PERTENECE_A, fase.id);
     await conectar(tarjeta.id, TipoConexion.PERTENECE_A, rama.id);
@@ -82,6 +93,7 @@ describe('Las páginas de la VR (e2e, FASE 15) — una por HU, la API decide', (
       duda: duda.id,
       rama: rama.id,
       nota: nota.id,
+      pieza: pieza.id,
     };
   });
 
@@ -89,16 +101,21 @@ describe('Las páginas de la VR (e2e, FASE 15) — una por HU, la API decide', (
     await ctx.app.close();
   });
 
-  it('GET /derivado/paginas: la HU con su árbol y su duda; la otra HU sola; «Sin HU» con la nota', async () => {
+  it('GET /derivado/paginas: la HU con su árbol y su duda; la otra HU sola y su plan aparte; «Sin HU» con la nota', async () => {
     const res = await ctx.app.inject({
       method: 'GET',
       url: `${PREFIJO}/derivado/paginas`,
     });
     const paginas = (JSON.parse(res.body) as Envuelto<Pagina[]>).data;
-    const { hu, otra, fase, tarjeta, duda, rama, nota } = ctx.ids;
+    const { hu, otra, fase, tarjeta, duda, rama, nota, pieza } = ctx.ids;
 
     expect(res.statusCode).toBe(200);
-    expect(paginas.map(({ id }) => id)).toEqual([hu, otra, 'sin-hu']);
+    expect(paginas.map(({ id }) => id)).toEqual([
+      hu,
+      otra,
+      `${otra}:plan`,
+      'sin-hu',
+    ]);
     expect([...paginas[0].nodos].sort()).toEqual(
       [hu, fase, tarjeta, duda].sort(),
     );
@@ -107,8 +124,10 @@ describe('Las páginas de la VR (e2e, FASE 15) — una por HU, la API decide', (
       historiaId: hu,
       abiertas: 1,
     });
-    expect(paginas[1].nodos).toEqual([otra]);
-    expect(paginas[2]).toMatchObject({
+    expect(paginas[1]).toMatchObject({ nodos: [otra], cara: Cara.REAL });
+    expect(paginas[2]).toMatchObject({ libro: otra, cara: Cara.PLAN });
+    expect([...paginas[2].nodos].sort()).toEqual([otra, pieza].sort());
+    expect(paginas[3]).toMatchObject({
       historiaId: null,
       nodos: [nota],
       abiertas: 1,

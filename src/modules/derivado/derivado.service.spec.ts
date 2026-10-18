@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { EstadoNodo, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo, TipoNodo } from '@prisma/client';
 import { NotFoundError } from '../../common/exceptions/domain.exceptions';
 import { DerivadoRepository, NodoResumen } from './derivado.repository';
 import { RolesService } from '../roles/roles.service';
@@ -10,6 +10,7 @@ const resumen = (id: string, tipo: TipoNodo = TipoNodo.TAREA): NodoResumen => ({
   tipo,
   titulo: `Nodo ${id}`,
   estado: EstadoNodo.ABIERTO,
+  cara: Cara.REAL,
   color: null,
   etapa: null,
   etiquetas: [],

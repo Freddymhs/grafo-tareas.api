@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { EstadoNodo, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo, TipoNodo } from '@prisma/client';
 
 export class NodoResumenDto {
   @ApiProperty({ format: 'uuid' })
@@ -13,6 +13,9 @@ export class NodoResumenDto {
 
   @ApiProperty({ enum: EstadoNodo })
   estado!: EstadoNodo;
+
+  @ApiProperty({ enum: Cara })
+  cara!: Cara;
 
   @ApiPropertyOptional({ nullable: true, type: String })
   color!: string | null;
