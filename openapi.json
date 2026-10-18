@@ -779,6 +779,150 @@
         "tags": ["Derivado"]
       }
     },
+    "/api/v1/nodos/{id}/descartar": {
+      "post": {
+        "operationId": "PulidoController_descartar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DescartarDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DescartadoResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Descartar un nodo: se archiva entero con sus conexiones (se puede deshacer) y la importación no lo revive",
+        "tags": ["Pulido"]
+      }
+    },
+    "/api/v1/descartes/{nodoId}/restaurar": {
+      "post": {
+        "operationId": "PulidoController_restaurar",
+        "parameters": [
+          {
+            "name": "nodoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestaurarDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestauradoResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Deshacer un descarte: el nodo vuelve con su id y sus conexiones",
+        "tags": ["Pulido"]
+      }
+    },
+    "/api/v1/descartes": {
+      "get": {
+        "operationId": "PulidoController_descartes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DescarteResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Lo descartado al pulir, lo más reciente primero",
+        "tags": ["Pulido"]
+      }
+    },
+    "/api/v1/cambios": {
+      "get": {
+        "operationId": "PulidoController_cambios",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CambioResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "La bitácora del pulido: cada edición, descarte y restauración, con su motivo",
+        "tags": ["Pulido"]
+      }
+    },
     "/api/v1/nodos/{id}/complementos": {
       "get": {
         "operationId": "ComplementosController_deUnNodo",
@@ -1331,6 +1475,10 @@
             "example": "ENTENDIMIENTO",
             "nullable": true,
             "description": "Columna del tablero: una de GET /etapas. null = vuelve a la entrada"
+          },
+          "motivo": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -1762,6 +1910,143 @@
           }
         },
         "required": ["directos", "cadena"]
+      },
+      "DescartarDto": {
+        "type": "object",
+        "properties": {
+          "motivo": {
+            "type": "string",
+            "example": "Sin contenido: una sesión la archivó sin decir qué preguntas eran",
+            "description": "Por qué se descarta: queda en la bitácora para el contraste final"
+          }
+        },
+        "required": ["motivo"]
+      },
+      "DescartadoResponseDto": {
+        "type": "object",
+        "properties": {
+          "nodoId": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "conexionesArchivadas": {
+            "type": "number",
+            "description": "Las conexiones que se archivaron con el nodo"
+          }
+        },
+        "required": ["nodoId", "titulo", "motivo", "conexionesArchivadas"]
+      },
+      "RestaurarDto": {
+        "type": "object",
+        "properties": {
+          "motivo": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "RestauradoResponseDto": {
+        "type": "object",
+        "properties": {
+          "nodoId": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "conexionesRecuperadas": {
+            "type": "number"
+          },
+          "conexionesPerdidas": {
+            "type": "number",
+            "description": "Las que no vuelven: su otro extremo ya no existe"
+          }
+        },
+        "required": [
+          "nodoId",
+          "titulo",
+          "conexionesRecuperadas",
+          "conexionesPerdidas"
+        ]
+      },
+      "DescarteResponseDto": {
+        "type": "object",
+        "properties": {
+          "nodoId": {
+            "type": "string"
+          },
+          "externoOrigen": {
+            "type": "string",
+            "nullable": true
+          },
+          "externoId": {
+            "type": "string",
+            "nullable": true
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": ["nodoId", "titulo", "motivo", "createdAt"]
+      },
+      "CambioResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nodoId": {
+            "type": "string"
+          },
+          "externoOrigen": {
+            "type": "string",
+            "nullable": true
+          },
+          "externoId": {
+            "type": "string",
+            "nullable": true
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": ["EDICION", "DESCARTE", "RESTAURACION"]
+          },
+          "campo": {
+            "type": "string",
+            "nullable": true
+          },
+          "antes": {
+            "type": "string",
+            "nullable": true
+          },
+          "despues": {
+            "type": "string",
+            "nullable": true
+          },
+          "motivo": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": ["id", "nodoId", "titulo", "tipo", "createdAt"]
       },
       "ComplementoResponseDto": {
         "type": "object",

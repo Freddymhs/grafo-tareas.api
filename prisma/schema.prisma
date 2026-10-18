@@ -82,3 +82,49 @@ model Conexion {
   @@index([destinoId])
   @@map("conexiones")
 }
+
+/// Lo descartado al pulir el grafo (FASE 16): el nodo entero y sus conexiones, para verlo y deshacerlo. Lo descartado
+/// NO está en `nodos`, así que ninguna lectura lo ve; el importador no lo revive (mismo externo).
+model Descarte {
+  id            String   @id @default(uuid())
+  nodoId        String   @unique @map("nodo_id")
+  externoOrigen String?  @map("externo_origen")
+  externoId     String?  @map("externo_id")
+  titulo        String
+  /// La fila del nodo tal cual estaba (con su posición): restaurar la vuelve a crear con el mismo id.
+  nodo          Json
+  /// Sus conexiones (las dos direcciones): al restaurar vuelven las que todavía tienen su otro extremo.
+  conexiones    Json
+  motivo        String
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@unique([externoOrigen, externoId])
+  @@map("descartes")
+}
+
+enum TipoCambio {
+  EDICION
+  DESCARTE
+  RESTAURACION
+}
+
+/// La bitácora del pulido (FASE 16): qué cambió en el grafo respecto de su fuente, y por qué. Sin llave al nodo, a
+/// propósito: sobrevive a que se descarte. Al final, el contraste Todoist ↔ grafo sale de acá.
+model Cambio {
+  id            String     @id @default(uuid())
+  nodoId        String     @map("nodo_id")
+  externoOrigen String?    @map("externo_origen")
+  externoId     String?    @map("externo_id")
+  titulo        String
+  tipo          TipoCambio
+  /// En una EDICION: el campo que cambió, y su valor antes y después (como texto).
+  campo         String?
+  antes         String?
+  despues       String?
+  motivo        String?
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  @@index([nodoId])
+  @@index([externoOrigen, externoId])
+  @@map("cambios")
+}

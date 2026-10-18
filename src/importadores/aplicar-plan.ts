@@ -1,12 +1,32 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, TipoCambio } from '@prisma/client';
 import { ConexionPlan, NodoPlan } from './plan.js';
 
 export type Tx = Prisma.TransactionClient;
 
 export interface ConteoAplicado {
-  readonly nodos: { readonly nuevos: number; readonly actualizados: number };
-  readonly conexiones: { readonly nuevas: number; readonly existentes: number };
+  readonly nodos: {
+    readonly nuevos: number;
+    readonly actualizados: number;
+    /** Descartados al pulir el grafo (FASE 16): la fuente los sigue trayendo y no se reviven. */
+    readonly descartados: number;
+  };
+  readonly conexiones: {
+    readonly nuevas: number;
+    readonly existentes: number;
+    /** Las que tocan un nodo descartado: no se crean. */
+    readonly omitidas: number;
+  };
 }
+
+/** Lo que pasó con un nodo del plan: guardado (con su id), o descartado en el grafo y por eso no tocado. */
+export type NodoGuardado =
+  | {
+      readonly descartado: false;
+      readonly id: string;
+      readonly creado: boolean;
+      readonly cambio: boolean;
+    }
+  | { readonly descartado: true };
 
 const CAMPOS_DEL_PLAN = {
   titulo: true,
@@ -35,6 +55,9 @@ function iguales(guardado: DatosDelPlan, nuevo: DatosDelPlan): boolean {
 }
 
 /**
+ * El grafo manda sobre lo que se pulió en él (FASE 16): un nodo descartado no se revive, y un campo editado en el grafo
+ * (bitácora EDICION) conserva su valor aunque la fuente traiga otro.
+ *
  * Idempotente por `externo` (C3, D8): la segunda corrida no duplica, y **solo escribe lo que cambió**. Escribir
  * todo en cada corrida dejaba `updatedAt` con la fecha de la importación en todos los nodos, y «qué terminé hoy»
  * (FASE 10) no se podía leer: las 59 cerradas tenían fecha de hoy.
@@ -43,11 +66,16 @@ export async function guardarNodo(
   tx: Tx,
   externoOrigen: string,
   nodo: NodoPlan,
-) {
+): Promise<NodoGuardado> {
   const externo = {
     externoOrigen: nodo.origen ?? externoOrigen,
     externoId: nodo.externoId,
   };
+  const descartado = await tx.descarte.findUnique({
+    where: { externoOrigen_externoId: externo },
+    select: { id: true },
+  });
+  if (descartado) return { descartado: true };
   const datos: DatosDelPlan = {
     titulo: nodo.titulo,
     descripcion: nodo.descripcion,
@@ -66,23 +94,45 @@ export async function guardarNodo(
     select: { id: true, fechaOrigen: true, ...CAMPOS_DEL_PLAN },
   });
   if (existente) {
+    const editados = new Set(
+      (
+        await tx.cambio.findMany({
+          where: { nodoId: existente.id, tipo: TipoCambio.EDICION },
+          select: { campo: true },
+        })
+      ).map(({ campo }) => campo),
+    );
+    const respetar = <K extends keyof DatosDelPlan>(
+      campo: K,
+    ): DatosDelPlan[K] =>
+      editados.has(campo) ? existente[campo] : datos[campo];
+    const finales: DatosDelPlan = {
+      titulo: respetar('titulo'),
+      descripcion: respetar('descripcion'),
+      estado: respetar('estado'),
+      color: respetar('color'),
+      etapa: respetar('etapa'),
+      etiquetas: respetar('etiquetas'),
+      prioridad: respetar('prioridad'),
+      vence: respetar('vence'),
+    };
     const otraFecha =
       fechaOrigen !== null && !mismaFecha(existente.fechaOrigen, fechaOrigen);
     const cambio =
-      !nodo.soloSiFalta && (!iguales(existente, datos) || otraFecha);
+      !nodo.soloSiFalta && (!iguales(existente, finales) || otraFecha);
     if (cambio) {
       await tx.nodo.update({
         where: { id: existente.id },
-        data: { ...datos, ...conFecha },
+        data: { ...finales, ...conFecha },
       });
     }
-    return { id: existente.id, creado: false, cambio };
+    return { descartado: false, id: existente.id, creado: false, cambio };
   }
   const nuevo = await tx.nodo.create({
     data: { ...datos, ...conFecha, tipo: nodo.tipo, ...externo },
     select: { id: true },
   });
-  return { id: nuevo.id, creado: true, cambio: true };
+  return { descartado: false, id: nuevo.id, creado: true, cambio: true };
 }
 
 export async function guardarConexion(
@@ -122,15 +172,28 @@ export async function aplicarPlan(
   conexiones: readonly ConexionPlan[],
 ): Promise<ConteoAplicado & { idPorExterno: ReadonlyMap<string, string> }> {
   const idPorExterno = new Map<string, string>();
-  const conteoNodos = { nuevos: 0, actualizados: 0 };
+  const descartados = new Set<string>();
+  const conteoNodos = { nuevos: 0, actualizados: 0, descartados: 0 };
   for (const nodo of nodos) {
-    const { id, creado, cambio } = await guardarNodo(tx, origen, nodo);
-    idPorExterno.set(nodo.externoId, id);
-    if (creado) conteoNodos.nuevos += 1;
-    else if (cambio) conteoNodos.actualizados += 1;
+    const guardado = await guardarNodo(tx, origen, nodo);
+    if (guardado.descartado) {
+      descartados.add(nodo.externoId);
+      conteoNodos.descartados += 1;
+      continue;
+    }
+    idPorExterno.set(nodo.externoId, guardado.id);
+    if (guardado.creado) conteoNodos.nuevos += 1;
+    else if (guardado.cambio) conteoNodos.actualizados += 1;
   }
-  const conteoConexiones = { nuevas: 0, existentes: 0 };
+  const conteoConexiones = { nuevas: 0, existentes: 0, omitidas: 0 };
   for (const conexion of conexiones) {
+    const tocaUnDescartado =
+      descartados.has(conexion.origenExternoId) ||
+      descartados.has(conexion.destinoExternoId);
+    if (tocaUnDescartado) {
+      conteoConexiones.omitidas += 1;
+      continue;
+    }
     const creada = await guardarConexion(tx, idPorExterno, conexion);
     if (creada) conteoConexiones.nuevas += 1;
     else conteoConexiones.existentes += 1;

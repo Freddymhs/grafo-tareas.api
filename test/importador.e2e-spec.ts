@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TipoNodo } from '@prisma/client';
+import { NodosService } from './../src/modules/nodos/nodos.service';
+import { PulidoService } from './../src/modules/pulido/pulido.service';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/database/prisma.service';
 import { ImportadorTodoistService } from './../src/importadores/todoist/importador-todoist.service';
@@ -41,6 +43,8 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
     ctx.importador = ctx.app.get(ImportadorTodoistService);
     await ctx.prisma.conexion.deleteMany();
     await ctx.prisma.nodo.deleteMany();
+    await ctx.prisma.descarte.deleteMany();
+    await ctx.prisma.cambio.deleteMany();
   });
 
   afterAll(async () => {
@@ -135,5 +139,35 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
       where: { tipo: TipoNodo.PERSONA },
     });
     expect(personas).toBe(1);
+  });
+
+  it('lo pulido en el grafo manda (FASE 16): un descarte no revive y una edición no se pisa', async () => {
+    await ctx.importador.importar('P1', false);
+    const [aDescartar, aEditar] = await ctx.prisma.nodo.findMany({
+      where: { externoOrigen: 'todoist', tipo: TipoNodo.TAREA },
+      orderBy: { externoId: 'asc' },
+      take: 2,
+    });
+    await ctx.app
+      .get(PulidoService)
+      .descartar(aDescartar.id, 'prueba: sin contenido');
+    await ctx.app.get(NodosService).update(aEditar.id, {
+      titulo: 'Editado en el grafo',
+      motivo: 'más claro',
+    });
+
+    const otra = await ctx.importador.importar('P1', false);
+
+    expect(otra.nodos.descartados).toBe(1);
+    expect(otra.nodos.nuevos).toBe(0);
+    expect(
+      await ctx.prisma.nodo.count({
+        where: { externoId: aDescartar.externoId },
+      }),
+    ).toBe(0);
+    const editado = await ctx.prisma.nodo.findUniqueOrThrow({
+      where: { id: aEditar.id },
+    });
+    expect(editado.titulo).toBe('Editado en el grafo');
   });
 });

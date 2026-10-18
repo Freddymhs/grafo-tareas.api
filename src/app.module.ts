@@ -14,6 +14,7 @@ import { DerivadoModule } from './modules/derivado/derivado.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { ComplementosModule } from './modules/complementos/complementos.module';
 import { AreaModule } from './modules/area/area.module';
+import { PulidoModule } from './modules/pulido/pulido.module';
 import { ImportadoresModule } from './importadores/todoist/importadores.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
@@ -56,6 +57,7 @@ import { GLOBAL_VALIDATION_PIPE } from './common/pipes/validation.pipe';
     ConexionesModule,
     RamasModule,
     DerivadoModule,
+    PulidoModule,
     RolesModule,
     ComplementosModule,
     AreaModule,

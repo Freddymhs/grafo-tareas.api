@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service.js';
 import { EtapasService } from '../../modules/nodos/etapas.service.js';
 import { TodoistClient } from './todoist.client.js';
-import { aplicarPlan, Tx } from '../aplicar-plan.js';
+import { aplicarPlan, ConteoAplicado, Tx } from '../aplicar-plan.js';
 import { simular } from '../simulacro.js';
 import { Plan, traducir } from './traducir.js';
 
@@ -10,8 +10,9 @@ export interface ResumenImportacion {
   readonly proyectoId: string;
   readonly seco: boolean;
   readonly tareasLeidas: number;
-  readonly nodos: { readonly nuevos: number; readonly actualizados: number };
-  readonly conexiones: { readonly nuevas: number; readonly existentes: number };
+  /** Con los descartados en el grafo (FASE 16) y las conexiones que no se crean por tocarlos. */
+  readonly nodos: ConteoAplicado['nodos'];
+  readonly conexiones: ConteoAplicado['conexiones'];
 }
 
 @Injectable()

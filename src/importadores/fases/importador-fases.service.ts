@@ -314,8 +314,11 @@ export class ImportadorFasesService {
     };
     const vigentes: string[] = [];
     for (const duda of dudas) {
-      const { id, creado, cambio } = await guardarNodo(tx, origen, duda);
+      const guardada = await guardarNodo(tx, origen, duda);
       vigentes.push(duda.externoId);
+      // Descartada al pulir el grafo (FASE 16): no se revive ni se conecta.
+      if (guardada.descartado) continue;
+      const { id, creado, cambio } = guardada;
       if (creado) conteo.nuevos += 1;
       else if (cambio) conteo.actualizados += 1;
       const tarea = await tx.nodo.findFirst({

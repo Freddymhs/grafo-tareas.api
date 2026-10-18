@@ -3,11 +3,13 @@ import {
   EstadoNodo,
   Nodo,
   Prisma,
+  TipoCambio,
   TipoConexion,
   TipoNodo,
 } from '@prisma/client';
 import { BaseRepository } from '../../database/base.repository.js';
 import { PrismaService } from '../../database/prisma.service.js';
+import type { Diferencia } from '../pulido/diferencias.js';
 import type { FiltroRol } from '../roles/roles.service.js';
 import { PosicionNodoDto } from './dto/index.js';
 
@@ -94,6 +96,35 @@ export class NodosRepository extends BaseRepository<
 
   protected get delegate() {
     return this.prisma.nodo;
+  }
+
+  /** Actualiza y anota en la bitácora (FASE 16) cada campo que cambió, con su motivo: todo o nada. */
+  async actualizarConBitacora(
+    nodo: Nodo,
+    data: Prisma.NodoUpdateInput,
+    cambios: readonly Diferencia[],
+    motivo: string | null,
+  ): Promise<Nodo> {
+    const { id, externoOrigen, externoId, titulo } = nodo;
+    return this.prisma.$transaction(async (tx) => {
+      const actualizado = await tx.nodo.update({ where: { id }, data });
+      if (cambios.length > 0) {
+        await tx.cambio.createMany({
+          data: cambios.map(({ campo, antes, despues }) => ({
+            nodoId: id,
+            externoOrigen,
+            externoId,
+            titulo,
+            tipo: TipoCambio.EDICION,
+            campo,
+            antes,
+            despues,
+            motivo,
+          })),
+        });
+      }
+      return actualizado;
+    });
   }
 
   async listar(

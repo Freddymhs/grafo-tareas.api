@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { diferencias } from '../pulido/diferencias.js';
 import { TipoNodo } from '@prisma/client';
 import { EtapasService } from './etapas.service.js';
 import { RolesService } from '../roles/roles.service.js';
@@ -77,7 +78,14 @@ export class NodosService {
     const nodo = await this.findOne(id);
     this.validarColor(nodo.tipo, dto.color);
     this.etapas.validar(dto.etapa);
-    return this.repository.update(id, dto);
+    // FASE 16: lo que se edita en el grafo queda en la bitácora, y el importador ya no lo pisa con lo de la fuente.
+    const { motivo, ...cambios } = dto;
+    return this.repository.actualizarConBitacora(
+      nodo,
+      cambios,
+      diferencias(nodo, cambios),
+      motivo ?? null,
+    );
   }
 
   async remove(id: string) {

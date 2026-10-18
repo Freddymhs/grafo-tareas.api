@@ -1,0 +1,55 @@
+import { EstadoNodo, TipoConexion, TipoNodo, type Nodo } from '@prisma/client';
+import {
+  conexionesDelArchivo,
+  conexionesParaArchivo,
+  nodoDelArchivo,
+  nodoParaArchivo,
+} from './archivo';
+
+const nodo: Nodo = {
+  id: '4cd9e2e3-1d61-4fbd-ab4a-b3884e4f6238',
+  tipo: TipoNodo.TAREA,
+  titulo: 'preguntas',
+  descripcion: 'Archivada el 06-10',
+  estado: EstadoNodo.CERRADO,
+  color: null,
+  externoOrigen: 'todoist',
+  externoId: '6hhMVChrX8gjMWwc',
+  etapa: '🔎 Precheck fin de sprint (archivadas)',
+  etiquetas: ['retro'],
+  prioridad: 4,
+  vence: new Date('2026-10-20T00:00:00.000Z'),
+  posX: 1.5,
+  posY: 1.6,
+  posZ: -2.5,
+  fechaOrigen: new Date('2026-10-07T01:02:32.147Z'),
+  createdAt: new Date('2026-10-17T03:52:23.449Z'),
+  updatedAt: new Date('2026-10-18T01:00:00.000Z'),
+};
+
+describe('el archivo de un descarte (FASE 16) — se puede deshacer tal cual', () => {
+  it('ida y vuelta: el nodo vuelve igual (mismo id, fechas, posición), salvo updatedAt', () => {
+    const vuelto = nodoDelArchivo(nodoParaArchivo(nodo));
+    const { updatedAt, ...sinActualizado } = nodo;
+    expect(updatedAt).toBeInstanceOf(Date);
+    expect(vuelto).toEqual(sinActualizado);
+  });
+
+  it('un archivo dañado no se restaura a ciegas', () => {
+    expect(() => nodoDelArchivo({ titulo: 'sin id' })).toThrow();
+    expect(() => nodoDelArchivo('texto')).toThrow();
+  });
+
+  it('las conexiones van y vuelven', () => {
+    const conexiones = [
+      {
+        origenId: 'a',
+        destinoId: nodo.id,
+        tipo: TipoConexion.DEPENDE_DE,
+      },
+    ];
+    expect(conexionesDelArchivo(conexionesParaArchivo(conexiones))).toEqual(
+      conexiones,
+    );
+  });
+});
