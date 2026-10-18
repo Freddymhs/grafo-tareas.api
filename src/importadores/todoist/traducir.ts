@@ -82,6 +82,13 @@ export const COLORES_CARRIL: readonly string[] = [
 
 const PATRON_BLOQUEO = /BLOQUEO|esperando a/i;
 const PATRON_FASE = /\bFASE ?(\d+)\b/g;
+/**
+ * FASE 15 tarea 3 (Freddy, 2026-10-18: «más un estorbo y carga cognitiva que datos valiosos»): una tarjeta que habla
+ * del cierre oficial de una task —URL commit, Evidencias, la wiki— es un trámite, y la VR puede apagarlos. Medido en
+ * producción: 12 de 144 títulos, ninguno falso; «wiki» sola no, porque las retros del 01-oct la nombran.
+ */
+const PATRON_TRAMITE =
+  /\bURL commit\b|\bEvidencias\b|\b(?:editar|actualizar) la wiki\b/i;
 const PRIORIDAD_TODOIST_MAXIMA = 4;
 
 const clave = (texto: string) =>
@@ -174,6 +181,8 @@ export function traducir(
   etapas: readonly string[],
   /** La cara del proyecto (FASE 17): «🚀 Draft trabajo» es el plan; lo demás, lo real. Solo la llevan sus tareas. */
   cara: Cara = Cara.REAL,
+  /** La etiqueta del complemento trámite; null si el catálogo del área no lo tiene (ninguna tarjeta se marca). */
+  etiquetaTramite: string | null = null,
 ): Plan {
   const nombreSeccion = new Map(secciones.map(({ id, name }) => [id, name]));
   const idsTareas = new Set(tareas.map(({ id }) => id));
@@ -187,6 +196,10 @@ export function traducir(
     // C9: la sección es la etapa del tablero si está en la lista; si no, queda al pie de la descripción.
     const etapa = seccion !== null && etapas.includes(seccion) ? seccion : null;
     const pieza = piezaDe(tarea);
+    const tramite =
+      etiquetaTramite !== null && PATRON_TRAMITE.test(tarea.content)
+        ? [etiquetaTramite]
+        : [];
     return {
       externoId: tarea.id,
       tipo: TipoNodo.TAREA,
@@ -195,7 +208,7 @@ export function traducir(
       estado: estadoDe(tarea, seccion),
       color: null,
       etapa,
-      etiquetas: [...tarea.labels, ...(pieza?.etiquetas ?? [])],
+      etiquetas: [...tarea.labels, ...(pieza?.etiquetas ?? []), ...tramite],
       prioridad: prioridadDe(tarea),
       vence: tarea.due?.date ?? null,
       fechaOrigen: tarea.added_at ?? null,

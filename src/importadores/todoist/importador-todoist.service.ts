@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Cara } from '@prisma/client';
+import {
+  CLAVE_TRAMITE,
+  etiquetaDeComplemento,
+} from '../../common/constants/index.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { EtapasService } from '../../modules/nodos/etapas.service.js';
+import { RolesService } from '../../modules/roles/roles.service.js';
 import { TodoistClient } from './todoist.client.js';
 import { aplicarPlan, ConteoAplicado, Tx } from '../aplicar-plan.js';
 import { simular } from '../simulacro.js';
@@ -24,6 +29,7 @@ export class ImportadorTodoistService {
     private readonly todoist: TodoistClient,
     private readonly prisma: PrismaService,
     private readonly etapas: EtapasService,
+    private readonly roles: RolesService,
   ) {}
 
   /** Lee Todoist (nunca escribe allá), traduce, y aplica el plan en UNA transacción: queda entero o no queda. */
@@ -36,7 +42,18 @@ export class ImportadorTodoistService {
       this.todoist.tareas(proyectoId),
       this.todoist.secciones(proyectoId),
     ]);
-    const plan = traducir(tareas, secciones, this.etapas.lista(), cara);
+    // Las tarjetas de cierre oficial se marcan como trámite solo si el catálogo del área tiene ese complemento.
+    const etiquetaTramite = etiquetaDeComplemento(CLAVE_TRAMITE);
+    const conTramite = this.roles
+      .etiquetasDeComplementos()
+      .includes(etiquetaTramite);
+    const plan = traducir(
+      tareas,
+      secciones,
+      this.etapas.lista(),
+      cara,
+      conTramite ? etiquetaTramite : null,
+    );
     const base = { proyectoId, seco, cara, tareasLeidas: tareas.length };
     if (seco) {
       return {

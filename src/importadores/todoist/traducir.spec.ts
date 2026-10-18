@@ -188,6 +188,28 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
   it('es determinista: el mismo fixture da el mismo plan', () => {
     expect(traducir(tareas, secciones, ETAPAS)).toEqual(plan);
   });
+
+  it('FASE 15 t3 · las tarjetas de cierre oficial («falta URL commit y Evidencias») llevan la etiqueta de trámite; sin catálogo, ninguna', () => {
+    const ETIQUETA = 'complemento:tramite';
+    const conTramite = traducir(tareas, secciones, ETAPAS, Cara.REAL, ETIQUETA);
+    const marcadas = conTramite.nodos.filter(({ etiquetas }) =>
+      etiquetas.includes(ETIQUETA),
+    );
+    expect(marcadas.length).toBeGreaterThan(0);
+    marcadas.forEach(({ titulo }) =>
+      expect(titulo).toMatch(/URL commit|Evidencias|la wiki/),
+    );
+    const cierre = tarea(/FASE 22 .*falta URL commit/);
+    expect(nodo(cierre.id)?.etiquetas).not.toContain(ETIQUETA);
+    expect(
+      conTramite.nodos.find((n) => n.externoId === cierre.id)?.etiquetas,
+    ).toContain(ETIQUETA);
+    // Una feature que no habla del cierre no es trámite aunque el catálogo lo tenga.
+    const feature = tarea(/Bloqueo sin Unidad Organizacional/);
+    expect(
+      conTramite.nodos.find((n) => n.externoId === feature.id)?.etiquetas,
+    ).not.toContain(ETIQUETA);
+  });
 });
 
 describe('R4 (FASE 13) · las piezas del Draft (fixture real: 3 tarjetas de la HU 20379)', () => {
