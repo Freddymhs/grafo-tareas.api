@@ -8,5 +8,6 @@ import { DerivadoService } from './derivado.service.js';
   imports: [RolesModule],
   controllers: [DerivadoController],
   providers: [DerivadoService, DerivadoRepository],
+  exports: [DerivadoService],
 })
 export class DerivadoModule {}

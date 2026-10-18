@@ -22,6 +22,10 @@ export interface SeccionTodoist {
 }
 
 export type { ConexionPlan, NodoPlan, Plan } from '../plan.js';
+import {
+  ETIQUETA_CARRIL,
+  etiquetaDeRonda,
+} from '../../common/constants/grafo.constants.js';
 import { externoHistoria, nodoHistoria, SIN_TABLERO } from '../plan.js';
 import type { ConexionPlan, NodoPlan, Plan } from '../plan.js';
 
@@ -156,7 +160,7 @@ function piezaDe(tarea: TareaTodoist): Pieza | null {
     hu,
     etiquetas: [
       ETIQUETA_PIEZA,
-      ...(ronda ? [`ronda:${ronda}`] : []),
+      ...(ronda ? [etiquetaDeRonda(ronda)] : []),
       ...(estado ? [estado] : []),
     ],
   };
@@ -278,6 +282,8 @@ export function traducir(
         tipo: TipoNodo.RAMA,
         titulo: `${pieza.hu} · ${carril}`,
         ...SIN_TABLERO,
+        // La API arma el tablero del plan con una columna por carril: lo reconoce por esta etiqueta, no por su id.
+        etiquetas: [ETIQUETA_CARRIL],
         color: colorDeCarril(carril),
       });
     }

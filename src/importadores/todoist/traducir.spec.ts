@@ -271,7 +271,7 @@ describe('R4 (FASE 13) · las piezas del Draft (fixture real: 3 tarjetas de la H
     });
   });
 
-  it('cada carril es una RAMA «HU · carril» con color, una sola vez aunque tenga varias piezas', () => {
+  it('cada carril es una RAMA «HU · carril» con color y la etiqueta carril (la columna del plan), una sola vez aunque tenga varias piezas', () => {
     const carriles = planDraft.nodos.filter(({ externoId }) =>
       externoId.startsWith('carril:'),
     );
@@ -281,6 +281,9 @@ describe('R4 (FASE 13) · las piezas del Draft (fixture real: 3 tarjetas de la H
     ]);
     expect(
       carriles.every(({ tipo, color }) => tipo === TipoNodo.RAMA && color),
+    ).toBe(true);
+    expect(
+      carriles.every(({ etiquetas }) => etiquetas.includes('carril')),
     ).toBe(true);
   });
 

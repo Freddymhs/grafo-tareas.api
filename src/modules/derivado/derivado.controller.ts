@@ -9,7 +9,9 @@ import {
   DiaResponseDto,
   FamiliaResponseDto,
   LiberaResponseDto,
+  CarrilDto,
   PaginaDto,
+  PlanQueryDto,
 } from './dto/index.js';
 
 /** Lo que se calcula sobre el grafo. Vive solo acá: la PWA y la VR lo muestran, no lo recalculan (C1). */
@@ -43,6 +45,16 @@ export class DerivadoController {
   @ApiResponse({ status: 200, type: [PaginaDto] })
   paginas() {
     return this.service.paginas();
+  }
+
+  @Get('derivado/plan')
+  @ApiOperation({
+    summary:
+      'El tablero del plan: una columna por carril con sus piezas abiertas, en orden de ronda (?libro= una HU)',
+  })
+  @ApiResponse({ status: 200, type: [CarrilDto] })
+  plan(@Query() { libro }: PlanQueryDto) {
+    return this.service.plan(libro);
   }
 
   @Get('nodos/:id/familia')

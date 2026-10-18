@@ -36,6 +36,16 @@ export class ListarNodosDto extends PaginationQueryDto {
   cara?: Cara;
 
   @ApiPropertyOptional({
+    example: 'sin-hu',
+    description:
+      'Solo los nodos de esta HU (el libro de GET /derivado/paginas: el id de la HU, o «sin-hu»), en la cara pedida (por defecto REAL)',
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  libro?: string;
+
+  @ApiPropertyOptional({
     example: 'ENTENDIMIENTO',
     description: 'Columna del tablero; vacía ("") = sin etapa',
   })

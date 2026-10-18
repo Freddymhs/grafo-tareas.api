@@ -6,6 +6,7 @@ import {
   ValidationError,
 } from '../../common/exceptions/domain.exceptions';
 import { EtapasService } from './etapas.service';
+import { DerivadoService } from '../derivado/derivado.service';
 import { RolesService } from '../roles/roles.service';
 import { NodosRepository } from './nodos.repository';
 import { NodosService } from './nodos.service';
@@ -50,6 +51,7 @@ describe('NodosService', () => {
         { provide: NodosRepository, useValue: mockRepository },
         { provide: EtapasService, useValue: mockEtapas },
         { provide: RolesService, useValue: { filtroDe: jest.fn() } },
+        { provide: DerivadoService, useValue: { nodosDe: jest.fn() } },
       ],
     }).compile();
     return module.get(NodosService);

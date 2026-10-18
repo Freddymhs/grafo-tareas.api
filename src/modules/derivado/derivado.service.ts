@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Cara } from '@prisma/client';
 import {
   CLAVE_TRAMITE,
   HORAS_DEL_PARTE,
@@ -10,6 +11,7 @@ import { RolesService } from '../roles/roles.service.js';
 import { calcularLibera } from './calcular-libera.js';
 import { calcularFamilia } from './calcular-familia.js';
 import { calcularPaginas } from './calcular-paginas.js';
+import { calcularTableroPlan } from './calcular-tablero-plan.js';
 import {
   Bloqueo,
   DerivadoRepository,
@@ -37,6 +39,34 @@ export class DerivadoService {
   async paginas() {
     const { nodos, conexiones } = await this.repository.paraPaginas();
     return calcularPaginas(nodos, conexiones);
+  }
+
+  /** Los nodos de una cara de un libro (la página que muestra la VR): con ellos la web filtra el tablero por HU. */
+  async nodosDe(libro: string, cara: Cara): Promise<readonly string[]> {
+    const pagina = (await this.paginas()).find(
+      (p) => p.libro === libro && p.cara === cara,
+    );
+    return pagina?.nodos ?? [];
+  }
+
+  /**
+   * El tablero del plan (FASE 17): una columna por carril con sus piezas abiertas en orden de ronda. Sin `libro`, el plan
+   * de todas las HU.
+   */
+  async plan(libro: string | undefined) {
+    const delPlan = (await this.paginas()).filter(
+      (p) => p.cara === Cara.PLAN && (libro === undefined || p.libro === libro),
+    );
+    const ids = [...new Set(delPlan.flatMap(({ nodos }) => nodos))];
+    const { nodos, conexiones } = await this.repository.paraTableroPlan(ids);
+    const porId = new Map(nodos.map((nodo) => [nodo.id, nodo]));
+    return calcularTableroPlan(nodos, conexiones).map((carril) => ({
+      ...carril,
+      nodos: carril.nodos.flatMap((id) => {
+        const nodo = porId.get(id);
+        return nodo ? [nodo] : [];
+      }),
+    }));
   }
 
   /** Lo que la VR ilumina al seleccionar un nodo (FASE 15): él, su árbol y con qué se conecta directo. */

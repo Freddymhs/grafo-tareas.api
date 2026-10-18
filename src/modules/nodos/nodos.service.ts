@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { diferencias } from '../pulido/diferencias.js';
-import { TipoNodo } from '@prisma/client';
+import { Cara, TipoNodo } from '@prisma/client';
+import { DerivadoService } from '../derivado/derivado.service.js';
 import { EtapasService } from './etapas.service.js';
 import { RolesService } from '../roles/roles.service.js';
 import {
@@ -24,6 +25,7 @@ export class NodosService {
     private readonly repository: NodosRepository,
     private readonly etapas: EtapasService,
     private readonly roles: RolesService,
+    private readonly derivado: DerivadoService,
   ) {}
 
   async findAll(query: ListarNodosDto) {
@@ -33,6 +35,7 @@ export class NodosService {
       tipo,
       estado,
       cara,
+      libro,
       etapa,
       etiqueta,
       rama,
@@ -43,10 +46,17 @@ export class NodosService {
     const porRol = rol === undefined ? undefined : this.roles.filtroDe(rol);
     const sinEtiquetas =
       notas === undefined ? undefined : this.roles.etiquetasDeNotas();
+    // La HU la resuelve la misma regla de las páginas de la VR (FASE 15): un tablero por HU sin otra lógica. Con
+    // `libro`, la cara elige la página (la del plan trae su HU, que es real) y no filtra aparte.
+    const ids =
+      libro === undefined
+        ? undefined
+        : await this.derivado.nodosDe(libro, cara ?? Cara.REAL);
     const filtro = {
       tipo,
       estado,
-      cara,
+      cara: libro === undefined ? cara : undefined,
+      ids,
       etapa,
       etiqueta,
       rama,

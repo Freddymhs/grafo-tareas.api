@@ -61,3 +61,11 @@ export const ORIGEN_RITUAL = 'ritual';
 export const OCULTAR_NOTAS = 'ocultar';
 export const etiquetaDeComplemento = (clave: string) =>
   `${PREFIJO_COMPLEMENTO}${clave}`;
+/**
+ * El reparto de una HU (FASE 17): cada pieza del plan dice su ronda (1 cimiento, 2 paralelo, 3 cruce…) con una etiqueta
+ * `ronda:<n>`, y cuelga de su carril (una zona de código), una RAMA con la etiqueta `carril`. El tablero del plan es una
+ * columna por carril, en orden de ronda.
+ */
+export const PREFIJO_RONDA = 'ronda:';
+export const etiquetaDeRonda = (ronda: string) => `${PREFIJO_RONDA}${ronda}`;
+export const ETIQUETA_CARRIL = 'carril';

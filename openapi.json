@@ -80,6 +80,16 @@
             }
           },
           {
+            "name": "libro",
+            "required": false,
+            "in": "query",
+            "description": "Solo los nodos de esta HU (el libro de GET /derivado/paginas: el id de la HU, o «sin-hu»), en la cara pedida (por defecto REAL)",
+            "schema": {
+              "example": "sin-hu",
+              "type": "string"
+            }
+          },
+          {
             "name": "etapa",
             "required": false,
             "in": "query",
@@ -395,6 +405,233 @@
         "tags": ["Roles"]
       }
     },
+    "/api/v1/derivado/hoy-puedo": {
+      "get": {
+        "operationId": "DerivadoController_hoyPuedo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NodoResumenDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Hoy puedo…: trabajo ABIERTO que nada bloquea",
+        "tags": ["Derivado"]
+      }
+    },
+    "/api/v1/derivado/dia": {
+      "get": {
+        "operationId": "DerivadoController_dia",
+        "parameters": [
+          {
+            "name": "desde",
+            "required": false,
+            "in": "query",
+            "description": "Desde cuándo cuenta «terminé» (por defecto, las últimas 24 h)",
+            "schema": {
+              "example": "2026-10-16T09:00:00-03:00",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiaResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "El parte del día: terminé, en curso (y si pasa del límite), detenido y para decir",
+        "tags": ["Derivado"]
+      }
+    },
+    "/api/v1/derivado/paginas": {
+      "get": {
+        "operationId": "DerivadoController_paginas",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaginaDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Las páginas de la VR: una por HU (su árbol y lo que la bloquea) y «Sin HU» al final",
+        "tags": ["Derivado"]
+      }
+    },
+    "/api/v1/derivado/plan": {
+      "get": {
+        "operationId": "DerivadoController_plan",
+        "parameters": [
+          {
+            "name": "libro",
+            "required": false,
+            "in": "query",
+            "description": "El libro (el id de la HU, o «sin-hu») cuyo plan se quiere ver; sin él, el plan de todas",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CarrilDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "El tablero del plan: una columna por carril con sus piezas abiertas, en orden de ronda (?libro= una HU)",
+        "tags": ["Derivado"]
+      }
+    },
+    "/api/v1/nodos/{id}/familia": {
+      "get": {
+        "operationId": "DerivadoController_familia",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamiliaResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Lo que se ilumina al seleccionar un nodo en la VR: él, lo que cuelga de él y con qué se conecta directo",
+        "tags": ["Derivado"]
+      }
+    },
+    "/api/v1/nodos/{id}/bloqueado": {
+      "get": {
+        "operationId": "DerivadoController_bloqueado",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BloqueadoResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "¿Está bloqueado? y qué lo bloquea",
+        "tags": ["Derivado"]
+      }
+    },
+    "/api/v1/nodos/{id}/libera": {
+      "get": {
+        "operationId": "DerivadoController_libera",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiberaResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Si este nodo se cierra (alguien contesta), qué se libera",
+        "tags": ["Derivado"]
+      }
+    },
     "/api/v1/conexiones": {
       "get": {
         "operationId": "ConexionesController_findAll",
@@ -593,200 +830,6 @@
         },
         "summary": "Crear una rama de color",
         "tags": ["Ramas"]
-      }
-    },
-    "/api/v1/derivado/hoy-puedo": {
-      "get": {
-        "operationId": "DerivadoController_hoyPuedo",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/NodoResumenDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "summary": "Hoy puedo…: trabajo ABIERTO que nada bloquea",
-        "tags": ["Derivado"]
-      }
-    },
-    "/api/v1/derivado/dia": {
-      "get": {
-        "operationId": "DerivadoController_dia",
-        "parameters": [
-          {
-            "name": "desde",
-            "required": false,
-            "in": "query",
-            "description": "Desde cuándo cuenta «terminé» (por defecto, las últimas 24 h)",
-            "schema": {
-              "example": "2026-10-16T09:00:00-03:00",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DiaResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "El parte del día: terminé, en curso (y si pasa del límite), detenido y para decir",
-        "tags": ["Derivado"]
-      }
-    },
-    "/api/v1/derivado/paginas": {
-      "get": {
-        "operationId": "DerivadoController_paginas",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PaginaDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "summary": "Las páginas de la VR: una por HU (su árbol y lo que la bloquea) y «Sin HU» al final",
-        "tags": ["Derivado"]
-      }
-    },
-    "/api/v1/nodos/{id}/familia": {
-      "get": {
-        "operationId": "DerivadoController_familia",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FamiliaResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Lo que se ilumina al seleccionar un nodo en la VR: él, lo que cuelga de él y con qué se conecta directo",
-        "tags": ["Derivado"]
-      }
-    },
-    "/api/v1/nodos/{id}/bloqueado": {
-      "get": {
-        "operationId": "DerivadoController_bloqueado",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BloqueadoResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "¿Está bloqueado? y qué lo bloquea",
-        "tags": ["Derivado"]
-      }
-    },
-    "/api/v1/nodos/{id}/libera": {
-      "get": {
-        "operationId": "DerivadoController_libera",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LiberaResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Si este nodo se cierra (alguien contesta), qué se libera",
-        "tags": ["Derivado"]
       }
     },
     "/api/v1/nodos/{id}/descartar": {
@@ -1627,105 +1670,6 @@
         },
         "required": ["defecto", "roles", "complementos"]
       },
-      "ConexionResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "origenId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "destinoId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "tipo": {
-            "type": "string",
-            "enum": [
-              "DEPENDE_DE",
-              "ESPERA_RESPUESTA_DE",
-              "BLOQUEADA_POR",
-              "PERTENECE_A",
-              "EN_DAILY_DE"
-            ]
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          }
-        },
-        "required": ["id", "origenId", "destinoId", "tipo", "createdAt"]
-      },
-      "CreateConexionDto": {
-        "type": "object",
-        "properties": {
-          "origenId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "El nodo que depende / pertenece"
-          },
-          "destinoId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "El nodo del que depende / al que pertenece"
-          },
-          "tipo": {
-            "type": "string",
-            "enum": [
-              "DEPENDE_DE",
-              "ESPERA_RESPUESTA_DE",
-              "BLOQUEADA_POR",
-              "PERTENECE_A",
-              "EN_DAILY_DE"
-            ],
-            "example": "DEPENDE_DE"
-          }
-        },
-        "required": ["origenId", "destinoId", "tipo"]
-      },
-      "RamaResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "titulo": {
-            "type": "string"
-          },
-          "color": {
-            "type": "string",
-            "nullable": true,
-            "example": "#3b82f6"
-          },
-          "estado": {
-            "type": "string",
-            "enum": ["ABIERTO", "CERRADO"]
-          },
-          "miembros": {
-            "type": "number",
-            "description": "Nodos que PERTENECEN_A esta rama"
-          }
-        },
-        "required": ["id", "titulo", "estado", "miembros"]
-      },
-      "CreateRamaDto": {
-        "type": "object",
-        "properties": {
-          "titulo": {
-            "type": "string",
-            "example": "Control fronterizo"
-          },
-          "color": {
-            "type": "string",
-            "example": "#3b82f6"
-          }
-        },
-        "required": ["titulo", "color"]
-      },
       "NodoResumenDto": {
         "type": "object",
         "properties": {
@@ -1929,6 +1873,30 @@
           "abiertas"
         ]
       },
+      "CarrilDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true,
+            "description": "La RAMA del carril; null = «Sin carril»"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "nodos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NodoResumenDto"
+            }
+          }
+        },
+        "required": ["id", "titulo", "color", "nodos"]
+      },
       "FamiliaResponseDto": {
         "type": "object",
         "properties": {
@@ -1977,6 +1945,105 @@
           }
         },
         "required": ["directos", "cadena"]
+      },
+      "ConexionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "origenId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "destinoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "DEPENDE_DE",
+              "ESPERA_RESPUESTA_DE",
+              "BLOQUEADA_POR",
+              "PERTENECE_A",
+              "EN_DAILY_DE"
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": ["id", "origenId", "destinoId", "tipo", "createdAt"]
+      },
+      "CreateConexionDto": {
+        "type": "object",
+        "properties": {
+          "origenId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "El nodo que depende / pertenece"
+          },
+          "destinoId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "El nodo del que depende / al que pertenece"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "DEPENDE_DE",
+              "ESPERA_RESPUESTA_DE",
+              "BLOQUEADA_POR",
+              "PERTENECE_A",
+              "EN_DAILY_DE"
+            ],
+            "example": "DEPENDE_DE"
+          }
+        },
+        "required": ["origenId", "destinoId", "tipo"]
+      },
+      "RamaResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "example": "#3b82f6"
+          },
+          "estado": {
+            "type": "string",
+            "enum": ["ABIERTO", "CERRADO"]
+          },
+          "miembros": {
+            "type": "number",
+            "description": "Nodos que PERTENECEN_A esta rama"
+          }
+        },
+        "required": ["id", "titulo", "estado", "miembros"]
+      },
+      "CreateRamaDto": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "example": "Control fronterizo"
+          },
+          "color": {
+            "type": "string",
+            "example": "#3b82f6"
+          }
+        },
+        "required": ["titulo", "color"]
       },
       "DescartarDto": {
         "type": "object",

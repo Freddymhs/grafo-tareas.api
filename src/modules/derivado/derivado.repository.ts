@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { EstadoNodo, Prisma, TipoConexion, TipoNodo } from '@prisma/client';
 import {
   CONEXIONES_BLOQUEANTES,
+  ETIQUETA_CARRIL,
   ORIGEN_RITUAL,
   TIPOS_ACCIONABLES,
   TIPOS_DEL_DIA,
@@ -217,6 +218,29 @@ export class DerivadoRepository {
         },
       }),
       this.prisma.conexion.findMany({
+        select: { origenId: true, destinoId: true, tipo: true },
+      }),
+    ]);
+    return { nodos, conexiones };
+  }
+
+  /**
+   * Lo que arma el tablero del plan (FASE 17): los nodos de las páginas pedidas más los carriles (RAMA con la etiqueta
+   * `carril`, que no entran a ninguna página) y las pertenencias que salen de esos nodos.
+   */
+  async paraTableroPlan(ids: readonly string[]) {
+    const [nodos, conexiones] = await Promise.all([
+      this.prisma.nodo.findMany({
+        where: {
+          OR: [
+            { id: { in: [...ids] } },
+            { tipo: TipoNodo.RAMA, etiquetas: { has: ETIQUETA_CARRIL } },
+          ],
+        },
+        select: RESUMEN,
+      }),
+      this.prisma.conexion.findMany({
+        where: { origenId: { in: [...ids] }, tipo: TipoConexion.PERTENECE_A },
         select: { origenId: true, destinoId: true, tipo: true },
       }),
     ]);

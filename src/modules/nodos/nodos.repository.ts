@@ -18,6 +18,8 @@ export interface FiltroNodos {
   readonly tipo?: TipoNodo;
   readonly estado?: EstadoNodo;
   readonly cara?: Cara;
+  /** Solo estos ids (los de la página de una HU); undefined = todos. */
+  readonly ids?: readonly string[];
   /** '' (vacía) = los que no tienen etapa; undefined = cualquiera. */
   readonly etapa?: string;
   readonly etiqueta?: string;
@@ -33,6 +35,7 @@ function whereDe({
   tipo,
   estado,
   cara,
+  ids,
   etapa,
   etiqueta,
   rama,
@@ -77,10 +80,12 @@ function whereDe({
     sinEtiquetas === undefined || sinEtiquetas.length === 0
       ? {}
       : { NOT: { etiquetas: { hasSome: [...sinEtiquetas] } } };
+  const porIds = ids === undefined ? {} : { id: { in: [...ids] } };
   return {
     tipo,
     estado,
     cara,
+    ...porIds,
     ...porEtapa,
     ...porRama,
     ...porTexto,

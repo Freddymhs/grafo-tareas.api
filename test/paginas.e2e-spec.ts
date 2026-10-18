@@ -81,6 +81,15 @@ describe('Las páginas de la VR (e2e, FASE 15) — una por HU, la API decide', (
       },
     });
     await conectar(pieza.id, TipoConexion.PERTENECE_A, otra.id);
+    // Su carril del reparto: una RAMA con la etiqueta `carril` (la columna del tablero del plan).
+    const carril = await prisma.nodo.create({
+      data: {
+        tipo: TipoNodo.RAMA,
+        titulo: '20379 · C · Recepción',
+        etiquetas: ['carril'],
+      },
+    });
+    await conectar(pieza.id, TipoConexion.PERTENECE_A, carril.id);
     await conectar(fase.id, TipoConexion.PERTENECE_A, hu.id);
     await conectar(tarjeta.id, TipoConexion.PERTENECE_A, fase.id);
     await conectar(tarjeta.id, TipoConexion.PERTENECE_A, rama.id);
@@ -94,6 +103,7 @@ describe('Las páginas de la VR (e2e, FASE 15) — una por HU, la API decide', (
       rama: rama.id,
       nota: nota.id,
       pieza: pieza.id,
+      carril: carril.id,
     };
   });
 
@@ -133,6 +143,56 @@ describe('Las páginas de la VR (e2e, FASE 15) — una por HU, la API decide', (
       abiertas: 1,
     });
     expect(paginas.flatMap(({ nodos }) => nodos)).not.toContain(rama);
+  });
+
+  it('GET /derivado/plan: una columna por carril con sus piezas abiertas; ?libro= una HU', async () => {
+    const plan = async (consulta: string) => {
+      const res = await ctx.app.inject({
+        method: 'GET',
+        url: `${PREFIJO}/derivado/plan${consulta}`,
+      });
+      return {
+        status: res.statusCode,
+        carriles: (
+          JSON.parse(res.body) as Envuelto<
+            { id: string | null; titulo: string; nodos: { id: string }[] }[]
+          >
+        ).data,
+      };
+    };
+    const { otra, hu, pieza, carril } = ctx.ids;
+    const todas = await plan('');
+    expect(todas.status).toBe(200);
+    expect(todas.carriles).toHaveLength(1);
+    expect(todas.carriles[0]).toMatchObject({
+      id: carril,
+      titulo: '20379 · C · Recepción',
+    });
+    expect(todas.carriles[0].nodos.map(({ id }) => id)).toEqual([pieza]);
+    expect((await plan(`?libro=${otra}`)).carriles).toEqual(todas.carriles);
+    // La HU 19565 no tiene plan: sin columnas.
+    expect((await plan(`?libro=${hu}`)).carriles).toEqual([]);
+  });
+
+  it('GET /nodos?libro=: el tablero de una HU, con la misma regla de las páginas (y la cara pedida)', async () => {
+    const ids = async (consulta: string) =>
+      (
+        JSON.parse(
+          (
+            await ctx.app.inject({
+              method: 'GET',
+              url: `${PREFIJO}/nodos${consulta}`,
+            })
+          ).body,
+        ) as Envuelto<{ data: { id: string }[] }>
+      ).data.data
+        .map(({ id }) => id)
+        .sort();
+    const { hu, otra, fase, tarjeta, duda, nota, pieza } = ctx.ids;
+    expect(await ids(`?libro=${hu}`)).toEqual([hu, fase, tarjeta, duda].sort());
+    expect(await ids(`?libro=${otra}&cara=PLAN`)).toEqual([otra, pieza].sort());
+    expect(await ids('?libro=sin-hu')).toEqual([nota]);
+    expect(await ids('?libro=no-existe')).toEqual([]);
   });
 
   it('GET /nodos/:id/familia: la HU ilumina su árbol; la tarjeta, con qué se conecta; un id que no existe da 404', async () => {
