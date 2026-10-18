@@ -1232,6 +1232,46 @@
         "summary": "Escaleras de dudas y rituales del área (refs.yaml)",
         "tags": ["Area"]
       }
+    },
+    "/api/v1/piezas": {
+      "post": {
+        "operationId": "PiezasController_crear",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePiezaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodoResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Una pieza del reparto en el plan de su HU (cara PLAN), colgada de su HU y de su carril",
+        "tags": ["Piezas"]
+      }
     }
   },
   "info": {
@@ -2460,6 +2500,26 @@
           }
         },
         "required": ["escaleras", "rituales"]
+      },
+      "CreatePiezaDto": {
+        "type": "object",
+        "properties": {
+          "carril": {
+            "type": "string",
+            "example": "C · Recepción",
+            "description": "El carril del reparto, «<letra> · <zona>»: una columna del plan"
+          },
+          "titulo": {
+            "type": "string",
+            "example": "2️⃣ 20379 · 0.4 · Catálogo de criterios del checklist · por crear"
+          },
+          "descripcion": {
+            "type": "string",
+            "example": "# 0.4 · Catálogo de criterios del checklist   HU 20379 · task por crear · reparto 2026-10-18",
+            "description": "La especificación de la pieza; su primera línea es la cabecera del reparto, de donde sale su HU"
+          }
+        },
+        "required": ["carril", "titulo", "descripcion"]
       }
     }
   }

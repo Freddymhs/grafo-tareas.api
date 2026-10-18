@@ -25,8 +25,14 @@ GET             derivado/dia (terminé · en curso · detenido · para decir · 
 GET             derivado/hoy-puedo  GET nodos/:id/bloqueado       GET nodos/:id/libera
 GET             etapas              roles   (GET nodos?rol=<clave>: los nodos de ese rol)
 GET/POST        nodos/:id/complementos   POST nodos/:id/escalar   POST nodos/:id/decidir   GET area
+POST            piezas              (una pieza del reparto en el plan de su HU, FASE 19)
 GET             health
 ```
+
+**Piezas (FASE 19).** Una pieza del reparto entra al grafo por dos caminos: el importador del tablero y `POST /piezas`
+(lo usa el adaptador `grafo` en `borrador`). Los dos aplican la misma regla, `src/importadores/pieza.ts`: cara PLAN,
+etiquetas `pieza` y `ronda:N`, y la pieza `PERTENECE_A` su HU —la de la cabecera de la especificación— y a la RAMA de su
+carril (la columna de `GET /derivado/plan`). Sin esa cabecera, o con un carril que no es `<letra> · <zona>`, 400.
 
 **Roles (FASE 8, C11).** Con `ROLES_ARCHIVO` apuntando al `docs/roles.yaml` del área, `GET /roles` da los tipos de
 trabajo y las columnas de cada tablero, y `GET /etapas` suma esas columnas a la lista del tablero (`ETAPAS`, C9). El

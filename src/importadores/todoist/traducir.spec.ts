@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { externoCarril } from '../pieza';
 import { ORIGEN_TRACKER, externoHistoria } from '../plan';
 import {
-  externoCarril,
   externoFase,
   externoPersona,
   externoRama,
@@ -181,6 +181,27 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
     expect(
       plan.nodos.filter(({ tipo }) => tipo === TipoNodo.PERSONA),
     ).toHaveLength(1);
+  });
+
+  it('D6 · «Thomas» es Tomás Soto, no Carabantes (Freddy, 2026-10-18: «backend: Thomas/Tomás Soto»)', () => {
+    const base = tarea(/BLOQUEO A2/);
+    const esperaDe = (content: string) =>
+      traducir([{ ...base, id: 'espera', content }], secciones, ETAPAS)
+        .conexiones.filter(
+          ({ origenExternoId, tipo }) =>
+            origenExternoId === 'espera' &&
+            tipo === TipoConexion.ESPERA_RESPUESTA_DE,
+        )
+        .map(({ destinoExternoId }) => destinoExternoId);
+    expect(esperaDe('BLOQUEO — esperando a Thomas por el esquema')).toEqual([
+      externoPersona('Tomás Soto'),
+    ]);
+    expect(esperaDe('BLOQUEO — esperando a Tomás Soto')).toEqual([
+      externoPersona('Tomás Soto'),
+    ]);
+    expect(esperaDe('BLOQUEO — esperando a Tomás Carabantes')).toEqual([
+      externoPersona('Tomás Carabantes'),
+    ]);
   });
 
   it('D6 · "Bloqueo sin Unidad Organizacional" es una feature, no una espera', () => {

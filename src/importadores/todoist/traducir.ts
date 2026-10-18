@@ -22,12 +22,9 @@ export interface SeccionTodoist {
 }
 
 export type { ConexionPlan, NodoPlan, Plan } from '../plan.js';
-import {
-  ETAPA_TRAMITES,
-  ETIQUETA_CARRIL,
-  etiquetaDeRonda,
-} from '../../common/constants/grafo.constants.js';
-import { externoHistoria, nodoHistoria, SIN_TABLERO } from '../plan.js';
+import { ETAPA_TRAMITES } from '../../common/constants/grafo.constants.js';
+import { alrededorDePieza, esCarril, piezaDe } from '../pieza.js';
+import { SIN_TABLERO } from '../plan.js';
 import type { ConexionPlan, NodoPlan, Plan } from '../plan.js';
 
 export const ORIGEN_TODOIST = 'todoist';
@@ -48,42 +45,22 @@ export const COLOR_POR_EMOJI: Readonly<Record<string, string>> = {
   '🔴': '#ef4444',
 };
 
-/** D6: cómo se escribe cada persona en Todoist → un solo nodo PERSONA (C8: Tomás = Carabantes, a confirmar). */
+/**
+ * D6: cómo se escribe cada persona en Todoist → un solo nodo PERSONA (C8: «Tomás» a secas = Carabantes, a confirmar).
+ * «Thomas» es Tomás Soto, el senior de backend (Freddy, 2026-10-18). Va primero: se toma la primera persona con un
+ * alias en el texto, y «Tomás Soto» contiene «Tomás».
+ */
 export const ALIAS_PERSONAS: Readonly<Record<string, readonly string[]>> = {
+  'Tomás Soto': ['Tomás Soto', 'Tomas Soto', 'Thomas', 'Soto'],
   'Tomás Carabantes': [
     'Tomás Carabantes',
     'Tomas Carabantes',
     'Tomás',
     'Tomas',
-    'Thomas',
     'Carabantes',
   ],
   Fabián: ['Fabián', 'Fabian'],
 };
-
-/**
- * R4 (FASE 13): una pieza de `/flow:pbi:repartir` se reconoce por la cabecera fija de su descripción —
- * `# N.M · título   HU <n> · task …`— y no por el título, que cambia al tomarla (`5️⃣ 🟢 [26309] …`).
- */
-const CABECERA_PIEZA = /^#\s*\d+\.\d+[a-z]?\s+·.*?\bHU\s+(\d{5,6})\b/;
-/** La ronda abre el título: 1️⃣ cimiento · 2️⃣ paralelo · 3️⃣ cruce (y las que el reparto agregue). */
-const RONDA = /^([1-9])\uFE0F?\u20E3/u;
-/** El último tramo del título dice si la task existe: «por crear», «descartada…» o el id. */
-const ESTADO_PIEZA: ReadonlyArray<readonly [RegExp, string]> = [
-  [/·\s*por crear\s*$/i, 'por-crear'],
-  [/·\s*descartada[^·]*$/i, 'descartada'],
-];
-/** Una sección `A · zona` es un carril del reparto (zona de código: dos carriles no comparten archivos). */
-const CARRIL = /^[A-Z] · .+$/;
-export const ETIQUETA_PIEZA = 'pieza';
-/** Un color por carril, por su letra: en la VR cada carril se ve como su rama. */
-export const COLORES_CARRIL: readonly string[] = [
-  '#0ea5e9',
-  '#14b8a6',
-  '#8b5cf6',
-  '#f43f5e',
-  '#84cc16',
-];
 
 const PATRON_BLOQUEO = /BLOQUEO|esperando a/i;
 const PATRON_FASE = /\bFASE ?(\d+)\b/g;
@@ -100,8 +77,6 @@ const clave = (texto: string) =>
   texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, '-');
 
 export const externoRama = (emoji: string) => `rama:${emoji}`;
-export const externoCarril = (hu: string, carril: string) =>
-  `carril:${hu}:${carril}`;
 export const externoFase = (numero: string) => `fase:${numero}`;
 export const externoPersona = (nombre: string) => `persona:${clave(nombre)}`;
 
@@ -144,33 +119,8 @@ function fasesDe(texto: string): string[] {
   ];
 }
 
-interface Pieza {
-  readonly hu: string;
-  readonly etiquetas: readonly string[];
-}
-
-function piezaDe(tarea: TareaTodoist): Pieza | null {
-  const cabecera = (tarea.description ?? '').split('\n')[0].trim();
-  const hu = cabecera.match(CABECERA_PIEZA)?.[1];
-  if (!hu) return null;
-  const ronda = tarea.content.match(RONDA)?.[1];
-  const estado = ESTADO_PIEZA.find(([patron]) =>
-    patron.test(tarea.content),
-  )?.[1];
-  return {
-    hu,
-    etiquetas: [
-      ETIQUETA_PIEZA,
-      ...(ronda ? [etiquetaDeRonda(ronda)] : []),
-      ...(estado ? [estado] : []),
-    ],
-  };
-}
-
-const colorDeCarril = (carril: string) =>
-  COLORES_CARRIL[
-    (carril.charCodeAt(0) - 'A'.charCodeAt(0)) % COLORES_CARRIL.length
-  ];
+const piezaDeTarea = (tarea: TareaTodoist) =>
+  piezaDe(tarea.content, tarea.description);
 
 function personaBloqueante(content: string): string | null {
   if (!PATRON_BLOQUEO.test(content)) return null;
@@ -205,7 +155,7 @@ export function traducir(
       : null;
     // C9: la sección es la etapa del tablero si está en la lista; si no, queda al pie de la descripción.
     const etapa = seccion !== null && etapas.includes(seccion) ? seccion : null;
-    const pieza = piezaDe(tarea);
+    const pieza = piezaDeTarea(tarea);
     const esTramite =
       etiquetaTramite !== null && PATRON_TRAMITE.test(tarea.content);
     const tramite = esTramite && etiquetaTramite ? [etiquetaTramite] : [];
@@ -277,33 +227,14 @@ export function traducir(
       : [];
     // R4: la pieza PERTENECE_A su HU (la compartida; el tablero solo conoce el número: no pisa el título) y a
     // su carril si la sección es uno (`A · zona`); ya tomada y movida a una etapa, sigue colgando de su HU.
-    const pieza = piezaDe(tarea);
+    const pieza = piezaDeTarea(tarea);
     const seccion = tarea.section_id
       ? (nombreSeccion.get(tarea.section_id) ?? null)
       : null;
-    const carril = pieza && seccion && CARRIL.test(seccion) ? seccion : null;
-    if (pieza) sintetizar(nodoHistoria(pieza.hu, null, true));
-    if (pieza && carril) {
-      sintetizar({
-        externoId: externoCarril(pieza.hu, carril),
-        tipo: TipoNodo.RAMA,
-        titulo: `${pieza.hu} · ${carril}`,
-        ...SIN_TABLERO,
-        // La API arma el tablero del plan con una columna por carril: lo reconoce por esta etiqueta, no por su id.
-        etiquetas: [ETIQUETA_CARRIL],
-        color: colorDeCarril(carril),
-      });
-    }
-    const deLaPieza: ConexionPlan[] = pieza
-      ? [
-          externoHistoria(pieza.hu),
-          ...(carril ? [externoCarril(pieza.hu, carril)] : []),
-        ].map((destino) => ({
-          origenExternoId: tarea.id,
-          destinoExternoId: destino,
-          tipo: TipoConexion.PERTENECE_A,
-        }))
-      : [];
+    const carril = pieza && seccion && esCarril(seccion) ? seccion : null;
+    const alrededor = pieza ? alrededorDePieza(tarea.id, pieza, carril) : null;
+    alrededor?.nodos.forEach(sintetizar);
+    const deLaPieza: ConexionPlan[] = alrededor?.conexiones ?? [];
     // D3: el padre depende de cada hija. Una hija cuyo padre no vino en el export queda suelta.
     const padre = tarea.parent_id;
     const dependenciaDelPadre: ConexionPlan[] =
