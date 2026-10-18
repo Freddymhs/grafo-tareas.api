@@ -50,6 +50,21 @@ describe('leerFase', () => {
     ).toBeNull();
   });
 
+  it('mergeada: la casilla «Mergeado» de ## QA tildada (la tilda Freddy, FASE 17); sin tildar o «no aplica», no', () => {
+    const lista = md('FASE_3_LISTA.md');
+    const con = (casilla: string) =>
+      leerFase(
+        'FASE_3_LISTA.md',
+        lista.replace('- [x] Listo para PR', `- [x] Listo para PR\n${casilla}`),
+        ROLES,
+      ).mergeada;
+    expect(leer('FASE_3_LISTA.md').mergeada).toBe(false);
+    expect(con('- [ ] Mergeado')).toBe(false);
+    expect(con('- [x] Mergeado')).toBe(true);
+    expect(con('- [x] Mergeado — PR 5090')).toBe(true);
+    expect(con('- [x] Mergeado — no aplica')).toBe(false);
+  });
+
   it('nombre del archivo y task de **Azure** como fases.html; avance por rol', () => {
     const calidad = leer('FASE_5_CALIDAD.md');
     expect(calidad.nombre).toBe('Calidad');

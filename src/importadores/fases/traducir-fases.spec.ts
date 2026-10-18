@@ -3,7 +3,12 @@ import { ETAPAS_POR_DEFECTO } from '../../common/constants/grafo.constants';
 import { AbiertoLeido } from './leer-abiertos';
 import { FaseLeida } from './leer-fase';
 import { ORIGEN_TRACKER, externoHistoria } from '../plan';
-import { externoFase, externoTramite, traducirFases } from './traducir-fases';
+import {
+  ETIQUETA_MERGEADA,
+  externoFase,
+  externoTramite,
+  traducirFases,
+} from './traducir-fases';
 
 const fase = (parcial: Partial<FaseLeida> & { numero: number }): FaseLeida => ({
   titulo: `título ${parcial.numero}`,
@@ -15,6 +20,7 @@ const fase = (parcial: Partial<FaseLeida> & { numero: number }): FaseLeida => ({
   dependencias: [],
   etapa: 'ENTENDIMIENTO',
   terminada: false,
+  mergeada: false,
   cierrePendiente: null,
   ...parcial,
 });
@@ -54,6 +60,17 @@ describe('traducirFases', () => {
       etapa: 'CAMBIAR 🧰',
       etiquetas: ['calidad'],
     });
+  });
+
+  it('la FASE mergeada lleva la etiqueta `mergeada` (FASE 17): la VR le pone el anillo', () => {
+    const [mergeada] = traducirFases(
+      [fase({ numero: 7, mergeada: true })],
+      [],
+      ETAPAS_POR_DEFECTO,
+      'grafo',
+    ).nodos;
+    expect(mergeada?.etiquetas).toEqual(['producto', ETIQUETA_MERGEADA]);
+    expect(plan.nodos[0]?.etiquetas).not.toContain(ETIQUETA_MERGEADA);
   });
 
   it('Dependencias → DEPENDE_DE solo hacia FASEs que están en el directorio', () => {

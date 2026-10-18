@@ -13,6 +13,8 @@ export const ORIGEN_FASES = 'fases-md';
  */
 export const origenFases = (proyecto: string) => `${ORIGEN_FASES}:${proyecto}`;
 export const ETIQUETA_ABIERTO = 'abierto';
+/** La FASE con su casilla «Mergeado» tildada (FASE 17). La VR la muestra con un anillo; la API no la deduce de nada más. */
+export const ETIQUETA_MERGEADA = 'mergeada';
 export const externoFase = (numero: number) => `fase:${numero}`;
 /** El trámite de cierre de una FASE (FASE 10): uno por FASE, se cierra solo cuando se tildan sus casillas. */
 export const externoTramite = (numero: number) => `tramite:fase:${numero}`;
@@ -90,7 +92,7 @@ function nodoDeFase(fase: FaseLeida, etapas: readonly string[]): NodoPlan {
     estado: fase.terminada ? EstadoNodo.CERRADO : EstadoNodo.ABIERTO,
     color: null,
     etapa: etapaConocida(fase, etapas),
-    etiquetas: [fase.rol],
+    etiquetas: fase.mergeada ? [fase.rol, ETIQUETA_MERGEADA] : [fase.rol],
     prioridad: null,
     vence: null,
   };

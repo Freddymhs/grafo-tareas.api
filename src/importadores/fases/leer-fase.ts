@@ -5,6 +5,7 @@ import {
   avance,
   cierrePendiente,
   derivarEtapa,
+  mergeada,
   rolDeFase,
   terminada,
 } from './derivar-por-rol.js';
@@ -28,6 +29,8 @@ export interface FaseLeida {
   readonly etapa: string;
   /** Todas las casillas de Understand, Tareas, QA y Cierre tildadas: la FASE queda en solo lectura. */
   readonly terminada: boolean;
+  /** Su PR ya entró a la rama base: la casilla «Mergeado» de `## QA` (FASE 17). */
+  readonly mergeada: boolean;
   /** Entregada y con casillas reales del cierre sin tildar (URL commit, Evidencias…); null = no entregada. */
   readonly cierrePendiente: readonly string[] | null;
 }
@@ -79,6 +82,7 @@ export function leerFase(
     dependencias: [...new Set(dependencias)],
     etapa: derivarEtapa(md, rol).columna,
     terminada: terminada(md),
+    mergeada: mergeada(md),
     cierrePendiente: cierrePendiente(md, rol),
   };
 }

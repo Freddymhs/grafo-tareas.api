@@ -51,6 +51,11 @@ export function terminada(md: string): boolean {
   return casillas.length > 0 && casillas.every((c) => c === 'x');
 }
 
+/** La casilla «Mergeado» de `## QA` tildada (FASE 17): la tilda Freddy con `/flow:tildar`; ningún importador la deduce. */
+export function mergeada(md: string): boolean {
+  return tildada(seccion(md, 'QA'), 'Mergeado');
+}
+
 /** Las casillas de cada `### ` de `## Tareas`, en el primer grupo cuyo patrón calza el título. */
 function tareasDelGrupo(md: string, rol: Rol, grupo: string): string {
   const partes = (seccion(md, 'Tareas') ?? '').split(/^### /m).slice(1);
