@@ -1101,6 +1101,11 @@
             "type": "number",
             "nullable": true
           },
+          "fechaOrigen": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Cuándo nació en su fuente (la tarjeta en Todoist) o, si se creó acá, al crearse. Nunca vacía"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -1116,6 +1121,7 @@
           "titulo",
           "estado",
           "etiquetas",
+          "fechaOrigen",
           "createdAt",
           "updatedAt"
         ]
@@ -1831,6 +1837,11 @@
             "type": "number",
             "nullable": true
           },
+          "fechaOrigen": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Cuándo nació en su fuente (la tarjeta en Todoist) o, si se creó acá, al crearse. Nunca vacía"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -1851,6 +1862,7 @@
           "titulo",
           "estado",
           "etiquetas",
+          "fechaOrigen",
           "createdAt",
           "updatedAt",
           "complemento"

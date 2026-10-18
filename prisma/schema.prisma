@@ -53,6 +53,9 @@ model Nodo {
   posX          Float?     @map("pos_x")
   posY          Float?     @map("pos_y")
   posZ          Float?     @map("pos_z")
+  /// Cuándo nació en su fuente (la fecha de creación de la tarjeta en Todoist); lo creado acá, al crearse. Nunca vacía:
+  /// todo nodo tiene fecha (FASE 15) y nada se oculta por no tenerla.
+  fechaOrigen   DateTime   @default(now()) @map("fecha_origen")
   createdAt     DateTime   @default(now()) @map("created_at")
   updatedAt     DateTime   @updatedAt @map("updated_at")
 

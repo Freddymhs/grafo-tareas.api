@@ -64,6 +64,14 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
     });
   });
 
+  it('la fecha de creación de la tarjeta va a fechaOrigen (FASE 15); sin ella, nada (el nodo conserva la suya)', () => {
+    const [conFecha, sinFecha] = tareas;
+    const nodo = (id: string) =>
+      plan.nodos.find(({ externoId }) => externoId === id);
+    expect(nodo(conFecha.id)?.fechaOrigen).toBe('2026-10-14T19:50:39.673000Z');
+    expect(nodo(sinFecha.id)?.fechaOrigen ?? null).toBeNull();
+  });
+
   it('D2 · CERRADO en las secciones cerradas; ABIERTO en las demás', () => {
     const porSeccion = new Map(secciones.map(({ id, name }) => [name, id]));
     const enCerrado = tareas.find(

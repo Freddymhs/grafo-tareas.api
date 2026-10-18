@@ -12,6 +12,8 @@ export interface TareaTodoist {
   readonly priority: number;
   readonly checked: boolean;
   readonly due: { readonly date: string } | null;
+  /** Cuándo se creó la tarjeta (la API de Todoist la trae siempre; los fixtures viejos, no). */
+  readonly added_at?: string | null;
 }
 
 export interface SeccionTodoist {
@@ -194,6 +196,7 @@ export function traducir(
       etiquetas: [...tarea.labels, ...(pieza?.etiquetas ?? [])],
       prioridad: prioridadDe(tarea),
       vence: tarea.due?.date ?? null,
+      fechaOrigen: tarea.added_at ?? null,
     };
   });
 

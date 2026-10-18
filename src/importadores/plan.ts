@@ -12,6 +12,8 @@ export interface NodoPlan {
   readonly etiquetas: readonly string[];
   readonly prioridad: number | null;
   readonly vence: string | null;
+  /** Cuándo nació en su fuente (ISO). Sin ella, el nodo conserva la que ya tiene (o la de su creación acá). */
+  readonly fechaOrigen?: string | null;
   /** Un nodo que varios importadores comparten (la HU) lleva su propio origen en vez del del plan. */
   readonly origen?: string;
   /** Solo se crea si no existe: quien sabe menos (el tablero, que solo ve «HU 20379») no pisa al que sabe más. */

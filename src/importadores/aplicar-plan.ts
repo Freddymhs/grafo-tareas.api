@@ -58,19 +58,28 @@ export async function guardarNodo(
     prioridad: nodo.prioridad,
     vence: nodo.vence ? new Date(nodo.vence) : null,
   };
+  // La fecha de origen solo se escribe si la fuente la trae: sin ella, el nodo conserva la suya.
+  const fechaOrigen = nodo.fechaOrigen ? new Date(nodo.fechaOrigen) : null;
+  const conFecha = fechaOrigen ? { fechaOrigen } : {};
   const existente = await tx.nodo.findUnique({
     where: { externoOrigen_externoId: externo },
-    select: { id: true, ...CAMPOS_DEL_PLAN },
+    select: { id: true, fechaOrigen: true, ...CAMPOS_DEL_PLAN },
   });
   if (existente) {
-    const cambio = !nodo.soloSiFalta && !iguales(existente, datos);
+    const otraFecha =
+      fechaOrigen !== null && !mismaFecha(existente.fechaOrigen, fechaOrigen);
+    const cambio =
+      !nodo.soloSiFalta && (!iguales(existente, datos) || otraFecha);
     if (cambio) {
-      await tx.nodo.update({ where: { id: existente.id }, data: datos });
+      await tx.nodo.update({
+        where: { id: existente.id },
+        data: { ...datos, ...conFecha },
+      });
     }
     return { id: existente.id, creado: false, cambio };
   }
   const nuevo = await tx.nodo.create({
-    data: { ...datos, tipo: nodo.tipo, ...externo },
+    data: { ...datos, ...conFecha, tipo: nodo.tipo, ...externo },
     select: { id: true },
   });
   return { id: nuevo.id, creado: true, cambio: true };

@@ -63,6 +63,19 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
     const conexionesTrasPrimera = await ctx.prisma.conexion.count();
     expect(nodosTrasPrimera).toBe(primera.nodos.nuevos);
     expect(conexionesTrasPrimera).toBe(primera.conexiones.nuevas);
+    // FASE 15: la fecha de creación de la tarjeta queda como su fecha de origen; la que no la trae, igual tiene fecha.
+    const conFecha = await ctx.prisma.nodo.findFirstOrThrow({
+      where: { externoId: '6hgwQh9G3P94qR3Q' },
+      select: { fechaOrigen: true },
+    });
+    expect(conFecha.fechaOrigen.toISOString()).toBe('2026-10-14T19:50:39.673Z');
+    const sinFecha = await ctx.prisma.nodo.findFirstOrThrow({
+      where: { externoId: '6hgwQh9QqF3v7Pfx' },
+      select: { fechaOrigen: true, createdAt: true },
+    });
+    expect(
+      Math.abs(sinFecha.fechaOrigen.getTime() - sinFecha.createdAt.getTime()),
+    ).toBeLessThan(5_000);
 
     const fechas = async () =>
       (
