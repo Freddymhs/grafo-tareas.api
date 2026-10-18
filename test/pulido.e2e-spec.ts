@@ -202,6 +202,39 @@ describe('El pulido del grafo (e2e, FASE 16) — descartar sin borrar y la bitá
     );
   });
 
+  it('`vence` con la fecha del contrato (YYYY-MM-DD) se guarda al crear y al editar: antes daba 500 (Freddy, 2026-10-18)', async () => {
+    const creado = await pedir<{ id: string; vence: string }>(
+      'POST',
+      '/nodos',
+      {
+        tipo: TipoNodo.TAREA,
+        titulo: 'horas extras: correo a Fabián',
+        vence: '2026-10-19',
+      },
+    );
+    expect(creado.status).toBe(201);
+    expect(creado.data.vence).toBe('2026-10-19T00:00:00.000Z');
+
+    const editado = await pedir<{ vence: string }>(
+      'PATCH',
+      `/nodos/${creado.data.id}`,
+      {
+        vence: '2026-10-20',
+        motivo: 'se corre un día',
+      },
+    );
+    expect(editado.status).toBe(200);
+    expect(editado.data.vence).toBe('2026-10-20T00:00:00.000Z');
+    const cambios = await pedir<Cambio[]>('GET', '/cambios');
+    expect(cambios.data[0]).toEqual(
+      expect.objectContaining({
+        campo: 'vence',
+        antes: '2026-10-19',
+        despues: '2026-10-20',
+      }),
+    );
+  });
+
   it('GET /contraste: de lo que vino de una fuente, qué se editó y qué se descartó (con el denominador)', async () => {
     const crearImportado = (externoId: string, titulo: string) =>
       ctx.prisma.nodo.create({

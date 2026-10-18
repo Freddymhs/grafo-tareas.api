@@ -19,6 +19,18 @@ import { NodosRepository } from './nodos.repository.js';
 
 const RECURSO = 'Nodo';
 
+/**
+ * `vence` llega como dice el contrato, `YYYY-MM-DD`, y Prisma pide una fecha con hora: pasado tal cual, crear o editar
+ * con fecha daba 500 (Freddy, 2026-10-18, la tarea de las horas extras). `null` la borra.
+ */
+function conVenceComoFecha<T extends { readonly vence?: string | null }>(
+  dto: T,
+) {
+  const { vence } = dto;
+  if (vence === undefined || vence === null) return dto;
+  return { ...dto, vence: new Date(vence) };
+}
+
 @Injectable()
 export class NodosService {
   constructor(
@@ -83,7 +95,7 @@ export class NodosService {
     this.validarColor(dto.tipo, dto.color);
     this.etapas.validar(dto.etapa);
     await this.validarExterno(dto.externoOrigen, dto.externoId);
-    return this.repository.create(dto);
+    return this.repository.create(conVenceComoFecha(dto));
   }
 
   async update(id: string, dto: UpdateNodoDto) {
@@ -94,7 +106,7 @@ export class NodosService {
     const { motivo, ...cambios } = dto;
     return this.repository.actualizarConBitacora(
       nodo,
-      cambios,
+      conVenceComoFecha(cambios),
       diferencias(nodo, cambios),
       motivo ?? null,
     );
