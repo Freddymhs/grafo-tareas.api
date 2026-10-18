@@ -37,6 +37,8 @@ export class ImportadorTodoistService {
     proyectoId: string,
     seco: boolean,
     cara: Cara = Cara.REAL,
+    /** El origen de las FASE del orquestador (`origenFases(proyecto)`); null = el tablero sintetiza las suyas. */
+    origenFases: string | null = null,
   ): Promise<ResumenImportacion> {
     const [tareas, secciones] = await Promise.all([
       this.todoist.tareas(proyectoId),
@@ -53,6 +55,7 @@ export class ImportadorTodoistService {
       this.etapas.lista(),
       cara,
       conTramite ? etiquetaTramite : null,
+      origenFases,
     );
     const base = { proyectoId, seco, cara, tareasLeidas: tareas.length };
     if (seco) {

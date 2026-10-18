@@ -187,6 +187,11 @@ export function traducir(
   cara: Cara = Cara.REAL,
   /** La etiqueta del complemento trámite; null si el catálogo del área no lo tiene (ninguna tarjeta se marca). */
   etiquetaTramite: string | null = null,
+  /**
+   * El origen de las FASE del orquestador (`fases-md:<proyecto>`): «FASE 22» en un título cuelga de ESA FASE, por su
+   * externo, y solo se crea si falta. Sin él, el tablero sintetiza su propia «FASE 22» y queda duplicada (C10).
+   */
+  origenFases: string | null = null,
 ): Plan {
   const nombreSeccion = new Map(secciones.map(({ id, name }) => [id, name]));
   const idsTareas = new Set(tareas.map(({ id }) => id));
@@ -242,6 +247,7 @@ export function traducir(
         titulo: `FASE ${numero}`,
         ...SIN_TABLERO,
         color: null,
+        ...(origenFases ? { origen: origenFases, soloSiFalta: true } : {}),
       });
       return {
         origenExternoId: tarea.id,

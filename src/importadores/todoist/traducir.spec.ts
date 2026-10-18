@@ -146,6 +146,27 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
     ).toContain(externoFase('32'));
   });
 
+  it('C10 · con el origen de las FASE del orquestador, «FASE 32» es ESA FASE (por externo): no se duplica ni se pisa', () => {
+    const conFases = traducir(
+      tareas,
+      secciones,
+      ETAPAS,
+      Cara.REAL,
+      null,
+      'fases-md:laboratorio',
+    );
+    const fase32 = conFases.nodos.find(
+      (n) => n.externoId === externoFase('32'),
+    );
+    expect(fase32).toMatchObject({
+      tipo: TipoNodo.FASE,
+      origen: 'fases-md:laboratorio',
+      soloSiFalta: true,
+    });
+    // Sin el origen, el tablero sintetiza la suya (la de siempre).
+    expect(nodo(externoFase('32'))?.origen).toBeUndefined();
+  });
+
   it('D6 · "BLOQUEO … esperando a Tomás Carabantes" espera la respuesta de UNA persona', () => {
     const bloqueos = tareas.filter((t) => /BLOQUEO (A2|Q3)/.test(t.content));
     expect(bloqueos).toHaveLength(2);
