@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TipoCambio } from '@prisma/client';
+import { EstadoContraste } from '../contraste.js';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 const LARGO_MAXIMO_MOTIVO = 500;
@@ -108,4 +109,48 @@ export class CambioResponseDto {
 
   @ApiProperty()
   createdAt!: Date;
+}
+
+export class ResumenContrasteDto {
+  @ApiProperty({
+    description: 'Todo lo que vino de una fuente: el denominador',
+  })
+  total!: number;
+
+  @ApiProperty()
+  iguales!: number;
+
+  @ApiProperty()
+  editados!: number;
+
+  @ApiProperty()
+  descartados!: number;
+}
+
+export class DiferenciaContrasteDto {
+  @ApiProperty()
+  externoOrigen!: string;
+
+  @ApiProperty()
+  externoId!: string;
+
+  @ApiProperty()
+  titulo!: string;
+
+  @ApiProperty({ enum: Object.values(EstadoContraste) })
+  estado!: EstadoContraste;
+
+  @ApiProperty({ type: [String] })
+  campos!: string[];
+
+  @ApiPropertyOptional({ nullable: true, type: String })
+  motivo!: string | null;
+}
+
+export class ContrasteResponseDto {
+  @ApiProperty({ type: ResumenContrasteDto })
+  resumen!: ResumenContrasteDto;
+
+  @ApiProperty({ type: [DiferenciaContrasteDto] })
+  diferencias!: DiferenciaContrasteDto[];
 }

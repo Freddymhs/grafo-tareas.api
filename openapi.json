@@ -900,6 +900,26 @@
         "tags": ["Pulido"]
       }
     },
+    "/api/v1/contraste": {
+      "get": {
+        "operationId": "PulidoController_contraste",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContrasteResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "El contraste Todoist ↔ grafo, desde el grafo: qué sigue igual, qué se editó y qué se descartó, con su motivo",
+        "tags": ["Pulido"]
+      }
+    },
     "/api/v1/cambios": {
       "get": {
         "operationId": "PulidoController_cambios",
@@ -2000,6 +2020,69 @@
           }
         },
         "required": ["nodoId", "titulo", "motivo", "createdAt"]
+      },
+      "ResumenContrasteDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "description": "Todo lo que vino de una fuente: el denominador"
+          },
+          "iguales": {
+            "type": "number"
+          },
+          "editados": {
+            "type": "number"
+          },
+          "descartados": {
+            "type": "number"
+          }
+        },
+        "required": ["total", "iguales", "editados", "descartados"]
+      },
+      "DiferenciaContrasteDto": {
+        "type": "object",
+        "properties": {
+          "externoOrigen": {
+            "type": "string"
+          },
+          "externoId": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": ["EDITADO", "DESCARTADO"]
+          },
+          "campos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "motivo": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": ["externoOrigen", "externoId", "titulo", "estado", "campos"]
+      },
+      "ContrasteResponseDto": {
+        "type": "object",
+        "properties": {
+          "resumen": {
+            "$ref": "#/components/schemas/ResumenContrasteDto"
+          },
+          "diferencias": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiferenciaContrasteDto"
+            }
+          }
+        },
+        "required": ["resumen", "diferencias"]
       },
       "CambioResponseDto": {
         "type": "object",

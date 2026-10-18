@@ -1,5 +1,6 @@
 export {
   CambioResponseDto,
+  ContrasteResponseDto,
   DescartadoResponseDto,
   DescartarDto,
   DescarteResponseDto,

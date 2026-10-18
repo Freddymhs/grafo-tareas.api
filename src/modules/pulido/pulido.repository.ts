@@ -117,4 +117,32 @@ export class PulidoRepository {
   async cambios() {
     return this.prisma.cambio.findMany({ orderBy: { createdAt: 'desc' } });
   }
+
+  /** Lo que el contraste necesita (FASE 16): lo que vino de una fuente, lo descartado y la bitácora en orden. */
+  async paraContraste() {
+    const [nodos, descartes, bitacora] = await Promise.all([
+      this.prisma.nodo.findMany({
+        where: { externoOrigen: { not: null } },
+        select: {
+          id: true,
+          externoOrigen: true,
+          externoId: true,
+          titulo: true,
+        },
+      }),
+      this.prisma.descarte.findMany({
+        select: {
+          externoOrigen: true,
+          externoId: true,
+          titulo: true,
+          motivo: true,
+        },
+      }),
+      this.prisma.cambio.findMany({
+        select: { nodoId: true, tipo: true, campo: true, motivo: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+    ]);
+    return { nodos, descartes, bitacora };
+  }
 }

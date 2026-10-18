@@ -12,6 +12,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ErrorResponseDto } from '../../common/dto/index.js';
 import {
   CambioResponseDto,
+  ContrasteResponseDto,
   DescartadoResponseDto,
   DescartarDto,
   DescarteResponseDto,
@@ -60,6 +61,16 @@ export class PulidoController {
   @ApiResponse({ status: 200, type: [DescarteResponseDto] })
   descartes() {
     return this.service.descartes();
+  }
+
+  @Get('contraste')
+  @ApiOperation({
+    summary:
+      'El contraste Todoist ↔ grafo, desde el grafo: qué sigue igual, qué se editó y qué se descartó, con su motivo',
+  })
+  @ApiResponse({ status: 200, type: ContrasteResponseDto })
+  contraste() {
+    return this.service.contraste();
   }
 
   @Get('cambios')

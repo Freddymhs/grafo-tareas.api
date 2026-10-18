@@ -201,4 +201,47 @@ describe('El pulido del grafo (e2e, FASE 16) — descartar sin borrar y la bitá
       }),
     );
   });
+
+  it('GET /contraste: de lo que vino de una fuente, qué se editó y qué se descartó (con el denominador)', async () => {
+    const crearImportado = (externoId: string, titulo: string) =>
+      ctx.prisma.nodo.create({
+        data: {
+          tipo: TipoNodo.TAREA,
+          titulo,
+          externoOrigen: 'todoist',
+          externoId,
+        },
+      });
+    const igual = await crearImportado('T1', 'sigue igual');
+    const aEditar = await crearImportado('T2', 'título viejo');
+    const aDescartar = await crearImportado('T3', 'basura');
+    await pedir('PATCH', `/nodos/${aEditar.id}`, {
+      titulo: 'título nuevo',
+      motivo: 'más claro',
+    });
+    await pedir('POST', `/nodos/${aDescartar.id}/descartar`, {
+      motivo: 'sin contenido',
+    });
+
+    const { status, data } = await pedir<{
+      resumen: Record<string, number>;
+      diferencias: { externoId: string; estado: string }[];
+    }>('GET', '/contraste');
+
+    expect(status).toBe(200);
+    expect(data.resumen).toEqual({
+      total: 3,
+      iguales: 1,
+      editados: 1,
+      descartados: 1,
+    });
+    expect(
+      data.diferencias
+        .map(({ externoId, estado }) => `${externoId}:${estado}`)
+        .sort(),
+    ).toEqual(['T2:EDITADO', 'T3:DESCARTADO']);
+    expect(data.diferencias.map(({ externoId }) => externoId)).not.toContain(
+      igual.externoId,
+    );
+  });
 });

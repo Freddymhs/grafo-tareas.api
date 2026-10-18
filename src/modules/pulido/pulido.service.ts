@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { NotFoundError } from '../../common/exceptions/index.js';
+import { calcularContraste } from './contraste.js';
 import { PulidoRepository } from './pulido.repository.js';
 
 /**
@@ -40,5 +41,11 @@ export class PulidoService {
 
   cambios() {
     return this.repository.cambios();
+  }
+
+  async contraste() {
+    const { nodos, descartes, bitacora } =
+      await this.repository.paraContraste();
+    return calcularContraste(nodos, descartes, bitacora);
   }
 }
