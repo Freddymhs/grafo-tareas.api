@@ -32,6 +32,7 @@ export class NodosService {
       limit,
       tipo,
       estado,
+      cara,
       etapa,
       etiqueta,
       rama,
@@ -45,6 +46,7 @@ export class NodosService {
     const filtro = {
       tipo,
       estado,
+      cara,
       etapa,
       etiqueta,
       rama,

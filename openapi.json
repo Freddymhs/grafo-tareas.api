@@ -70,6 +70,16 @@
             }
           },
           {
+            "name": "cara",
+            "required": false,
+            "in": "query",
+            "description": "Solo los de esta cara de su HU (FASE 17): REAL = el trabajo, PLAN = el Draft",
+            "schema": {
+              "type": "string",
+              "enum": ["REAL", "PLAN"]
+            }
+          },
+          {
             "name": "etapa",
             "required": false,
             "in": "query",

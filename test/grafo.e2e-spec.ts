@@ -251,6 +251,29 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
     expect((await patch('NO_EXISTE')).statusCode).toBe(400);
   });
 
+  it('?cara= separa el trabajo del plan (FASE 17): mover a otra cara con PATCH lo cambia de lista', async () => {
+    const enCara = async (cara: string) =>
+      (
+        await get<{ data: Resumen[] }>(`/nodos?cara=${cara}&limit=100`)
+      ).body.data.data.map(({ id }) => id);
+    expect(await enCara('REAL')).toContain(ids.t2);
+    expect(await enCara('PLAN')).not.toContain(ids.t2);
+
+    const mover = (cara: string) =>
+      ctx.app.inject({
+        method: 'PATCH',
+        url: `${PREFIJO}/nodos/${ids.t2}`,
+        payload: { cara, motivo: 'e2e: mover al plan y volver' },
+      });
+    expect((await mover('PLAN')).statusCode).toBe(200);
+    expect(await enCara('PLAN')).toContain(ids.t2);
+    expect(await enCara('REAL')).not.toContain(ids.t2);
+    expect((await mover('REAL')).statusCode).toBe(200);
+    expect(await enCara('REAL')).toContain(ids.t2);
+
+    expect((await get('/nodos?cara=OTRA')).status).toBe(400);
+  });
+
   it('cerrar la duda libera la tarea; borrar un nodo borra sus conexiones', async () => {
     const cerrar = await ctx.app.inject({
       method: 'PATCH',

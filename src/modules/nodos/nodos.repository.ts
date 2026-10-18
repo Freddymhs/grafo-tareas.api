@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  Cara,
   EstadoNodo,
   Nodo,
   Prisma,
@@ -16,6 +17,7 @@ import { PosicionNodoDto } from './dto/index.js';
 export interface FiltroNodos {
   readonly tipo?: TipoNodo;
   readonly estado?: EstadoNodo;
+  readonly cara?: Cara;
   /** '' (vacía) = los que no tienen etapa; undefined = cualquiera. */
   readonly etapa?: string;
   readonly etiqueta?: string;
@@ -30,6 +32,7 @@ export interface FiltroNodos {
 function whereDe({
   tipo,
   estado,
+  cara,
   etapa,
   etiqueta,
   rama,
@@ -77,6 +80,7 @@ function whereDe({
   return {
     tipo,
     estado,
+    cara,
     ...porEtapa,
     ...porRama,
     ...porTexto,

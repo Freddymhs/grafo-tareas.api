@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { EstadoNodo, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo, TipoNodo } from '@prisma/client';
 import {
   IsEnum,
   IsIn,
@@ -25,6 +25,15 @@ export class ListarNodosDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(EstadoNodo)
   estado?: EstadoNodo;
+
+  @ApiPropertyOptional({
+    enum: Cara,
+    description:
+      'Solo los de esta cara de su HU (FASE 17): REAL = el trabajo, PLAN = el Draft',
+  })
+  @IsOptional()
+  @IsEnum(Cara)
+  cara?: Cara;
 
   @ApiPropertyOptional({
     example: 'ENTENDIMIENTO',
