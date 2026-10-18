@@ -222,6 +222,10 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
     );
     const cierre = tarea(/FASE 22 .*falta URL commit/);
     expect(nodo(cierre.id)?.etiquetas).not.toContain(ETIQUETA);
+    // Un trámite va a su columna, a la derecha de CERRADO, sea cual sea su sección en Todoist.
+    expect(conTramite.nodos.find((n) => n.externoId === cierre.id)?.etapa).toBe(
+      'TRÁMITES DE CIERRE',
+    );
     expect(
       conTramite.nodos.find((n) => n.externoId === cierre.id)?.etiquetas,
     ).toContain(ETIQUETA);

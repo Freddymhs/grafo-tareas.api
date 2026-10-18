@@ -25,6 +25,13 @@ export const PATRON_COLOR_HEX = /^#[0-9a-fA-F]{6}$/;
 export const LARGO_MAXIMO_TITULO = 500;
 export const MAXIMO_POSICIONES_POR_LOTE = 5000;
 
+/**
+ * Lo que falta después de cerrar (URL commit, evidencias, wiki): una columna a la derecha de CERRADO (Freddy, 2026-10-18:
+ * «a la derecha… estas son las cosas que me faltaron después de haber cerrado»). Un trámite va acá sea cual sea su
+ * sección en el tablero de origen: en ENTENDIMIENTO parecía trabajo por entender.
+ */
+export const ETAPA_TRAMITES = 'TRÁMITES DE CIERRE';
+
 /** Las columnas del tablero, en orden: las etapas del método (`tablero.secciones` en refs.yaml, PORTAR.md) con los
  *  nombres que Freddy usa en su tablero. C9 (2026-10-16): lista fija. `ETAPAS` en el entorno la reemplaza (coma). */
 export const ETAPAS_POR_DEFECTO: readonly string[] = [
@@ -40,6 +47,7 @@ export const ETAPAS_POR_DEFECTO: readonly string[] = [
   'Pull Request',
   'APROBADO',
   'CERRADO',
+  ETAPA_TRAMITES,
   '🔎 Precheck fin de sprint (archivadas)',
 ];
 export const PRIORIDAD_MINIMA = 1;

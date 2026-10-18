@@ -1,6 +1,7 @@
 // FASE_*.md + entendimiento.md → plan del grafo (puro). Cada FASE es un nodo FASE con su etapa derivada de
 // las casillas y la etiqueta de su rol (C11); `**Dependencias**` son conexiones DEPENDE_DE entre FASEs; cada punto ABIERTO es una DUDA.
 import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { ETAPA_TRAMITES } from '../../common/constants/grafo.constants.js';
 import { externoHistoria, nodoHistoria } from '../plan.js';
 import type { ConexionPlan, NodoPlan, Plan } from '../plan.js';
 import { AbiertoLeido } from './leer-abiertos.js';
@@ -116,7 +117,7 @@ function tramiteDe(fase: FaseLeida, etiqueta: string): NodoPlan | null {
       'Sale de las casillas de «## Cierre oficial» de la FASE: se tilda allá, no acá.',
     estado: falta ? EstadoNodo.ABIERTO : EstadoNodo.CERRADO,
     color: null,
-    etapa: null,
+    etapa: ETAPA_TRAMITES,
     etiquetas: [etiqueta],
     prioridad: null,
     vence: null,

@@ -131,6 +131,8 @@ describe('traducirFases', () => {
         titulo: 'FASE 7: falta URL commit, Evidencias',
         estado: EstadoNodo.ABIERTO,
         etiquetas: [TRAMITE],
+        // A la derecha de CERRADO: lo que falta después de cerrar (Freddy, 2026-10-18).
+        etapa: 'TRÁMITES DE CIERRE',
       });
       expect(conTramites.conexiones).toContainEqual({
         origenExternoId: externoTramite(7),

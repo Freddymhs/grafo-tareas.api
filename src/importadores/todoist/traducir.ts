@@ -23,6 +23,7 @@ export interface SeccionTodoist {
 
 export type { ConexionPlan, NodoPlan, Plan } from '../plan.js';
 import {
+  ETAPA_TRAMITES,
   ETIQUETA_CARRIL,
   etiquetaDeRonda,
 } from '../../common/constants/grafo.constants.js';
@@ -205,10 +206,9 @@ export function traducir(
     // C9: la sección es la etapa del tablero si está en la lista; si no, queda al pie de la descripción.
     const etapa = seccion !== null && etapas.includes(seccion) ? seccion : null;
     const pieza = piezaDe(tarea);
-    const tramite =
-      etiquetaTramite !== null && PATRON_TRAMITE.test(tarea.content)
-        ? [etiquetaTramite]
-        : [];
+    const esTramite =
+      etiquetaTramite !== null && PATRON_TRAMITE.test(tarea.content);
+    const tramite = esTramite && etiquetaTramite ? [etiquetaTramite] : [];
     return {
       externoId: tarea.id,
       tipo: TipoNodo.TAREA,
@@ -216,7 +216,8 @@ export function traducir(
       descripcion: descripcionDe(tarea, seccion, etapa),
       estado: estadoDe(tarea, seccion),
       color: null,
-      etapa,
+      // Lo que falta después de cerrar va a su columna, no a la sección donde quedó en el tablero de origen.
+      etapa: esTramite ? ETAPA_TRAMITES : etapa,
       etiquetas: [...tarea.labels, ...(pieza?.etiquetas ?? []), ...tramite],
       prioridad: prioridadDe(tarea),
       vence: tarea.due?.date ?? null,
