@@ -97,6 +97,26 @@ describe('calcularPaginas — una página por HU (FASE 15, «la API decide»)', 
     expect(contenido(PAGINA_SIN_HU)).toEqual(['nota-suelta']);
   });
 
+  it('la misma regla en «Sin HU»: una tarjeta suelta trae lo que necesita, a un salto (la madre con sus hijas de otras HU)', () => {
+    const conMadre = calcularPaginas(
+      [...nodos, nodo('madre', TipoNodo.TAREA)],
+      [
+        ...conexiones,
+        conexion('madre', DEPENDE_DE, 'tarjeta-a'),
+        conexion('madre', DEPENDE_DE, 'tarjeta-b'),
+      ],
+    );
+    const sinHu = conMadre.find(({ id }) => id === PAGINA_SIN_HU);
+    expect([...(sinHu?.nodos ?? [])].sort()).toEqual([
+      'madre',
+      'nota-suelta',
+      'tarjeta-a',
+      'tarjeta-b',
+    ]);
+    // Las hijas siguen en la página de su HU.
+    expect(conMadre[0].nodos).toContain('tarjeta-a');
+  });
+
   it('cuenta las tareas abiertas de cada página (para la pestaña)', () => {
     expect(pagina('HU 19565')?.abiertas).toBe(3);
     expect(pagina('HU 20379')?.abiertas).toBe(2);

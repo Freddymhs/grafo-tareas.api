@@ -33,7 +33,7 @@ export interface Pagina {
  * Las páginas de la VR (FASE 15): una por HU, para trabajar una a la vez. Una página trae su árbol (lo que le
  * PERTENECE_A, directo o a través de una FASE) más lo que bloquea a lo suyo, un salto: la duda, la persona, la tarea de
  * la que depende. Si lo que bloquea es una duda, también a quién espera. Las ramas no entran: son el color. Lo que
- * ninguna HU trae va a «Sin HU». Vive en la API: la VR muestra la página, no decide qué hay en ella.
+ * ninguna HU trae va a «Sin HU», con la misma regla (una tarjeta suelta llega con lo que necesita, aunque sea de una HU). Vive en la API: la VR muestra la página, no decide qué hay en ella.
  */
 export function calcularPaginas(
   nodos: readonly NodoDePagina[],
@@ -51,12 +51,12 @@ export function calcularPaginas(
       .map(({ destinoId }) => destinoId);
   const esDuda = (id: string) => porId.get(id)?.tipo === TipoNodo.DUDA;
 
-  const contenidoDe = (historiaId: string): string[] => {
-    const arbol = arbolDe(historiaId, hijosDe);
-    const bloqueadores = bloqueadoresDe(arbol);
+  // La regla de toda página: lo suyo y lo que eso necesita, a un salto (y, si es una duda, a quién espera).
+  const conLoQueNecesita = (propios: ReadonlySet<string>): string[] => {
+    const bloqueadores = bloqueadoresDe(propios);
     const dudas = new Set(bloqueadores.filter(esDuda));
     const aQuienEsperan = bloqueadoresDe(dudas);
-    const todos = new Set([...arbol, ...bloqueadores, ...aQuienEsperan]);
+    const todos = new Set([...propios, ...bloqueadores, ...aQuienEsperan]);
     return [...todos].filter((id) => !esRama(id));
   };
   const abiertasEn = (ids: readonly string[]) =>
@@ -73,7 +73,7 @@ export function calcularPaginas(
       a.titulo.localeCompare(b.titulo, undefined, { numeric: true }),
     );
   const deHistorias: Pagina[] = historias.map(({ id, titulo }) => {
-    const ids = contenidoDe(id);
+    const ids = conLoQueNecesita(arbolDe(id, hijosDe));
     return {
       id,
       titulo,
@@ -84,9 +84,13 @@ export function calcularPaginas(
   });
 
   const yaEnUnaPagina = new Set(deHistorias.flatMap(({ nodos: ids }) => ids));
-  const sueltos = nodos
-    .map(({ id }) => id)
-    .filter((id) => !yaEnUnaPagina.has(id) && !esRama(id));
+  const sueltos = conLoQueNecesita(
+    new Set(
+      nodos
+        .map(({ id }) => id)
+        .filter((id) => !yaEnUnaPagina.has(id) && !esRama(id)),
+    ),
+  );
   const sinHu: Pagina[] =
     sueltos.length === 0
       ? []
