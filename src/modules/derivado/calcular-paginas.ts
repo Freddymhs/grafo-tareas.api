@@ -68,13 +68,13 @@ export function calcularPaginas(
   const esPlan = (id: string) => porId.get(id)?.cara === Cara.PLAN;
   const esReal = (id: string) => !esPlan(id);
 
-  // La regla de toda página: lo suyo y lo que eso necesita, a un salto (y, si es una duda, a quién espera). Una duda que
-  // ya está en la cara real de la HU no se repite en el plan, ni a quién espera: vive en una sola cara (Freddy, 2026-10-19).
+  // La regla de toda página: lo suyo y lo que eso necesita, a un salto (y, si es una duda, a quién espera). Una duda vive
+  // en una sola cara de su HU, ni ella ni a quién espera se repiten en la otra (Freddy, 2026-10-19).
   const conLoQueNecesita = (
     propios: ReadonlySet<string>,
-    dudasDeLoReal: ReadonlySet<string>,
+    dudasDeLaOtraCara: ReadonlySet<string>,
   ): string[] => {
-    const noRepetida = (id: string) => !dudasDeLoReal.has(id);
+    const noRepetida = (id: string) => !dudasDeLaOtraCara.has(id);
     const suyos = new Set([...propios].filter(noRepetida));
     const bloqueadores = bloqueadoresDe(suyos).filter(noRepetida);
     const dudas = new Set(bloqueadores.filter(esDuda));
@@ -117,9 +117,9 @@ export function calcularPaginas(
     titulo: string,
     historiaId: string | null,
     propios: ReadonlySet<string>,
-    dudasDeLoReal: ReadonlySet<string> = new Set(),
+    dudasDeLaOtraCara: ReadonlySet<string> = new Set(),
   ): Pagina => {
-    const ids = conLoQueNecesita(propios, dudasDeLoReal);
+    const ids = conLoQueNecesita(propios, dudasDeLaOtraCara);
     const id = cara === Cara.PLAN ? paginaDelPlan(libro) : libro;
     return {
       id,
@@ -134,20 +134,27 @@ export function calcularPaginas(
   };
 
   const deHistorias: Pagina[] = historias.flatMap(({ id, titulo }) => {
+    const propiosDeLoReal = arbolDe(id, hijosDe, esReal);
+    // El plan de la HU: sus piezas (de donde cuelguen) y lo que cuelga de ellas.
+    const piezas = [...arbolDe(id, hijosDe)].filter(esPlan);
+    const delPlan = new Set([
+      id,
+      ...piezas.flatMap((pieza) => [...arbolDe(pieza, hijosDe)]),
+    ]);
+    // Una duda va en la cara de quien es dueña (lo que le PERTENECE_A); si es de las dos, gana lo real. Si además frena
+    // algo de la otra cara, ahí se ve la pieza de la que se depende, no la duda (Freddy: «el plan quedó sin dudas»).
+    const dudasDelPlan = new Set(
+      [...delPlan].filter((d) => esDuda(d) && !propiosDeLoReal.has(d)),
+    );
     const real = pagina(
       id,
       Cara.REAL,
       titulo,
       id,
-      arbolDe(id, hijosDe, esReal),
+      propiosDeLoReal,
+      dudasDelPlan,
     );
-    // El plan de la HU: sus piezas (de donde cuelguen) y lo que cuelga de ellas.
-    const piezas = [...arbolDe(id, hijosDe)].filter(esPlan);
     if (piezas.length === 0) return [real];
-    const delPlan = new Set([
-      id,
-      ...piezas.flatMap((pieza) => [...arbolDe(pieza, hijosDe)]),
-    ]);
     const dudasDeLoReal = new Set(real.nodos.filter(esDuda));
     return [real, pagina(id, Cara.PLAN, titulo, id, delPlan, dudasDeLoReal)];
   });

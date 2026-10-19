@@ -279,3 +279,41 @@ describe('calcularPaginas — una duda vive en una sola cara: la de lo real gana
     ]);
   });
 });
+
+describe('calcularPaginas — la duda va en la cara de quien es dueña (Freddy, 2026-10-19: «el plan quedó sin dudas»)', () => {
+  const { PLAN } = Cara;
+  const { ABIERTO } = EstadoNodo;
+  const paginas = calcularPaginas(
+    [
+      nodo('HU 20379', TipoNodo.HISTORIA),
+      nodo('mi-pbi', TipoNodo.TAREA),
+      nodo('pieza-plan', TipoNodo.TAREA, ABIERTO, PLAN),
+      nodo('duda-de-la-pieza', TipoNodo.DUDA),
+      nodo('carabantes', TipoNodo.PERSONA),
+    ],
+    [
+      conexion('mi-pbi', PERTENECE_A, 'HU 20379'),
+      conexion('pieza-plan', PERTENECE_A, 'HU 20379'),
+      conexion('mi-pbi', DEPENDE_DE, 'pieza-plan'),
+      conexion('duda-de-la-pieza', PERTENECE_A, 'pieza-plan'),
+      conexion('pieza-plan', BLOQUEADA_POR, 'duda-de-la-pieza'),
+      conexion('mi-pbi', BLOQUEADA_POR, 'duda-de-la-pieza'),
+      conexion('duda-de-la-pieza', ESPERA_RESPUESTA_DE, 'carabantes'),
+    ],
+  );
+  const contenido = (id: string) =>
+    [...(paginas.find((p) => p.id === id)?.nodos ?? [])].sort();
+
+  it('una duda que pertenece a una pieza del plan se ve en el plan, aunque también frene lo real', () => {
+    expect(contenido(paginaDelPlan('HU 20379'))).toEqual([
+      'HU 20379',
+      'carabantes',
+      'duda-de-la-pieza',
+      'pieza-plan',
+    ]);
+  });
+
+  it('lo real muestra la pieza de la que depende, no la duda ajena', () => {
+    expect(contenido('HU 20379')).toEqual(['HU 20379', 'mi-pbi', 'pieza-plan']);
+  });
+});
