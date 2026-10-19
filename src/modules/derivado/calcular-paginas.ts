@@ -68,12 +68,18 @@ export function calcularPaginas(
   const esPlan = (id: string) => porId.get(id)?.cara === Cara.PLAN;
   const esReal = (id: string) => !esPlan(id);
 
-  // La regla de toda página: lo suyo y lo que eso necesita, a un salto (y, si es una duda, a quién espera).
-  const conLoQueNecesita = (propios: ReadonlySet<string>): string[] => {
-    const bloqueadores = bloqueadoresDe(propios);
+  // La regla de toda página: lo suyo y lo que eso necesita, a un salto (y, si es una duda, a quién espera). Una duda que
+  // ya está en la cara real de la HU no se repite en el plan, ni a quién espera: vive en una sola cara (Freddy, 2026-10-19).
+  const conLoQueNecesita = (
+    propios: ReadonlySet<string>,
+    dudasDeLoReal: ReadonlySet<string>,
+  ): string[] => {
+    const noRepetida = (id: string) => !dudasDeLoReal.has(id);
+    const suyos = new Set([...propios].filter(noRepetida));
+    const bloqueadores = bloqueadoresDe(suyos).filter(noRepetida);
     const dudas = new Set(bloqueadores.filter(esDuda));
     const aQuienEsperan = bloqueadoresDe(dudas);
-    const todos = new Set([...propios, ...bloqueadores, ...aQuienEsperan]);
+    const todos = new Set([...suyos, ...bloqueadores, ...aQuienEsperan]);
     return [...todos].filter((id) => !esRama(id));
   };
   const abiertasEn = (ids: readonly string[]) =>
@@ -111,8 +117,9 @@ export function calcularPaginas(
     titulo: string,
     historiaId: string | null,
     propios: ReadonlySet<string>,
+    dudasDeLoReal: ReadonlySet<string> = new Set(),
   ): Pagina => {
-    const ids = conLoQueNecesita(propios);
+    const ids = conLoQueNecesita(propios, dudasDeLoReal);
     const id = cara === Cara.PLAN ? paginaDelPlan(libro) : libro;
     return {
       id,
@@ -141,7 +148,8 @@ export function calcularPaginas(
       id,
       ...piezas.flatMap((pieza) => [...arbolDe(pieza, hijosDe)]),
     ]);
-    return [real, pagina(id, Cara.PLAN, titulo, id, delPlan)];
+    const dudasDeLoReal = new Set(real.nodos.filter(esDuda));
+    return [real, pagina(id, Cara.PLAN, titulo, id, delPlan, dudasDeLoReal)];
   });
 
   const yaEnUnaPagina = new Set(deHistorias.flatMap(({ nodos: ids }) => ids));

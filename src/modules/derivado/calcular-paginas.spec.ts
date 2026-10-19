@@ -234,3 +234,48 @@ describe('calcularPaginas — las dos caras de cada HU (FASE 17): lo real y el p
     expect(contenido(paginaDelPlan(PAGINA_SIN_HU))).toEqual(['plan-suelto']);
   });
 });
+
+describe('calcularPaginas — una duda vive en una sola cara: la de lo real gana (Freddy, 2026-10-19)', () => {
+  const { PLAN } = Cara;
+  const { ABIERTO } = EstadoNodo;
+  const paginas = calcularPaginas(
+    [
+      nodo('HU 20379', TipoNodo.HISTORIA),
+      nodo('mi-pbi', TipoNodo.TAREA),
+      nodo('pieza-plan', TipoNodo.TAREA, ABIERTO, PLAN),
+      nodo('duda-de-mi-pbi', TipoNodo.DUDA),
+      nodo('duda-del-plan', TipoNodo.DUDA),
+      nodo('carabantes', TipoNodo.PERSONA),
+      nodo('graciany', TipoNodo.PERSONA),
+    ],
+    [
+      conexion('mi-pbi', PERTENECE_A, 'HU 20379'),
+      conexion('pieza-plan', PERTENECE_A, 'HU 20379'),
+      conexion('mi-pbi', BLOQUEADA_POR, 'duda-de-mi-pbi'),
+      conexion('pieza-plan', BLOQUEADA_POR, 'duda-de-mi-pbi'),
+      conexion('duda-de-mi-pbi', ESPERA_RESPUESTA_DE, 'carabantes'),
+      conexion('pieza-plan', BLOQUEADA_POR, 'duda-del-plan'),
+      conexion('duda-del-plan', ESPERA_RESPUESTA_DE, 'graciany'),
+    ],
+  );
+  const contenido = (id: string) =>
+    [...(paginas.find((p) => p.id === id)?.nodos ?? [])].sort();
+
+  it('la duda que destraba lo real se ve en lo real, aunque también frene una pieza del plan', () => {
+    expect(contenido('HU 20379')).toEqual([
+      'HU 20379',
+      'carabantes',
+      'duda-de-mi-pbi',
+      'mi-pbi',
+    ]);
+  });
+
+  it('el plan muestra solo sus propias dudas: la de lo real no se repite, ni a quién espera', () => {
+    expect(contenido(paginaDelPlan('HU 20379'))).toEqual([
+      'HU 20379',
+      'duda-del-plan',
+      'graciany',
+      'pieza-plan',
+    ]);
+  });
+});
