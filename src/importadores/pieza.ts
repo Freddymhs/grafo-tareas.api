@@ -23,11 +23,14 @@ const ESTADO_PIEZA: ReadonlyArray<readonly [RegExp, string]> = [
 /** Un carril del reparto se llama `A · zona` (zona de código: dos carriles no comparten archivos). */
 const CARRIL = /^[A-Z] · .+$/;
 export const ETIQUETA_PIEZA = 'pieza';
-/** Un color por carril, por su letra: en la VR cada carril se ve como su rama. */
+/**
+ * Un color por carril, por su letra: en la VR cada carril se ve como su rama. Sin morados: en la VR el morado es el PBI,
+ * y la C violeta hacía pasar por PBI a sus piezas (Freddy en el visor, 2026-10-18: «¿qué significa el morado?»).
+ */
 export const COLORES_CARRIL: readonly string[] = [
   '#0ea5e9',
   '#14b8a6',
-  '#8b5cf6',
+  '#eab308',
   '#f43f5e',
   '#84cc16',
 ];
