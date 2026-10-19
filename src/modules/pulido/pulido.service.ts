@@ -43,6 +43,12 @@ export class PulidoService {
     return this.repository.cambios();
   }
 
+  async cambiosDe(nodoId: string) {
+    const bitacora = await this.repository.cambiosDe(nodoId);
+    if (!bitacora) throw new NotFoundError('Nodo');
+    return bitacora;
+  }
+
   async contraste() {
     const { nodos, descartes, bitacora } =
       await this.repository.paraContraste();

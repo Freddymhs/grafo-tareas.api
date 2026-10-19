@@ -235,6 +235,49 @@ describe('El pulido del grafo (e2e, FASE 16) — descartar sin borrar y la bitá
     );
   });
 
+  it('GET /nodos/:id/cambios: solo la bitácora de ese nodo, lo más reciente primero — cómo se cerró una duda (Freddy, 2026-10-19)', async () => {
+    const crear = async (titulo: string) =>
+      (
+        await pedir<{ id: string }>('POST', '/nodos', {
+          tipo: TipoNodo.DUDA,
+          titulo,
+        })
+      ).data.id;
+    const duda = await crear('¿quién asigna las Unidades en QA?');
+    const otra = await crear('otra duda');
+    await pedir('PATCH', `/nodos/${duda}`, {
+      titulo: '¿quién asigna las Unidades de QA?',
+      motivo: 'más claro',
+    });
+    await pedir('PATCH', `/nodos/${otra}`, {
+      estado: 'CERRADO',
+      motivo: 'no es de este nodo',
+    });
+    await pedir('PATCH', `/nodos/${duda}`, {
+      estado: 'CERRADO',
+      motivo: 'Thomas, 19-10: «el 1 y el 2 todavía no»',
+    });
+
+    const bitacora = await pedir<Cambio[]>('GET', `/nodos/${duda}/cambios`);
+    expect(bitacora.status).toBe(200);
+    expect(bitacora.data.map(({ nodoId }) => nodoId)).toEqual([duda, duda]);
+    expect(bitacora.data[0]).toEqual(
+      expect.objectContaining({
+        campo: 'estado',
+        despues: 'CERRADO',
+        motivo: 'Thomas, 19-10: «el 1 y el 2 todavía no»',
+      }),
+    );
+    expect(
+      (
+        await pedir(
+          'GET',
+          '/nodos/00000000-0000-4000-8000-000000000000/cambios',
+        )
+      ).status,
+    ).toBe(404);
+  });
+
   it('GET /contraste: de lo que vino de una fuente, qué se editó y qué se descartó (con el denominador)', async () => {
     const crearImportado = (externoId: string, titulo: string) =>
       ctx.prisma.nodo.create({

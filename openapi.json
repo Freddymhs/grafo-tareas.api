@@ -996,6 +996,48 @@
         "tags": ["Pulido"]
       }
     },
+    "/api/v1/nodos/{id}/cambios": {
+      "get": {
+        "operationId": "PulidoController_cambiosDe",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CambioResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "La bitácora de un nodo, lo más reciente primero: con qué motivo se cerró, se editó o se movió",
+        "tags": ["Pulido"]
+      }
+    },
     "/api/v1/nodos/{id}/complementos": {
       "get": {
         "operationId": "ComplementosController_deUnNodo",

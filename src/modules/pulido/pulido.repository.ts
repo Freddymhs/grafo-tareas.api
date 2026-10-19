@@ -118,6 +118,19 @@ export class PulidoRepository {
     return this.prisma.cambio.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
+  /** La bitácora de un nodo, lo más reciente primero; `null` si el nodo no existe. */
+  async cambiosDe(nodoId: string) {
+    const nodo = await this.prisma.nodo.findUnique({
+      where: { id: nodoId },
+      select: { id: true },
+    });
+    if (!nodo) return null;
+    return this.prisma.cambio.findMany({
+      where: { nodoId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   /** Lo que el contraste necesita (FASE 16): lo que vino de una fuente, lo descartado y la bitácora en orden. */
   async paraContraste() {
     const [nodos, descartes, bitacora] = await Promise.all([

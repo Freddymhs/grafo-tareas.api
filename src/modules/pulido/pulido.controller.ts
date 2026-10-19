@@ -82,4 +82,15 @@ export class PulidoController {
   cambios() {
     return this.service.cambios();
   }
+
+  @Get('nodos/:id/cambios')
+  @ApiOperation({
+    summary:
+      'La bitácora de un nodo, lo más reciente primero: con qué motivo se cerró, se editó o se movió',
+  })
+  @ApiResponse({ status: 200, type: [CambioResponseDto] })
+  @ApiResponse({ status: 404, type: ErrorResponseDto })
+  cambiosDe(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.cambiosDe(id);
+  }
 }
