@@ -1901,6 +1901,13 @@
           "abiertas": {
             "type": "number",
             "description": "Tareas abiertas de la página"
+          },
+          "frenan": {
+            "description": "Lo que frena en la página: lo abierto de lo que algo abierto de ella depende, espera respuesta o está bloqueado",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -1910,7 +1917,8 @@
           "titulo",
           "historiaId",
           "nodos",
-          "abiertas"
+          "abiertas",
+          "frenan"
         ]
       },
       "CarrilDto": {

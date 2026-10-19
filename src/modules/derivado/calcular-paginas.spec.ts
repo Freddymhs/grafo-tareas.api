@@ -124,6 +124,34 @@ describe('calcularPaginas — una página por HU (FASE 15, «la API decide»)', 
     expect(pagina('HU 20379')?.abiertas).toBe(2);
   });
 
+  it('dice lo que frena (el filtro 4): la duda, a quién espera y la tarea de la que se depende, no solo las dudas (Freddy, 2026-10-18)', () => {
+    expect([...(pagina('HU 19565')?.frenan ?? [])].sort()).toEqual([
+      'duda',
+      'persona',
+      'tarjeta-b',
+    ]);
+    expect(pagina('HU 20379')?.frenan).toEqual([]);
+  });
+
+  it('lo cerrado no frena, ni frena a lo cerrado', () => {
+    const conCerradas = calcularPaginas(
+      [
+        nodo('HU 1', TipoNodo.HISTORIA),
+        nodo('abierta', TipoNodo.TAREA),
+        nodo('cerrada', TipoNodo.TAREA, EstadoNodo.CERRADO),
+        nodo('duda-contestada', TipoNodo.DUDA, EstadoNodo.CERRADO),
+        nodo('cimiento', TipoNodo.TAREA),
+      ],
+      [
+        conexion('abierta', PERTENECE_A, 'HU 1'),
+        conexion('cerrada', PERTENECE_A, 'HU 1'),
+        conexion('abierta', BLOQUEADA_POR, 'duda-contestada'),
+        conexion('cerrada', DEPENDE_DE, 'cimiento'),
+      ],
+    );
+    expect(conCerradas[0].frenan).toEqual([]);
+  });
+
   it('sin nada suelto no hay página «Sin HU», y un ciclo de pertenencias no la cuelga', () => {
     const conCiclo = calcularPaginas(
       [

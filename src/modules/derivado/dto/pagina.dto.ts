@@ -36,4 +36,11 @@ export class PaginaDto {
 
   @ApiProperty({ description: 'Tareas abiertas de la página' })
   abiertas!: number;
+
+  @ApiProperty({
+    type: [String],
+    description:
+      'Lo que frena en la página: lo abierto de lo que algo abierto de ella depende, espera respuesta o está bloqueado',
+  })
+  frenan!: string[];
 }

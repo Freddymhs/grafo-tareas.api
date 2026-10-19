@@ -34,6 +34,11 @@ export interface Pagina {
   readonly nodos: readonly string[];
   /** Tareas abiertas de la página: lo que la pestaña muestra al lado del nombre. */
   readonly abiertas: number;
+  /**
+   * Lo que frena en la página (el filtro 4 de la VR): lo abierto de lo que algo abierto de la página depende, espera
+   * respuesta o está bloqueado. La misma regla que `GET /nodos/:id/bloqueado` (`CONEXIONES_BLOQUEANTES`), vista al revés.
+   */
+  readonly frenan: readonly string[];
 }
 
 /**
@@ -78,6 +83,22 @@ export function calcularPaginas(
         nodo?.tipo === TipoNodo.TAREA && nodo.estado === EstadoNodo.ABIERTO
       );
     }).length;
+  const estaAbierto = (id: string) =>
+    porId.get(id)?.estado === EstadoNodo.ABIERTO;
+  // Un freno cuenta si las dos puntas están en la página y abiertas: lo cerrado ya no frena ni espera.
+  const frenanEn = (ids: readonly string[]) => {
+    const enLaPagina = new Set(ids);
+    const frenos = bloqueantes
+      .filter(
+        ({ origenId, destinoId }) =>
+          enLaPagina.has(origenId) &&
+          enLaPagina.has(destinoId) &&
+          estaAbierto(origenId) &&
+          estaAbierto(destinoId),
+      )
+      .map(({ destinoId }) => destinoId);
+    return [...new Set(frenos)];
+  };
 
   const historias = nodos
     .filter(({ tipo }) => tipo === TipoNodo.HISTORIA)
@@ -101,6 +122,7 @@ export function calcularPaginas(
       historiaId,
       nodos: ids,
       abiertas: abiertasEn(ids),
+      frenan: frenanEn(ids),
     };
   };
 
