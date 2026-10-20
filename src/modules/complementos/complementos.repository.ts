@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  Cara,
   EstadoNodo,
   Nodo,
   Prisma,
@@ -14,6 +15,11 @@ type Tx = Prisma.TransactionClient;
 
 export interface NuevoComplemento {
   readonly padreId: string;
+  /** La cara de su dueño. */
+  readonly cara: Cara;
+  readonly prioridad: number | null;
+  /** A quién espera: queda ESPERA_RESPUESTA_DE en el mismo commit. */
+  readonly personaId: string | null;
   readonly tipo: TipoNodo;
   readonly titulo: string;
   readonly descripcion: string | null;
@@ -54,6 +60,9 @@ export class ComplementosRepository {
   async crear(nuevo: NuevoComplemento): Promise<Nodo> {
     const {
       padreId,
+      cara,
+      prioridad,
+      personaId,
       tipo,
       titulo,
       descripcion,
@@ -63,11 +72,26 @@ export class ComplementosRepository {
     } = nuevo;
     return this.prisma.$transaction(async (tx) => {
       const nodo = await tx.nodo.create({
-        data: { tipo, titulo, descripcion, etiquetas: [etiqueta] },
+        data: {
+          tipo,
+          titulo,
+          descripcion,
+          cara,
+          prioridad,
+          etiquetas: [etiqueta],
+        },
       });
       await conectar(tx, nodo.id, padreId, TipoConexion.PERTENECE_A);
       if (frenaAlPadre) {
         await conectar(tx, padreId, nodo.id, TipoConexion.BLOQUEADA_POR);
+      }
+      if (personaId) {
+        await conectar(
+          tx,
+          nodo.id,
+          personaId,
+          TipoConexion.ESPERA_RESPUESTA_DE,
+        );
       }
       if (ritual) {
         const delRitual = await this.nodoDeRitual(tx, ritual);

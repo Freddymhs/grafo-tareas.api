@@ -36,7 +36,7 @@ export class ComplementosService {
   ) {}
 
   async crear(padreId: string, dto: CreateComplementoDto) {
-    const { tipo, titulo, descripcion, ritual } = dto;
+    const { tipo, titulo, descripcion, ritual, personaId, prioridad } = dto;
     const complemento = this.roles.complemento(tipo);
     const esParaUnRitual = complemento.nodo === TipoNodo.DAILY_ITEM;
     if (!esParaUnRitual && ritual !== undefined) {
@@ -49,9 +49,14 @@ export class ComplementosService {
         `"${tipo}" se dice en un ritual: falta "ritual" (GET /area)`,
       );
     }
-    await this.buscar(padreId);
+    const padre = await this.buscar(padreId);
+    const persona = personaId ? await this.buscarPersona(personaId) : null;
     const nodo = await this.repository.crear({
       padreId,
+      // La cara del dueño: así el dato dice lo mismo que la página donde se muestra (la de su PERTENECE_A).
+      cara: padre.cara,
+      prioridad: prioridad ?? null,
+      personaId: persona?.id ?? null,
       tipo: complemento.nodo,
       titulo,
       descripcion: descripcion ?? null,
@@ -147,5 +152,16 @@ export class ComplementosService {
     const nodo = await this.repository.buscar(id);
     if (!nodo) throw new NotFoundError(RECURSO);
     return nodo;
+  }
+
+  /** A quién espera un bloqueante: tiene que ser una PERSONA del grafo. */
+  private async buscarPersona(id: string): Promise<Nodo> {
+    const persona = await this.buscar(id);
+    if (persona.tipo !== TipoNodo.PERSONA) {
+      throw new ValidationError(
+        '"personaId" tiene que ser una PERSONA del grafo',
+      );
+    }
+    return persona;
   }
 }

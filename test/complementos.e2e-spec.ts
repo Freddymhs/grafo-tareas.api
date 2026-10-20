@@ -5,7 +5,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { TipoNodo } from '@prisma/client';
+import { Cara, TipoNodo } from '@prisma/client';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/database/prisma.service';
 import { AreaService } from './../src/modules/area/area.service';
@@ -118,6 +118,54 @@ describe('Complementos (e2e) — lo que cuelga de un PBI', () => {
       'apunte',
       'tramite',
     ]);
+  });
+
+  it('un bloqueante en una sola llamada: espera a su persona, nace en la cara de su dueño y con su prioridad (Freddy, 2026-10-19)', async () => {
+    const persona = await ctx.prisma.nodo.create({
+      data: { tipo: TipoNodo.PERSONA, titulo: 'Carabantes' },
+    });
+    const pieza = await ctx.prisma.nodo.create({
+      data: { tipo: TipoNodo.TAREA, titulo: '3.1 · Iniciar', cara: Cara.PLAN },
+    });
+    const res = await pedir<Nodo & { cara: string; prioridad: number }>(
+      'POST',
+      `/nodos/${pieza.id}/complementos`,
+      {
+        tipo: 'duda-negocio',
+        titulo: 'Para Carabantes: ¿dos recepcionistas a la vez?',
+        personaId: persona.id,
+        prioridad: 1,
+      },
+    );
+    expect(res.status).toBe(201);
+    expect(res.body.data).toMatchObject({ cara: 'PLAN', prioridad: 1 });
+    const conexiones = await ctx.prisma.conexion.findMany({
+      where: {
+        OR: [{ origenId: res.body.data.id }, { destinoId: res.body.data.id }],
+      },
+    });
+    expect(conexiones.map(({ tipo }) => tipo).sort()).toEqual([
+      'BLOQUEADA_POR',
+      'ESPERA_RESPUESTA_DE',
+      'PERTENECE_A',
+    ]);
+  });
+
+  it('una persona que no existe es 404 y no deja nada a medias; algo que no es una persona, 400', async () => {
+    const antes = await ctx.prisma.nodo.count();
+    const sinPersona = await pedir('POST', `/nodos/${ctx.pbi}/complementos`, {
+      tipo: 'duda-negocio',
+      titulo: 'x',
+      personaId: UUID_INEXISTENTE,
+    });
+    expect(sinPersona.status).toBe(404);
+    expect(await ctx.prisma.nodo.count()).toBe(antes);
+    const noEsPersona = await pedir('POST', `/nodos/${ctx.pbi}/complementos`, {
+      tipo: 'duda-negocio',
+      titulo: 'x',
+      personaId: ctx.pbi,
+    });
+    expect(noEsPersona.status).toBe(400);
   });
 
   it('un tipo fuera del catálogo es 400; un padre que no existe, 404', async () => {

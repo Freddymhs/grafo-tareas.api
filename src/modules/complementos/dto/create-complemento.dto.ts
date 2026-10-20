@@ -1,6 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
-import { LARGO_MAXIMO_TITULO } from '../../../common/constants/index.js';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
+import {
+  LARGO_MAXIMO_TITULO,
+  PRIORIDAD_MAXIMA,
+  PRIORIDAD_MINIMA,
+} from '../../../common/constants/index.js';
 
 export class CreateComplementoDto {
   @ApiProperty({
@@ -31,4 +44,25 @@ export class CreateComplementoDto {
   @IsString()
   @IsNotEmpty()
   ritual?: string;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description:
+      'A quién espera (una PERSONA): queda ESPERA_RESPUESTA_DE en la misma llamada. Un bloqueante nace entero, sin tres pedidos',
+  })
+  @IsOptional()
+  @IsUUID()
+  personaId?: string;
+
+  @ApiPropertyOptional({
+    example: 1,
+    minimum: PRIORIDAD_MINIMA,
+    maximum: PRIORIDAD_MAXIMA,
+    description: '1 = la más urgente',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(PRIORIDAD_MINIMA)
+  @Max(PRIORIDAD_MAXIMA)
+  prioridad?: number;
 }
