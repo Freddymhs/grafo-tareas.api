@@ -37,6 +37,8 @@ const mockRepository = {
   contarExistentes: jest.fn().mockResolvedValue(1),
   buscarPorExterno: jest.fn().mockResolvedValue(null),
   guardarPosiciones: jest.fn().mockResolvedValue(1),
+  tiposDe: jest.fn().mockResolvedValue([TipoNodo.TAREA]),
+  guardarOrdenDelDia: jest.fn().mockResolvedValue(1),
 };
 
 const mockEtapas = { validar: jest.fn(), lista: () => [] };
@@ -121,6 +123,43 @@ describe('NodosService', () => {
         service.guardarPosiciones({ posiciones: [posicion] }),
       ).rejects.toThrow(NotFoundError);
       expect(mockRepository.guardarPosiciones).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('ordenarDia', () => {
+    it('guarda el orden y devuelve cuántas', async () => {
+      const service = await armar();
+      await expect(service.ordenarDia({ ids: [NODO.id] })).resolves.toEqual({
+        ordenadas: 1,
+      });
+      expect(mockRepository.guardarOrdenDelDia).toHaveBeenCalledWith([NODO.id]);
+    });
+
+    it('rechaza una tarjeta repetida', async () => {
+      const service = await armar();
+      await expect(
+        service.ordenarDia({ ids: [NODO.id, NODO.id] }),
+      ).rejects.toThrow(ValidationError);
+    });
+
+    it('404 si algún id no existe', async () => {
+      const service = await armar();
+      mockRepository.tiposDe.mockResolvedValueOnce([]);
+
+      await expect(service.ordenarDia({ ids: [NODO.id] })).rejects.toThrow(
+        NotFoundError,
+      );
+      expect(mockRepository.guardarOrdenDelDia).not.toHaveBeenCalled();
+    });
+
+    it('solo tarjetas: a una FASE el importador le pisaría la etiqueta', async () => {
+      const service = await armar();
+      mockRepository.tiposDe.mockResolvedValueOnce([TipoNodo.FASE]);
+
+      await expect(service.ordenarDia({ ids: [NODO.id] })).rejects.toThrow(
+        ValidationError,
+      );
+      expect(mockRepository.guardarOrdenDelDia).not.toHaveBeenCalled();
     });
   });
 });

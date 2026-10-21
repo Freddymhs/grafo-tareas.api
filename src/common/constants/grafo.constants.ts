@@ -77,3 +77,11 @@ export const etiquetaDeComplemento = (clave: string) =>
 export const PREFIJO_RONDA = 'ronda:';
 export const etiquetaDeRonda = (ronda: string) => `${PREFIJO_RONDA}${ronda}`;
 export const ETIQUETA_CARRIL = 'carril';
+/**
+ * El orden del día: las tarjetas que Freddy puso en AHORA llevan `hoy:<n>`, 1 la primera, como la ronda lleva su número
+ * (sin columna nueva en la base). Lo escribe `PUT /nodos/orden-del-dia` de una vez; la VR lo muestra con el lente «hoy».
+ */
+export const PREFIJO_HOY = 'hoy:';
+export const etiquetaDeHoy = (lugar: number) => `${PREFIJO_HOY}${lugar}`;
+/** AHORA tiene 4 o 5 tarjetas: más que esto ya no es un orden del día. */
+export const MAXIMO_TARJETAS_DEL_DIA = 20;

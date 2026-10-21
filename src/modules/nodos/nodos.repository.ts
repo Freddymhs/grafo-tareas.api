@@ -13,6 +13,7 @@ import { PrismaService } from '../../database/prisma.service.js';
 import type { Diferencia } from '../pulido/diferencias.js';
 import type { FiltroRol } from '../roles/roles.service.js';
 import { PosicionNodoDto } from './dto/index.js';
+import { cambiosDelDia } from './orden-del-dia.js';
 
 export interface FiltroNodos {
   readonly tipo?: TipoNodo;
@@ -178,5 +179,45 @@ export class NodosRepository extends BaseRepository<
     );
     const resultado = await this.prisma.$transaction(actualizaciones);
     return resultado.length;
+  }
+
+  /** El tipo de cada id que existe (los que no, no vienen). */
+  async tiposDe(ids: readonly string[]): Promise<TipoNodo[]> {
+    const nodos = await this.prisma.nodo.findMany({
+      where: { id: { in: [...ids] } },
+      select: { tipo: true },
+    });
+    return nodos.map(({ tipo }) => tipo);
+  }
+
+  /**
+   * Un solo commit: el día anterior se borra y el nuevo queda entero, o nada cambia. Mover una etiqueta no es trabajo:
+   * se conserva `updatedAt`, o la tarjeta cerrada ayer saldría en «terminé» del parte de hoy (`GET /derivado/dia`).
+   */
+  async guardarOrdenDelDia(ids: readonly string[]): Promise<number> {
+    return this.prisma.$transaction(async (tx) => {
+      const conEtiquetas = await tx.nodo.findMany({
+        where: {
+          OR: [
+            { id: { in: [...ids] } },
+            { NOT: { etiquetas: { isEmpty: true } } },
+          ],
+        },
+        select: { id: true, etiquetas: true, updatedAt: true },
+      });
+      const fechaDe = new Map(
+        conEtiquetas.map(({ id, updatedAt }) => [id, updatedAt]),
+      );
+      const cambios = cambiosDelDia(conEtiquetas, ids);
+      await Promise.all(
+        cambios.map(({ id, etiquetas }) =>
+          tx.nodo.update({
+            where: { id },
+            data: { etiquetas: [...etiquetas], updatedAt: fechaDe.get(id) },
+          }),
+        ),
+      );
+      return ids.length;
+    });
   }
 }
