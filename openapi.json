@@ -246,49 +246,6 @@
         "tags": ["Nodos"]
       }
     },
-    "/api/v1/nodos/orden-del-dia": {
-      "put": {
-        "operationId": "NodosController_ordenarDia",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OrdenDelDiaDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "{ ordenadas: n }"
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "El orden del día: las tarjetas de AHORA llevan hoy:1…n y las de otro día lo pierden (todo o nada)",
-        "tags": ["Nodos"]
-      }
-    },
     "/api/v1/nodos/{id}": {
       "get": {
         "operationId": "NodosController_findOne",
@@ -1563,20 +1520,6 @@
           }
         },
         "required": ["statusCode", "error", "message", "meta"]
-      },
-      "OrdenDelDiaDto": {
-        "type": "object",
-        "properties": {
-          "ids": {
-            "description": "Las tarjetas (TAREA) de AHORA, la primera arriba. Vacía = el día sin nada",
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        },
-        "required": ["ids"]
       },
       "CreateNodoDto": {
         "type": "object",

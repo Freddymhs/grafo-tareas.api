@@ -13,7 +13,6 @@ import {
   CreateNodoDto,
   GuardarPosicionesDto,
   ListarNodosDto,
-  OrdenDelDiaDto,
   UpdateNodoDto,
 } from './dto/index.js';
 import { NodosRepository } from './nodos.repository.js';
@@ -130,29 +129,6 @@ export class NodosService {
     }
     const guardadas = await this.repository.guardarPosiciones(posiciones);
     return { guardadas };
-  }
-
-  /**
-   * El orden del día (AHORA de Herdr, que Freddy ordena a mano): las tarjetas llevan `hoy:1…n` y las de otro día lo
-   * pierden. Solo tarjetas: en una FASE, `importar:fases` reescribe las etiquetas y el lugar se perdería sin aviso.
-   */
-  async ordenarDia({ ids }: OrdenDelDiaDto) {
-    const hayRepetidas = new Set(ids).size !== ids.length;
-    if (hayRepetidas) {
-      throw new ValidationError('Una tarjeta aparece más de una vez en el día');
-    }
-    const tipos = await this.repository.tiposDe(ids);
-    if (tipos.length !== ids.length) {
-      throw new NotFoundError(RECURSO);
-    }
-    const noEsTarjeta = tipos.some((tipo) => tipo !== TipoNodo.TAREA);
-    if (noEsTarjeta) {
-      throw new ValidationError(
-        'El día se arma con tarjetas (TAREA): la FASE se ordena por su tarjeta [<id>]',
-      );
-    }
-    const ordenadas = await this.repository.guardarOrdenDelDia(ids);
-    return { ordenadas };
   }
 
   private validarColor(tipo: TipoNodo, color: string | undefined) {

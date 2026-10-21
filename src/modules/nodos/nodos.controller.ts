@@ -19,7 +19,6 @@ import {
   GuardarPosicionesDto,
   ListarNodosDto,
   NodoResponseDto,
-  OrdenDelDiaDto,
   PaginaNodosDto,
   UpdateNodoDto,
 } from './dto/index.js';
@@ -48,18 +47,6 @@ export class NodosController {
   @ApiResponse({ status: 404, type: ErrorResponseDto })
   guardarPosiciones(@Body() dto: GuardarPosicionesDto) {
     return this.service.guardarPosiciones(dto);
-  }
-
-  @Put('orden-del-dia')
-  @ApiOperation({
-    summary:
-      'El orden del día: las tarjetas de AHORA llevan hoy:1…n y las de otro día lo pierden (todo o nada)',
-  })
-  @ApiResponse({ status: 200, description: '{ ordenadas: n }' })
-  @ApiResponse({ status: 400, type: ErrorResponseDto })
-  @ApiResponse({ status: 404, type: ErrorResponseDto })
-  ordenarDia(@Body() dto: OrdenDelDiaDto) {
-    return this.service.ordenarDia(dto);
   }
 
   @Get(':id')
