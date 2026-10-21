@@ -1,13 +1,14 @@
-// `pnpm importar:fases -- --backlog <docs/backlog> [--tareas <Tareas>] [--roles <roles.yaml>] [--proyecto <nombre>] [--padres <json>] [--seco]` —
+// `pnpm importar:fases -- --backlog <docs/backlog> [--tareas <Tareas>] [--roles <roles.yaml>] [--proyecto <nombre>] [--padres <json>] [--seco] [--podar]` —
 // los FASE_*.md del método al grafo (FASE 5 tarea 3; el rol y la etapa salen del roles.yaml del área, FASE 8).
-// Corre desde `dist` (los alias `.js` no los resuelve ts-node). `--seco` cuenta sin escribir.
+// Corre desde `dist` (los alias `.js` no los resuelve ts-node). `--seco` cuenta sin escribir. `--podar` borra las
+// dependencias entre FASE que ningún .md declara (A.1); sin él solo se informan en `dependenciasViejas`.
 import { basename, resolve } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../../app.module';
 import { ImportadorFasesService } from './importador-fases.service';
 
 const USO =
-  'uso: importar:fases -- --backlog <carpeta con FASE_*.md> [--tareas <carpeta Tareas/>] [--roles <roles.yaml>] [--proyecto <nombre>] [--adoptar <origen>] [--padres <json>] [--seco]';
+  'uso: importar:fases -- --backlog <carpeta con FASE_*.md> [--tareas <carpeta Tareas/>] [--roles <roles.yaml>] [--proyecto <nombre>] [--adoptar <origen>] [--padres <json>] [--seco] [--podar]';
 /** `<orquestador>/docs/backlog`: el proyecto por defecto es el nombre del orquestador. */
 const DEL_BACKLOG_AL_ORQUESTADOR = '../..';
 /** `<orquestador>/docs/roles.yaml`: el del área, al lado del backlog. */
@@ -59,6 +60,7 @@ function leerArgumentos(argv: readonly string[]) {
     padres: valorDe(argv, '--padres'),
     proyecto,
     seco: argv.includes('--seco'),
+    podar: argv.includes('--podar'),
   };
 }
 

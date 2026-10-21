@@ -20,6 +20,7 @@ const OPCIONES = {
   padres: null,
   proyecto: PROYECTO,
   seco: false,
+  podar: false,
 };
 const FASES_EN_FIXTURE = 5;
 const ABIERTOS_EN_FIXTURE = 2;
@@ -349,5 +350,37 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
 
     const segunda = await ctx.importador.importar(opciones);
     expect(segunda.tarjetasEnganchadas).toBe(0);
+  });
+
+  it('A.1: una dependencia entre FASE que ningún .md declara se informa; solo con --podar se borra (Freddy, 2026-10-21)', async () => {
+    const fase = (numero: number) =>
+      ctx.prisma.nodo.findUniqueOrThrow({
+        where: {
+          externoOrigen_externoId: {
+            externoOrigen: ORIGEN,
+            externoId: `fase:${numero}`,
+          },
+        },
+      });
+    const [uno, dos, tres] = await Promise.all([fase(1), fase(2), fase(3)]);
+    await ctx.prisma.conexion.create({
+      data: {
+        origenId: uno.id,
+        destinoId: tres.id,
+        tipo: TipoConexion.DEPENDE_DE,
+      },
+    });
+    const vieja = { origenId: uno.id, destinoId: tres.id };
+    const declarada = { origenId: tres.id, destinoId: dos.id };
+
+    const informa = await ctx.importador.importar(OPCIONES);
+    expect(informa.dependenciasViejas).toEqual(['fase:1 → fase:3']);
+    expect(informa.dependenciasPodadas).toBe(0);
+    expect(await ctx.prisma.conexion.count({ where: vieja })).toBe(1);
+
+    const poda = await ctx.importador.importar({ ...OPCIONES, podar: true });
+    expect(poda.dependenciasPodadas).toBe(1);
+    expect(await ctx.prisma.conexion.count({ where: vieja })).toBe(0);
+    expect(await ctx.prisma.conexion.count({ where: declarada })).toBe(1);
   });
 });

@@ -12,6 +12,10 @@ import { leerRoles } from '../../modules/roles/leer-roles.js';
 import type { Roles } from '../../modules/roles/roles.types.js';
 import { aplicarPlan, conectar, guardarNodo, Tx } from '../aplicar-plan.js';
 import { simular } from '../simulacro.js';
+import {
+  dependenciasViejas,
+  textoDeDependencia,
+} from './dependencias-viejas.js';
 import { AbiertoLeido, leerAbiertos } from './leer-abiertos.js';
 import { FaseLeida, leerFase } from './leer-fase.js';
 import {
@@ -47,6 +51,8 @@ export interface OpcionesFases {
   /** JSON `{ tareas: { <task>: <hu> }, padres: { <hu>: <título> } }` leído del tracker (FASE 13); null = sin HU. */
   readonly padres: string | null;
   readonly seco: boolean;
+  /** Borrar las dependencias entre FASE que ningún .md declara (A.1). Sin él, solo se informan. */
+  readonly podar: boolean;
 }
 
 export interface ResumenFases {
@@ -65,6 +71,10 @@ export interface ResumenFases {
   readonly adoptadas: number;
   /** Tarjetas que citan la task de una FASE y quedaron colgando de ella en esta corrida (R3, FASE 13). */
   readonly tarjetasEnganchadas: number;
+  /** DEPENDE_DE entre FASE de este proyecto que ningún .md declara (`fase:38 → fase:18`): se informan siempre (A.1). */
+  readonly dependenciasViejas: readonly string[];
+  /** Cuántas de ésas se borraron: 0 sin `podar`. */
+  readonly dependenciasPodadas: number;
 }
 
 const ES_FASE = /^FASE_\d+_.*\.md$/;
@@ -115,7 +125,14 @@ export class ImportadorFasesService {
     };
     const conTareas = opciones.tareas !== null;
     const aplicar = (tx: Tx) =>
-      this.aplicar(tx, plan, conTareas, opciones.adoptar, tasks);
+      this.aplicar(
+        tx,
+        plan,
+        conTareas,
+        opciones.adoptar,
+        tasks,
+        opciones.podar,
+      );
     const aplicado = opciones.seco
       ? await simular(this.prisma, aplicar)
       : await this.prisma.$transaction(aplicar);
@@ -171,6 +188,7 @@ export class ImportadorFasesService {
     conTareas: boolean,
     adoptar: string | null,
     tasks: readonly TaskDeFase[],
+    podar: boolean,
   ) {
     // Nunca se adopta por título: «FASE 6» de Todoist puede ser de otro orquestador (real 2026-10-17, la FASE 6 del
     // SAG). Solo si el que importa dice de qué origen son sus FASE (`adoptar`), y siempre por externo.
@@ -192,7 +210,9 @@ export class ImportadorFasesService {
       fases.idPorExterno,
       tasks,
     );
+    const viejas = await this.dependenciasViejas(tx, plan, podar);
     return {
+      ...viejas,
       nodos: {
         nuevos: fases.nodos.nuevos + dudas.nuevos,
         actualizados: fases.nodos.actualizados + dudas.actualizados,
@@ -205,6 +225,47 @@ export class ImportadorFasesService {
       dudasSueltas: dudas.sueltas,
       adoptadas,
       tarjetasEnganchadas,
+    };
+  }
+
+  /**
+   * A.1: las DEPENDE_DE entre FASE de este proyecto que ningún .md declara. Se informan siempre; se borran solo con
+   * `podar`, porque una conexión hecha a mano en la web entre dos FASE tampoco está en un .md.
+   */
+  private async dependenciasViejas(tx: Tx, plan: PlanFases, podar: boolean) {
+    const deEsteProyecto = { externoOrigen: plan.origen, tipo: TipoNodo.FASE };
+    const existentes = await tx.conexion.findMany({
+      where: {
+        tipo: TipoConexion.DEPENDE_DE,
+        origen: deEsteProyecto,
+        destino: deEsteProyecto,
+      },
+      select: {
+        id: true,
+        origen: { select: { externoId: true } },
+        destino: { select: { externoId: true } },
+      },
+    });
+    const conExterno = existentes.flatMap(({ id, origen, destino }) =>
+      origen.externoId && destino.externoId
+        ? [{ id, origen: origen.externoId, destino: destino.externoId }]
+        : [],
+    );
+    const declaradas = plan.conexiones
+      .filter(({ tipo }) => tipo === TipoConexion.DEPENDE_DE)
+      .map(({ origenExternoId, destinoExternoId }) => ({
+        origen: origenExternoId,
+        destino: destinoExternoId,
+      }));
+    const viejas = dependenciasViejas(conExterno, declaradas);
+    if (podar && viejas.length > 0) {
+      await tx.conexion.deleteMany({
+        where: { id: { in: viejas.map(({ id }) => id) } },
+      });
+    }
+    return {
+      dependenciasViejas: viejas.map(textoDeDependencia),
+      dependenciasPodadas: podar ? viejas.length : 0,
     };
   }
 
