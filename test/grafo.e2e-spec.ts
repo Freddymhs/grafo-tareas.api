@@ -314,4 +314,20 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
     const sigue = await get<Bloqueado>(`/nodos/${frenada}/bloqueado`);
     expect(sigue.body.data.bloqueado).toBe(true);
   });
+
+  it('depender de una tarjeta en APROBADO (mergeada) tampoco bloquea: la etiqueta la lleva su FASE (Freddy, 2026-10-21)', async () => {
+    const aprobada = await ctx.prisma.nodo.create({
+      data: {
+        tipo: TipoNodo.TAREA,
+        titulo: '[25325] Estados y confirmar recepción',
+        etiquetas: ['board'],
+        etapa: 'APROBADO',
+      },
+    });
+    const depende = await nodo(TipoNodo.TAREA, '[26998] depende de la 25325');
+    await conectar(depende, aprobada.id, TipoConexion.DEPENDE_DE);
+
+    const libre = await get<Bloqueado>(`/nodos/${depende}/bloqueado`);
+    expect(libre.body.data.bloqueado).toBe(false);
+  });
 });

@@ -16,8 +16,9 @@ export interface NodoDePagina {
   readonly titulo: string;
   readonly estado: EstadoNodo;
   readonly cara: Cara;
-  /** Para saber si depender de él ya está cumplido (`mergeada`, `dependenciaCumplida`). */
+  /** Las dos, para saber si depender de él ya está cumplido (`dependenciaCumplida`). */
   readonly etiquetas: readonly string[];
+  readonly etapa: string | null;
 }
 
 export interface ConexionDePagina {
@@ -94,8 +95,9 @@ export function calcularPaginas(
     }).length;
   const estaAbierto = (id: string) =>
     porId.get(id)?.estado === EstadoNodo.ABIERTO;
+  const SIN_DESTINO = { etiquetas: [], etapa: null };
   const cumplida = ({ tipo, destinoId }: ConexionDePagina) =>
-    dependenciaCumplida(tipo, porId.get(destinoId)?.etiquetas ?? []);
+    dependenciaCumplida(tipo, porId.get(destinoId) ?? SIN_DESTINO);
   // Un freno cuenta si las dos puntas están en la página y abiertas: lo cerrado ya no frena ni espera, y depender de
   // algo ya mergeado tampoco (`dependenciaCumplida`).
   const frenanEn = (ids: readonly string[]) => {

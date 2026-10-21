@@ -36,6 +36,12 @@ export const MAXIMO_POSICIONES_POR_LOTE = 5000;
  * sección en el tablero de origen: en ENTENDIMIENTO parecía trabajo por entender.
  */
 export const ETAPA_TRAMITES = 'TRÁMITES DE CIERRE';
+/**
+ * La columna de lo mergeado: «mergeado: el PR entró a la base» (docs/roles.yaml, `aprobado`, en Producto y Calidad). El
+ * hook `fase-tilde` lleva ahí la tarjeta `[<id>]` al tildar Mergeado, pero la etiqueta `mergeada` la lleva solo su FASE:
+ * depender de una tarjeta en esta columna también está cumplido (`dependenciaCumplida`; real 21-10, 26998 → 25325).
+ */
+export const ETAPA_MERGEADA = 'APROBADO';
 
 /** Las columnas del tablero, en orden: las etapas del método (`tablero.secciones` en refs.yaml, PORTAR.md) con los
  *  nombres que Freddy usa en su tablero. C9 (2026-10-16): lista fija. `ETAPAS` en el entorno la reemplaza (coma). */
@@ -50,7 +56,7 @@ export const ETAPAS_POR_DEFECTO: readonly string[] = [
   'TESTEADO',
   'LISTO PARA PR',
   'Pull Request',
-  'APROBADO',
+  ETAPA_MERGEADA,
   'CERRADO',
   ETAPA_TRAMITES,
   '🔎 Precheck fin de sprint (archivadas)',

@@ -3,6 +3,7 @@ import { EstadoNodo, Prisma, TipoConexion, TipoNodo } from '@prisma/client';
 import {
   CONEXIONES_BLOQUEANTES,
   ETIQUETA_CARRIL,
+  ETAPA_MERGEADA,
   ETIQUETA_MERGEADA,
   ORIGEN_RITUAL,
   TIPOS_ACCIONABLES,
@@ -33,15 +34,21 @@ export interface Bloqueo {
 
 /**
  * Una conexión bloqueante hacia un nodo que sigue ABIERTO: es lo que hace "bloqueado" a su origen (C1). Menos depender de
- * algo ya mergeado, que está cumplido: es `dependenciaCumplida` escrita para Prisma.
+ * algo ya mergeado, que está cumplido: es `dependenciaCumplida` escrita para Prisma. «Sin columna» (`etapa` NULL) se pide
+ * explícito: un `NOT (etapa = 'APROBADO')` da NULL en SQL y descartaba toda dependencia hacia una tarjeta sin columna.
  */
 const BLOQUEA_AHORA = {
   tipo: { in: [...CONEXIONES_BLOQUEANTES] },
   destino: { estado: EstadoNodo.ABIERTO },
-  NOT: {
-    tipo: TipoConexion.DEPENDE_DE,
-    destino: { etiquetas: { has: ETIQUETA_MERGEADA } },
-  },
+  OR: [
+    { tipo: { not: TipoConexion.DEPENDE_DE } },
+    {
+      destino: {
+        NOT: { etiquetas: { has: ETIQUETA_MERGEADA } },
+        OR: [{ etapa: null }, { etapa: { not: ETAPA_MERGEADA } }],
+      },
+    },
+  ],
 } as const satisfies Prisma.ConexionWhereInput;
 
 @Injectable()
@@ -224,6 +231,7 @@ export class DerivadoRepository {
           estado: true,
           cara: true,
           etiquetas: true,
+          etapa: true,
         },
       }),
       this.prisma.conexion.findMany({

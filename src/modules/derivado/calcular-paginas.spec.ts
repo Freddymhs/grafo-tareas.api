@@ -13,7 +13,8 @@ const nodo = (
   estado: EstadoNodo = EstadoNodo.ABIERTO,
   cara: Cara = Cara.REAL,
   etiquetas: readonly string[] = [],
-): NodoDePagina => ({ id, tipo, titulo: id, estado, cara, etiquetas });
+  etapa: string | null = null,
+): NodoDePagina => ({ id, tipo, titulo: id, estado, cara, etiquetas, etapa });
 const conexion = (
   origenId: string,
   tipo: TipoConexion,
@@ -154,6 +155,29 @@ describe('calcularPaginas — una página por HU (FASE 15, «la API decide»)', 
       ],
     );
     expect(hu?.frenan).toEqual(['fase-18']);
+  });
+
+  it('depender de una tarjeta en APROBADO (mergeada) no frena: la etiqueta la lleva su FASE, no la tarjeta (21-10)', () => {
+    const [hu] = calcularPaginas(
+      [
+        nodo('HU', TipoNodo.HISTORIA),
+        nodo(
+          '[25325]',
+          TipoNodo.TAREA,
+          EstadoNodo.ABIERTO,
+          Cara.REAL,
+          ['board'],
+          'APROBADO',
+        ),
+        nodo('[26998]', TipoNodo.TAREA),
+      ],
+      [
+        conexion('[25325]', PERTENECE_A, 'HU'),
+        conexion('[26998]', PERTENECE_A, 'HU'),
+        conexion('[26998]', DEPENDE_DE, '[25325]'),
+      ],
+    );
+    expect(hu?.frenan).toEqual([]);
   });
 
   it('lo cerrado no frena, ni frena a lo cerrado', () => {
