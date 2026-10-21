@@ -1,7 +1,10 @@
 // FASE_*.md + entendimiento.md → plan del grafo (puro). Cada FASE es un nodo FASE con su etapa derivada de
 // las casillas y la etiqueta de su rol (C11); `**Dependencias**` son conexiones DEPENDE_DE entre FASEs; cada punto ABIERTO es una DUDA.
 import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
-import { ETAPA_TRAMITES } from '../../common/constants/grafo.constants.js';
+import {
+  ETAPA_TRAMITES,
+  ETIQUETA_MERGEADA,
+} from '../../common/constants/grafo.constants.js';
 import { externoHistoria, nodoHistoria } from '../plan.js';
 import type { ConexionPlan, NodoPlan, Plan } from '../plan.js';
 import { AbiertoLeido } from './leer-abiertos.js';
@@ -14,8 +17,6 @@ export const ORIGEN_FASES = 'fases-md';
  */
 export const origenFases = (proyecto: string) => `${ORIGEN_FASES}:${proyecto}`;
 export const ETIQUETA_ABIERTO = 'abierto';
-/** La FASE con su casilla «Mergeado» tildada (FASE 17). La VR la muestra con un anillo; la API no la deduce de nada más. */
-export const ETIQUETA_MERGEADA = 'mergeada';
 export const externoFase = (numero: number) => `fase:${numero}`;
 /** El trámite de cierre de una FASE (FASE 10): uno por FASE, se cierra solo cuando se tildan sus casillas. */
 export const externoTramite = (numero: number) => `tramite:fase:${numero}`;

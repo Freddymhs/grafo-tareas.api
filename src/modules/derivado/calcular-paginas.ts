@@ -1,6 +1,7 @@
 import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
 import { CONEXIONES_BLOQUEANTES } from '../../common/constants/index.js';
 import { arbolDe, hijosPorPertenencia } from './arbol.js';
+import { dependenciaCumplida } from './dependencia-cumplida.js';
 
 /** La página de lo que ninguna HU trae (notas, retros, onboarding): va última. */
 export const PAGINA_SIN_HU = 'sin-hu';
@@ -15,6 +16,8 @@ export interface NodoDePagina {
   readonly titulo: string;
   readonly estado: EstadoNodo;
   readonly cara: Cara;
+  /** Para saber si depender de él ya está cumplido (`mergeada`, `dependenciaCumplida`). */
+  readonly etiquetas: readonly string[];
 }
 
 export interface ConexionDePagina {
@@ -91,16 +94,20 @@ export function calcularPaginas(
     }).length;
   const estaAbierto = (id: string) =>
     porId.get(id)?.estado === EstadoNodo.ABIERTO;
-  // Un freno cuenta si las dos puntas están en la página y abiertas: lo cerrado ya no frena ni espera.
+  const cumplida = ({ tipo, destinoId }: ConexionDePagina) =>
+    dependenciaCumplida(tipo, porId.get(destinoId)?.etiquetas ?? []);
+  // Un freno cuenta si las dos puntas están en la página y abiertas: lo cerrado ya no frena ni espera, y depender de
+  // algo ya mergeado tampoco (`dependenciaCumplida`).
   const frenanEn = (ids: readonly string[]) => {
     const enLaPagina = new Set(ids);
     const frenos = bloqueantes
       .filter(
-        ({ origenId, destinoId }) =>
-          enLaPagina.has(origenId) &&
-          enLaPagina.has(destinoId) &&
-          estaAbierto(origenId) &&
-          estaAbierto(destinoId),
+        (conexion) =>
+          enLaPagina.has(conexion.origenId) &&
+          enLaPagina.has(conexion.destinoId) &&
+          estaAbierto(conexion.origenId) &&
+          estaAbierto(conexion.destinoId) &&
+          !cumplida(conexion),
       )
       .map(({ destinoId }) => destinoId);
     return [...new Set(frenos)];

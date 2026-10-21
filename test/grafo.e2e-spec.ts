@@ -295,4 +295,23 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
     });
     expect(conexionesDeT3).toBe(0);
   });
+
+  it('depender de algo ya mergeado no bloquea; estar bloqueada por eso, sí (Freddy, 2026-10-21)', async () => {
+    const mergeada = await ctx.prisma.nodo.create({
+      data: {
+        tipo: TipoNodo.FASE,
+        titulo: 'FASE 38 · mergeada, con trámites',
+        etiquetas: ['producto', 'mergeada'],
+      },
+    });
+    const depende = await nodo(TipoNodo.TAREA, 'depende de la 38');
+    const frenada = await nodo(TipoNodo.TAREA, 'bloqueada por la 38');
+    await conectar(depende, mergeada.id, TipoConexion.DEPENDE_DE);
+    await conectar(frenada, mergeada.id, TipoConexion.BLOQUEADA_POR);
+
+    const libre = await get<Bloqueado>(`/nodos/${depende}/bloqueado`);
+    expect(libre.body.data.bloqueado).toBe(false);
+    const sigue = await get<Bloqueado>(`/nodos/${frenada}/bloqueado`);
+    expect(sigue.body.data.bloqueado).toBe(true);
+  });
 });

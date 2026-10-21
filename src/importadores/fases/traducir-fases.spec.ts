@@ -1,14 +1,12 @@
 import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
-import { ETAPAS_POR_DEFECTO } from '../../common/constants/grafo.constants';
+import {
+  ETAPAS_POR_DEFECTO,
+  ETIQUETA_MERGEADA,
+} from '../../common/constants/grafo.constants';
 import { AbiertoLeido } from './leer-abiertos';
 import { FaseLeida } from './leer-fase';
 import { ORIGEN_TRACKER, externoHistoria } from '../plan';
-import {
-  ETIQUETA_MERGEADA,
-  externoFase,
-  externoTramite,
-  traducirFases,
-} from './traducir-fases';
+import { externoFase, externoTramite, traducirFases } from './traducir-fases';
 
 const fase = (parcial: Partial<FaseLeida> & { numero: number }): FaseLeida => ({
   titulo: `título ${parcial.numero}`,

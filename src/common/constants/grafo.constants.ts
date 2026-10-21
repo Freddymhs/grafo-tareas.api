@@ -6,6 +6,11 @@ export const CONEXIONES_BLOQUEANTES: readonly TipoConexion[] = [
   TipoConexion.ESPERA_RESPUESTA_DE,
   TipoConexion.BLOQUEADA_POR,
 ];
+/**
+ * La FASE con su casilla «Mergeado» tildada (FASE 17): la pone `importar:fases`, nunca se deduce de otra cosa. Depender de
+ * ella ya está cumplido aunque siga ABIERTA por sus trámites (`dependenciaCumplida`).
+ */
+export const ETIQUETA_MERGEADA = 'mergeada';
 
 /** "hoy puedo…" lista TAREAS (concepto § Modelo de dominio: tareas ABIERTAS no bloqueadas). FASE, RAMA, PERSONA, DUDA y PR
  *  agrupan o bloquean, no se hacen. Medido 2026-10-16 con datos reales: con FASE adentro salían 96 de 80 tareas abiertas. */

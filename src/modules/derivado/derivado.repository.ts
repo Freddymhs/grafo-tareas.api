@@ -3,6 +3,7 @@ import { EstadoNodo, Prisma, TipoConexion, TipoNodo } from '@prisma/client';
 import {
   CONEXIONES_BLOQUEANTES,
   ETIQUETA_CARRIL,
+  ETIQUETA_MERGEADA,
   ORIGEN_RITUAL,
   TIPOS_ACCIONABLES,
   TIPOS_DEL_DIA,
@@ -30,10 +31,17 @@ export interface Bloqueo {
   readonly destinoId: string;
 }
 
-/** Una conexión bloqueante hacia un nodo que sigue ABIERTO: es lo que hace "bloqueado" a su origen (C1). */
+/**
+ * Una conexión bloqueante hacia un nodo que sigue ABIERTO: es lo que hace "bloqueado" a su origen (C1). Menos depender de
+ * algo ya mergeado, que está cumplido: es `dependenciaCumplida` escrita para Prisma.
+ */
 const BLOQUEA_AHORA = {
   tipo: { in: [...CONEXIONES_BLOQUEANTES] },
   destino: { estado: EstadoNodo.ABIERTO },
+  NOT: {
+    tipo: TipoConexion.DEPENDE_DE,
+    destino: { etiquetas: { has: ETIQUETA_MERGEADA } },
+  },
 } as const satisfies Prisma.ConexionWhereInput;
 
 @Injectable()
@@ -215,6 +223,7 @@ export class DerivadoRepository {
           titulo: true,
           estado: true,
           cara: true,
+          etiquetas: true,
         },
       }),
       this.prisma.conexion.findMany({

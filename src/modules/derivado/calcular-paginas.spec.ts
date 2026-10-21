@@ -12,7 +12,8 @@ const nodo = (
   tipo: TipoNodo,
   estado: EstadoNodo = EstadoNodo.ABIERTO,
   cara: Cara = Cara.REAL,
-): NodoDePagina => ({ id, tipo, titulo: id, estado, cara });
+  etiquetas: readonly string[] = [],
+): NodoDePagina => ({ id, tipo, titulo: id, estado, cara, etiquetas });
 const conexion = (
   origenId: string,
   tipo: TipoConexion,
@@ -131,6 +132,28 @@ describe('calcularPaginas — una página por HU (FASE 15, «la API decide»)', 
       'tarjeta-b',
     ]);
     expect(pagina('HU 20379')?.frenan).toEqual([]);
+  });
+
+  it('depender de algo ya mergeado no frena: las FASE dicen «Dependencias: FASE N mergeada» (Freddy, 2026-10-21)', () => {
+    const [hu] = calcularPaginas(
+      [
+        nodo('HU', TipoNodo.HISTORIA),
+        nodo('fase-18', TipoNodo.FASE),
+        nodo('fase-38', TipoNodo.FASE, EstadoNodo.ABIERTO, Cara.REAL, [
+          'producto',
+          'mergeada',
+        ]),
+        nodo('fase-41', TipoNodo.FASE),
+      ],
+      [
+        conexion('fase-18', PERTENECE_A, 'HU'),
+        conexion('fase-38', PERTENECE_A, 'HU'),
+        conexion('fase-41', PERTENECE_A, 'HU'),
+        conexion('fase-18', DEPENDE_DE, 'fase-38'),
+        conexion('fase-41', DEPENDE_DE, 'fase-18'),
+      ],
+    );
+    expect(hu?.frenan).toEqual(['fase-18']);
   });
 
   it('lo cerrado no frena, ni frena a lo cerrado', () => {
