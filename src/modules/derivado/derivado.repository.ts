@@ -243,28 +243,54 @@ export class DerivadoRepository {
 
   /**
    * Lo que arma el tablero del plan (FASE 17): los nodos de las páginas pedidas más los carriles (RAMA con la etiqueta
-   * `carril`, que no entran a ninguna página) y las pertenencias que salen de esos nodos.
+   * `carril`, que no entran a ninguna página) y las pertenencias y dependencias que salen de esos nodos. Se siguen los
+   * DEPENDE_DE hasta el final: una pieza ya tomada no está en la página del plan, pero sigue en su línea.
    */
   async paraTableroPlan(ids: readonly string[]) {
-    const [nodos, conexiones] = await Promise.all([
-      this.prisma.nodo.findMany({
-        where: {
-          OR: [
-            { id: { in: [...ids] } },
-            { tipo: TipoNodo.RAMA, etiquetas: { has: ETIQUETA_CARRIL } },
-          ],
-        },
-        select: RESUMEN,
-      }),
-      this.prisma.conexion.findMany({
-        where: {
-          origenId: { in: [...ids] },
-          tipo: { in: [TipoConexion.PERTENECE_A, TipoConexion.DEPENDE_DE] },
-        },
-        select: { origenId: true, destinoId: true, tipo: true },
-      }),
-    ]);
+    const conexiones = await this.dependenciasDesde(ids);
+    const alcanzados = [
+      ...new Set([...ids, ...conexiones.map(({ destinoId }) => destinoId)]),
+    ];
+    const nodos = await this.prisma.nodo.findMany({
+      where: {
+        OR: [
+          { id: { in: alcanzados } },
+          { tipo: TipoNodo.RAMA, etiquetas: { has: ETIQUETA_CARRIL } },
+        ],
+      },
+      select: RESUMEN,
+    });
     return { nodos, conexiones };
+  }
+
+  /** Las pertenencias y dependencias que salen de `ids` y, por DEPENDE_DE, de todo lo que alcanzan (sin repetir). */
+  private async dependenciasDesde(
+    frontera: readonly string[],
+    vistos: ReadonlySet<string> = new Set(frontera),
+  ): Promise<{ origenId: string; destinoId: string; tipo: TipoConexion }[]> {
+    if (frontera.length === 0) return [];
+    const salientes = await this.prisma.conexion.findMany({
+      where: {
+        origenId: { in: [...frontera] },
+        tipo: { in: [TipoConexion.PERTENECE_A, TipoConexion.DEPENDE_DE] },
+      },
+      select: { origenId: true, destinoId: true, tipo: true },
+    });
+    const siguientes = [
+      ...new Set(
+        salientes
+          .filter(
+            ({ tipo, destinoId }) =>
+              tipo === TipoConexion.DEPENDE_DE && !vistos.has(destinoId),
+          )
+          .map(({ destinoId }) => destinoId),
+      ),
+    ];
+    const masAdelante = await this.dependenciasDesde(
+      siguientes,
+      new Set([...vistos, ...siguientes]),
+    );
+    return [...salientes, ...masAdelante];
   }
 
   /** Todas las conexiones, en lo justo para recorrer el árbol (la familia de un nodo, FASE 15). */

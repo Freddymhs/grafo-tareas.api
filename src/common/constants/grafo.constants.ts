@@ -90,3 +90,5 @@ export const etiquetaDeComplemento = (clave: string) =>
 export const PREFIJO_RONDA = 'ronda:';
 export const etiquetaDeRonda = (ronda: string) => `${PREFIJO_RONDA}${ronda}`;
 export const ETIQUETA_CARRIL = 'carril';
+/** Una pieza del reparto (FASE 13 R4): la lleva en el plan y la conserva al tomarla, cuando pasa a lo real. */
+export const ETIQUETA_PIEZA = 'pieza';

@@ -1,6 +1,7 @@
 import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
 import {
   ETIQUETA_CARRIL,
+  ETIQUETA_PIEZA,
   PREFIJO_RONDA,
 } from '../../common/constants/index.js';
 
@@ -46,7 +47,9 @@ const porRonda = (a: NodoDelTablero, b: NodoDelTablero) =>
  * El tablero del plan (FASE 17): una columna por carril —la zona de código del reparto, una RAMA con la etiqueta
  * `carril`— con sus piezas abiertas en el orden en que se trabajan (todas las de la ronda 1, después las de la 2…).
  * Lo que no cuelga de un carril va a «Sin carril», al final. Recibe los nodos de la cara plan que se quieren ver
- * (una HU o todas). Puro: la web lo muestra, no lo calcula.
+ * (una HU o todas). Una pieza ya tomada y abierta (pasó a lo real, conserva la etiqueta `pieza`) sigue en su línea:
+ * está en curso, conserva su número y sigue frenando a las que la esperan (Freddy tomó la 26958 el 26-10 y la 26963,
+ * que la espera, se leía libre). Puro: la web lo muestra, no lo calcula.
  */
 export function calcularTableroPlan(
   nodos: readonly NodoDelTablero[],
@@ -59,11 +62,13 @@ export function calcularTableroPlan(
       nodo?.tipo === TipoNodo.RAMA && nodo.etiquetas.includes(ETIQUETA_CARRIL)
     );
   };
+  const esTomada = ({ cara, etiquetas }: NodoDelTablero) =>
+    cara === Cara.REAL && etiquetas.includes(ETIQUETA_PIEZA);
   const piezas = nodos.filter(
-    ({ tipo, cara, estado }) =>
-      tipo === TipoNodo.TAREA &&
-      cara === Cara.PLAN &&
-      estado === EstadoNodo.ABIERTO,
+    (nodo) =>
+      nodo.tipo === TipoNodo.TAREA &&
+      nodo.estado === EstadoNodo.ABIERTO &&
+      (nodo.cara === Cara.PLAN || esTomada(nodo)),
   );
   const carrilDe = (pieza: string) =>
     conexiones.find(

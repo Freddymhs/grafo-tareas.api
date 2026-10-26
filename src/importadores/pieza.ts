@@ -3,6 +3,7 @@
 import { TipoConexion, TipoNodo } from '@prisma/client';
 import {
   ETIQUETA_CARRIL,
+  ETIQUETA_PIEZA,
   etiquetaDeRonda,
 } from '../common/constants/grafo.constants.js';
 import { nodoHistoria, SIN_TABLERO } from './plan.js';
@@ -22,7 +23,7 @@ const ESTADO_PIEZA: ReadonlyArray<readonly [RegExp, string]> = [
 ];
 /** Un carril del reparto se llama `A · zona` (zona de código: dos carriles no comparten archivos). */
 const CARRIL = /^[A-Z] · .+$/;
-export const ETIQUETA_PIEZA = 'pieza';
+export { ETIQUETA_PIEZA };
 /**
  * Un color por carril, por su letra: en la VR cada carril se ve como su rama. Sin morados: en la VR el morado es el PBI,
  * y la C violeta hacía pasar por PBI a sus piezas (Freddy en el visor, 2026-10-18: «¿qué significa el morado?»).

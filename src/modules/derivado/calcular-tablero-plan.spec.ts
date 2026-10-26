@@ -84,6 +84,20 @@ describe('calcularTableroPlan — el plan en columnas por carril, como el Draft 
     expect(tablero[2]).toMatchObject({ id: null, nodos: ['suelta'] });
   });
 
+  it('una pieza tomada y abierta sigue en su línea: está en curso y frena a las que la esperan (26958, 26-10)', () => {
+    const tomada = nodo('tomada', {
+      cara: Cara.REAL,
+      titulo: '1 · tomada',
+      etiquetas: ['board', 'pieza', 'ronda:1'],
+    });
+    const enPlan = enRonda('siguiente', 2);
+    const tablero2 = calcularTableroPlan(
+      [carril('b', 'B · Revisión'), tomada, enPlan],
+      [pertenece('tomada', 'b'), pertenece('siguiente', 'b')],
+    );
+    expect(tablero2[0].nodos).toEqual(['tomada', 'siguiente']);
+  });
+
   it('sin piezas, sin columnas', () => {
     expect(calcularTableroPlan([carril('a', 'A')], [])).toEqual([]);
   });
