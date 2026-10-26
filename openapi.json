@@ -459,6 +459,36 @@
         "tags": ["Derivado"]
       }
     },
+    "/api/v1/derivado/ultimo-cambio": {
+      "get": {
+        "operationId": "DerivadoController_ultimoCambio",
+        "parameters": [
+          {
+            "name": "pagina",
+            "required": true,
+            "in": "query",
+            "description": "La página (su id de GET /derivado/paginas)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UltimoCambioResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Lo último que cambió en una página: qué nodo, cuándo y qué pasó («pasó a Trabajo»)",
+        "tags": ["Derivado"]
+      }
+    },
     "/api/v1/derivado/paginas": {
       "get": {
         "operationId": "DerivadoController_paginas",
@@ -1922,6 +1952,39 @@
           "paraDecir",
           "tramites"
         ]
+      },
+      "UltimoCambioDto": {
+        "type": "object",
+        "properties": {
+          "nodoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cuando": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "que": {
+            "type": "string",
+            "description": "Lo que pasó, en palabras: «pasó a Trabajo», «se cerró»…"
+          }
+        },
+        "required": ["nodoId", "cuando", "que"]
+      },
+      "UltimoCambioResponseDto": {
+        "type": "object",
+        "properties": {
+          "ultimo": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UltimoCambioDto"
+              }
+            ]
+          }
+        },
+        "required": ["ultimo"]
       },
       "PaginaDto": {
         "type": "object",

@@ -25,6 +25,9 @@ const RESUMEN = {
   vence: true,
 } as const satisfies Prisma.NodoSelect;
 
+/** Alcanza con los del último instante; unos pocos más por si ese instante tocó varios campos. */
+const ULTIMOS_CAMBIOS = 20;
+
 export type NodoResumen = Prisma.NodoGetPayload<{ select: typeof RESUMEN }>;
 
 export interface Bloqueo {
@@ -291,6 +294,22 @@ export class DerivadoRepository {
       new Set([...vistos, ...siguientes]),
     );
     return [...salientes, ...masAdelante];
+  }
+
+  /** Los últimos cambios de la bitácora de esos nodos: lo justo para saber qué cambió último en una página. */
+  async ultimosCambiosDe(ids: readonly string[]) {
+    return this.prisma.cambio.findMany({
+      where: { nodoId: { in: [...ids] } },
+      orderBy: { createdAt: 'desc' },
+      take: ULTIMOS_CAMBIOS,
+      select: {
+        nodoId: true,
+        tipo: true,
+        campo: true,
+        despues: true,
+        createdAt: true,
+      },
+    });
   }
 
   /** Todas las conexiones, en lo justo para recorrer el árbol (la familia de un nodo, FASE 15). */

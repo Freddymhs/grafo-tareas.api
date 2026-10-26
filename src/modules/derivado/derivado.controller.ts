@@ -12,6 +12,8 @@ import {
   CarrilDto,
   PaginaDto,
   PlanQueryDto,
+  UltimoCambioQueryDto,
+  UltimoCambioResponseDto,
 } from './dto/index.js';
 
 /** Lo que se calcula sobre el grafo. Vive solo acá: la PWA y la VR lo muestran, no lo recalculan (C1). */
@@ -35,6 +37,16 @@ export class DerivadoController {
   @ApiResponse({ status: 200, type: DiaResponseDto })
   dia(@Query() { desde }: DiaQueryDto) {
     return this.service.dia(desde);
+  }
+
+  @Get('derivado/ultimo-cambio')
+  @ApiOperation({
+    summary:
+      'Lo último que cambió en una página: qué nodo, cuándo y qué pasó («pasó a Trabajo»)',
+  })
+  @ApiResponse({ status: 200, type: UltimoCambioResponseDto })
+  ultimoCambio(@Query() { pagina }: UltimoCambioQueryDto) {
+    return this.service.ultimoCambio(pagina);
   }
 
   @Get('derivado/paginas')

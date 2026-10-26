@@ -13,6 +13,7 @@ import { calcularFamilia } from './calcular-familia.js';
 import { calcularPaginas } from './calcular-paginas.js';
 import { calcularOrden } from './calcular-orden.js';
 import { calcularPelotitas } from './calcular-pelotitas.js';
+import { calcularUltimoCambio } from './calcular-ultimo-cambio.js';
 import { calcularTableroPlan } from './calcular-tablero-plan.js';
 import {
   Bloqueo,
@@ -83,6 +84,14 @@ export class DerivadoService {
           : [];
       }),
     }));
+  }
+
+  /** Lo último que cambió en una página (2026-10-26): para que un cambio hecho desde otro lado no sorprenda. */
+  async ultimoCambio(pagina: string) {
+    const nodos =
+      (await this.paginas()).find(({ id }) => id === pagina)?.nodos ?? [];
+    const cambios = await this.repository.ultimosCambiosDe(nodos);
+    return { ultimo: calcularUltimoCambio(cambios, nodos) };
   }
 
   /** Lo que la VR ilumina al seleccionar un nodo (FASE 15): él, su árbol y con qué se conecta directo. */
