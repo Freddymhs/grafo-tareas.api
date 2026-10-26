@@ -2,6 +2,7 @@
 export const CAMPOS_EDITABLES = [
   'titulo',
   'descripcion',
+  'resumen',
   'estado',
   'etapa',
   'etiquetas',

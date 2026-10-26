@@ -28,6 +28,8 @@ export const HORAS_DEL_PARTE = 24;
 
 export const PATRON_COLOR_HEX = /^#[0-9a-fA-F]{6}$/;
 export const LARGO_MAXIMO_TITULO = 500;
+/** El resumen es una línea para leer en voz alta en una reunión: más que esto ya es una descripción. */
+export const LARGO_MAXIMO_RESUMEN = 200;
 export const MAXIMO_POSICIONES_POR_LOTE = 5000;
 
 /**

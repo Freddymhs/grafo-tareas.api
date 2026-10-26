@@ -23,6 +23,7 @@ export function nodoParaArchivo(nodo: Nodo): Prisma.InputJsonObject {
     tipo: nodo.tipo,
     titulo: nodo.titulo,
     descripcion: nodo.descripcion,
+    resumen: nodo.resumen,
     estado: nodo.estado,
     cara: nodo.cara,
     color: nodo.color,
@@ -73,6 +74,8 @@ export function nodoDelArchivo(archivo: unknown): Omit<Nodo, 'updatedAt'> {
     tipo,
     titulo,
     descripcion: texto(archivo['descripcion']),
+    // Los descartes de antes del 2026-10-26 no lo guardaron: no tenían.
+    resumen: texto(archivo['resumen']),
     estado,
     // Los descartes de antes de la FASE 17 no la guardaron: eran todos de lo real.
     cara: esDe(Cara, archivo['cara']) ? archivo['cara'] : Cara.REAL,

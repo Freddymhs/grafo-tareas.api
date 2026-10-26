@@ -15,6 +15,7 @@ import {
 } from 'class-validator';
 import {
   LARGO_MAXIMO_ETIQUETA,
+  LARGO_MAXIMO_RESUMEN,
   LARGO_MAXIMO_TITULO,
   PATRON_COLOR_HEX,
   PRIORIDAD_MAXIMA,
@@ -36,6 +37,15 @@ export class CreateNodoDto {
   @IsOptional()
   @IsString()
   descripcion?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Una línea, con las palabras del humano: de qué trata el nodo (la VR la muestra al seleccionarlo)',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(LARGO_MAXIMO_RESUMEN)
+  resumen?: string;
 
   @ApiPropertyOptional({ enum: EstadoNodo, default: EstadoNodo.ABIERTO })
   @IsOptional()

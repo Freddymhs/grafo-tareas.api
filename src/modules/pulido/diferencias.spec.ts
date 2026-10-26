@@ -3,6 +3,7 @@ import { diferencias } from './diferencias';
 const antes = {
   titulo: 'preguntas',
   descripcion: null,
+  resumen: null,
   estado: 'ABIERTO',
   cara: 'PLAN',
   etapa: 'ENTENDIMIENTO',

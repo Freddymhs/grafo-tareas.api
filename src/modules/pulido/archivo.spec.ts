@@ -17,6 +17,7 @@ const nodo: Nodo = {
   tipo: TipoNodo.TAREA,
   titulo: 'preguntas',
   descripcion: 'Archivada el 06-10',
+  resumen: 'búsqueda rápida dentro de las muestras',
   estado: EstadoNodo.CERRADO,
   cara: Cara.PLAN,
   color: null,

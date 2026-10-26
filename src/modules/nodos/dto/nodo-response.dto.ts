@@ -38,6 +38,9 @@ export class NodoResponseDto extends NodoResumenDto {
   descripcion!: string | null;
 
   @ApiPropertyOptional({ nullable: true, type: String })
+  resumen!: string | null;
+
+  @ApiPropertyOptional({ nullable: true, type: String })
   externoOrigen!: string | null;
 
   @ApiPropertyOptional({ nullable: true, type: String })
