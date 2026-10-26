@@ -11,6 +11,7 @@ import { RolesService } from '../roles/roles.service.js';
 import { calcularLibera } from './calcular-libera.js';
 import { calcularFamilia } from './calcular-familia.js';
 import { calcularPaginas } from './calcular-paginas.js';
+import { calcularPelotitas } from './calcular-pelotitas.js';
 import { calcularTableroPlan } from './calcular-tablero-plan.js';
 import {
   Bloqueo,
@@ -60,11 +61,13 @@ export class DerivadoService {
     const ids = [...new Set(delPlan.flatMap(({ nodos }) => nodos))];
     const { nodos, conexiones } = await this.repository.paraTableroPlan(ids);
     const porId = new Map(nodos.map((nodo) => [nodo.id, nodo]));
-    return calcularTableroPlan(nodos, conexiones).map((carril) => ({
+    const carriles = calcularTableroPlan(nodos, conexiones);
+    const pelotitas = calcularPelotitas(carriles, conexiones);
+    return carriles.map((carril) => ({
       ...carril,
       nodos: carril.nodos.flatMap((id) => {
         const nodo = porId.get(id);
-        return nodo ? [nodo] : [];
+        return nodo ? [{ ...nodo, pelotitas: pelotitas.get(id) ?? [] }] : [];
       }),
     }));
   }

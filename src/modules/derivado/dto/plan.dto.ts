@@ -13,6 +13,25 @@ export class PlanQueryDto {
   libro?: string;
 }
 
+/** Un carril que la pieza lleva a la vista: el suyo o uno que espera (`calcularPelotitas`). */
+export class PelotitaDto {
+  @ApiProperty({ description: 'El título del carril' })
+  carril!: string;
+
+  @ApiProperty()
+  color!: string;
+}
+
+/** Una pieza del plan: la tarjeta, con su carril y los otros carriles que espera por sus DEPENDE_DE. */
+export class PiezaDelPlanDto extends NodoResumenDto {
+  @ApiProperty({
+    type: [PelotitaDto],
+    description:
+      'La primera, su carril; las demás, una por cada otro carril del que depende (como el Draft de Todoist)',
+  })
+  pelotitas!: PelotitaDto[];
+}
+
 /** Una columna del tablero del plan (FASE 17): un carril del reparto con sus piezas abiertas, en orden de ronda. */
 export class CarrilDto {
   @ApiProperty({
@@ -28,6 +47,6 @@ export class CarrilDto {
   @ApiProperty({ type: String, nullable: true })
   color!: string | null;
 
-  @ApiProperty({ type: [NodoResumenDto] })
-  nodos!: NodoResumenDto[];
+  @ApiProperty({ type: [PiezaDelPlanDto] })
+  nodos!: PiezaDelPlanDto[];
 }

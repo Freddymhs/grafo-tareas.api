@@ -257,7 +257,10 @@ export class DerivadoRepository {
         select: RESUMEN,
       }),
       this.prisma.conexion.findMany({
-        where: { origenId: { in: [...ids] }, tipo: TipoConexion.PERTENECE_A },
+        where: {
+          origenId: { in: [...ids] },
+          tipo: { in: [TipoConexion.PERTENECE_A, TipoConexion.DEPENDE_DE] },
+        },
         select: { origenId: true, destinoId: true, tipo: true },
       }),
     ]);

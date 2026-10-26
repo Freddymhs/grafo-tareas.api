@@ -1963,6 +1963,91 @@
           "frenan"
         ]
       },
+      "PelotitaDto": {
+        "type": "object",
+        "properties": {
+          "carril": {
+            "type": "string",
+            "description": "El título del carril"
+          },
+          "color": {
+            "type": "string"
+          }
+        },
+        "required": ["carril", "color"]
+      },
+      "PiezaDelPlanDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "TAREA",
+              "HISTORIA",
+              "FASE",
+              "RAMA",
+              "DUDA",
+              "PERSONA",
+              "PR",
+              "DAILY_ITEM"
+            ]
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": ["ABIERTO", "CERRADO"]
+          },
+          "cara": {
+            "type": "string",
+            "enum": ["REAL", "PLAN"]
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "etapa": {
+            "type": "string",
+            "nullable": true
+          },
+          "etiquetas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "prioridad": {
+            "type": "number",
+            "nullable": true
+          },
+          "vence": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "pelotitas": {
+            "description": "La primera, su carril; las demás, una por cada otro carril del que depende (como el Draft de Todoist)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PelotitaDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "titulo",
+          "estado",
+          "cara",
+          "etiquetas",
+          "pelotitas"
+        ]
+      },
       "CarrilDto": {
         "type": "object",
         "properties": {
@@ -1981,7 +2066,7 @@
           "nodos": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/NodoResumenDto"
+              "$ref": "#/components/schemas/PiezaDelPlanDto"
             }
           }
         },
