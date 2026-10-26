@@ -63,8 +63,8 @@ export class DerivadoService {
     const { nodos, conexiones } = await this.repository.paraTableroPlan(ids);
     const porId = new Map(nodos.map((nodo) => [nodo.id, nodo]));
     const carriles = calcularTableroPlan(nodos, conexiones);
-    const pelotitas = calcularPelotitas(carriles, conexiones);
     const orden = calcularOrden(carriles, conexiones);
+    const pelotitas = calcularPelotitas(carriles, conexiones, orden);
     return carriles.map((carril) => ({
       ...carril,
       nodos: carril.nodos.flatMap((id) => {

@@ -20,6 +20,14 @@ export class PelotitaDto {
 
   @ApiProperty()
   color!: string;
+
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    description:
+      'En la de otro carril: el número de la tarjeta que espera en esa línea (la última si son varias); null en la propia',
+  })
+  espera!: number | null;
 }
 
 /** Una pieza del plan: la tarjeta, con su carril y los otros carriles que espera por sus DEPENDE_DE. */

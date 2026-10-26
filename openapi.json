@@ -1972,9 +1972,14 @@
           },
           "color": {
             "type": "string"
+          },
+          "espera": {
+            "type": "number",
+            "nullable": true,
+            "description": "En la de otro carril: el número de la tarjeta que espera en esa línea (la última si son varias); null en la propia"
           }
         },
-        "required": ["carril", "color"]
+        "required": ["carril", "color", "espera"]
       },
       "PiezaDelPlanDto": {
         "type": "object",
