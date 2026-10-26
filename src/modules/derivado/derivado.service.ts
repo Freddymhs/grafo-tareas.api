@@ -65,9 +65,12 @@ export class DerivadoService {
     const carriles = calcularTableroPlan(nodos, conexiones);
     const orden = calcularOrden(carriles, conexiones);
     const pelotitas = calcularPelotitas(carriles, conexiones, orden);
+    // La columna va en el orden de su línea (`calcularOrden`); a igual número, el de ronda que ya traía.
+    const porOrden = (a: string, b: string) =>
+      (orden.get(a) ?? 1) - (orden.get(b) ?? 1);
     return carriles.map((carril) => ({
       ...carril,
-      nodos: carril.nodos.flatMap((id) => {
+      nodos: carril.nodos.toSorted(porOrden).flatMap((id) => {
         const nodo = porId.get(id);
         return nodo
           ? [
