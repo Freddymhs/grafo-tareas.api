@@ -30,6 +30,12 @@ export class PiezaDelPlanDto extends NodoResumenDto {
       'La primera, su carril; las demás, una por cada otro carril del que depende (como el Draft de Todoist)',
   })
   pelotitas!: PelotitaDto[];
+
+  @ApiProperty({
+    description:
+      'Su lugar en la cadena de DEPENDE_DE de su carril: 1 si no depende de nada de su carril',
+  })
+  orden!: number;
 }
 
 /** Una columna del tablero del plan (FASE 17): un carril del reparto con sus piezas abiertas, en orden de ronda. */

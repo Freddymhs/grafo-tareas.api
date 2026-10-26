@@ -11,6 +11,7 @@ import { RolesService } from '../roles/roles.service.js';
 import { calcularLibera } from './calcular-libera.js';
 import { calcularFamilia } from './calcular-familia.js';
 import { calcularPaginas } from './calcular-paginas.js';
+import { calcularOrden } from './calcular-orden.js';
 import { calcularPelotitas } from './calcular-pelotitas.js';
 import { calcularTableroPlan } from './calcular-tablero-plan.js';
 import {
@@ -63,11 +64,20 @@ export class DerivadoService {
     const porId = new Map(nodos.map((nodo) => [nodo.id, nodo]));
     const carriles = calcularTableroPlan(nodos, conexiones);
     const pelotitas = calcularPelotitas(carriles, conexiones);
+    const orden = calcularOrden(carriles, conexiones);
     return carriles.map((carril) => ({
       ...carril,
       nodos: carril.nodos.flatMap((id) => {
         const nodo = porId.get(id);
-        return nodo ? [{ ...nodo, pelotitas: pelotitas.get(id) ?? [] }] : [];
+        return nodo
+          ? [
+              {
+                ...nodo,
+                orden: orden.get(id) ?? 1,
+                pelotitas: pelotitas.get(id) ?? [],
+              },
+            ]
+          : [];
       }),
     }));
   }
