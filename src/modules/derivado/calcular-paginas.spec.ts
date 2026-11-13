@@ -1,15 +1,29 @@
-import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import {
+  TIPO_CONEXION,
+  TIPO_NODO,
+} from '../../common/constants/tipos.constants.js';
+import { Cara, EstadoNodo } from '@prisma/client';
 import {
   PAGINA_SIN_HU,
-  calcularPaginas,
+  calcularPaginas as calcular,
   paginaDelPlan,
   type ConexionDePagina,
   type NodoDePagina,
 } from './calcular-paginas';
 
+const BLOQUEANTES: readonly string[] = [
+  TIPO_CONEXION.DEPENDE_DE,
+  TIPO_CONEXION.ESPERA_RESPUESTA_DE,
+  TIPO_CONEXION.BLOQUEADA_POR,
+];
+const calcularPaginas = (
+  nodos: readonly NodoDePagina[],
+  conexiones: readonly ConexionDePagina[],
+) => calcular(nodos, conexiones, BLOQUEANTES);
+
 const nodo = (
   id: string,
-  tipo: TipoNodo,
+  tipo: string,
   estado: EstadoNodo = EstadoNodo.ABIERTO,
   cara: Cara = Cara.REAL,
   etiquetas: readonly string[] = [],
@@ -17,27 +31,27 @@ const nodo = (
 ): NodoDePagina => ({ id, tipo, titulo: id, estado, cara, etiquetas, etapa });
 const conexion = (
   origenId: string,
-  tipo: TipoConexion,
+  tipo: string,
   destinoId: string,
 ): ConexionDePagina => ({ origenId, destinoId, tipo });
 const { PERTENECE_A, BLOQUEADA_POR, ESPERA_RESPUESTA_DE, DEPENDE_DE } =
-  TipoConexion;
+  TIPO_CONEXION;
 
 /** Dos HU como las del SAG: el árbol HU → FASE → tarjeta, una pieza del Draft, ramas y lo que bloquea. */
 const nodos: NodoDePagina[] = [
-  nodo('HU 20379', TipoNodo.HISTORIA),
-  nodo('HU 19565', TipoNodo.HISTORIA),
-  nodo('fase-a', TipoNodo.FASE),
-  nodo('tarjeta-a', TipoNodo.TAREA),
-  nodo('cerrada-a', TipoNodo.TAREA, EstadoNodo.CERRADO),
-  nodo('pieza-a', TipoNodo.TAREA),
-  nodo('fase-b', TipoNodo.FASE),
-  nodo('tarjeta-b', TipoNodo.TAREA),
-  nodo('hija-de-b', TipoNodo.TAREA),
-  nodo('duda', TipoNodo.DUDA),
-  nodo('persona', TipoNodo.PERSONA),
-  nodo('rama-azul', TipoNodo.RAMA),
-  nodo('nota-suelta', TipoNodo.TAREA),
+  nodo('HU 20379', TIPO_NODO.HISTORIA),
+  nodo('HU 19565', TIPO_NODO.HISTORIA),
+  nodo('fase-a', TIPO_NODO.FASE),
+  nodo('tarjeta-a', TIPO_NODO.TAREA),
+  nodo('cerrada-a', TIPO_NODO.TAREA, EstadoNodo.CERRADO),
+  nodo('pieza-a', TIPO_NODO.TAREA),
+  nodo('fase-b', TIPO_NODO.FASE),
+  nodo('tarjeta-b', TIPO_NODO.TAREA),
+  nodo('hija-de-b', TIPO_NODO.TAREA),
+  nodo('duda', TIPO_NODO.DUDA),
+  nodo('persona', TIPO_NODO.PERSONA),
+  nodo('rama-azul', TIPO_NODO.RAMA),
+  nodo('nota-suelta', TIPO_NODO.TAREA),
 ];
 const conexiones: ConexionDePagina[] = [
   conexion('fase-a', PERTENECE_A, 'HU 19565'),
@@ -103,7 +117,7 @@ describe('calcularPaginas — una página por HU (FASE 15, «la API decide»)', 
 
   it('la misma regla en «Sin HU»: una tarjeta suelta trae lo que necesita, a un salto (la madre con sus hijas de otras HU)', () => {
     const conMadre = calcularPaginas(
-      [...nodos, nodo('madre', TipoNodo.TAREA)],
+      [...nodos, nodo('madre', TIPO_NODO.TAREA)],
       [
         ...conexiones,
         conexion('madre', DEPENDE_DE, 'tarjeta-a'),
@@ -138,13 +152,13 @@ describe('calcularPaginas — una página por HU (FASE 15, «la API decide»)', 
   it('depender de algo ya mergeado no frena: las FASE dicen «Dependencias: FASE N mergeada» (Freddy, 2026-10-21)', () => {
     const [hu] = calcularPaginas(
       [
-        nodo('HU', TipoNodo.HISTORIA),
-        nodo('fase-18', TipoNodo.FASE),
-        nodo('fase-38', TipoNodo.FASE, EstadoNodo.ABIERTO, Cara.REAL, [
+        nodo('HU', TIPO_NODO.HISTORIA),
+        nodo('fase-18', TIPO_NODO.FASE),
+        nodo('fase-38', TIPO_NODO.FASE, EstadoNodo.ABIERTO, Cara.REAL, [
           'producto',
           'mergeada',
         ]),
-        nodo('fase-41', TipoNodo.FASE),
+        nodo('fase-41', TIPO_NODO.FASE),
       ],
       [
         conexion('fase-18', PERTENECE_A, 'HU'),
@@ -160,16 +174,16 @@ describe('calcularPaginas — una página por HU (FASE 15, «la API decide»)', 
   it('depender de una tarjeta en APROBADO (mergeada) no frena: la etiqueta la lleva su FASE, no la tarjeta (21-10)', () => {
     const [hu] = calcularPaginas(
       [
-        nodo('HU', TipoNodo.HISTORIA),
+        nodo('HU', TIPO_NODO.HISTORIA),
         nodo(
           '[25325]',
-          TipoNodo.TAREA,
+          TIPO_NODO.TAREA,
           EstadoNodo.ABIERTO,
           Cara.REAL,
           ['board'],
           'APROBADO',
         ),
-        nodo('[26998]', TipoNodo.TAREA),
+        nodo('[26998]', TIPO_NODO.TAREA),
       ],
       [
         conexion('[25325]', PERTENECE_A, 'HU'),
@@ -183,11 +197,11 @@ describe('calcularPaginas — una página por HU (FASE 15, «la API decide»)', 
   it('lo cerrado no frena, ni frena a lo cerrado', () => {
     const conCerradas = calcularPaginas(
       [
-        nodo('HU 1', TipoNodo.HISTORIA),
-        nodo('abierta', TipoNodo.TAREA),
-        nodo('cerrada', TipoNodo.TAREA, EstadoNodo.CERRADO),
-        nodo('duda-contestada', TipoNodo.DUDA, EstadoNodo.CERRADO),
-        nodo('cimiento', TipoNodo.TAREA),
+        nodo('HU 1', TIPO_NODO.HISTORIA),
+        nodo('abierta', TIPO_NODO.TAREA),
+        nodo('cerrada', TIPO_NODO.TAREA, EstadoNodo.CERRADO),
+        nodo('duda-contestada', TIPO_NODO.DUDA, EstadoNodo.CERRADO),
+        nodo('cimiento', TIPO_NODO.TAREA),
       ],
       [
         conexion('abierta', PERTENECE_A, 'HU 1'),
@@ -202,9 +216,9 @@ describe('calcularPaginas — una página por HU (FASE 15, «la API decide»)', 
   it('sin nada suelto no hay página «Sin HU», y un ciclo de pertenencias no la cuelga', () => {
     const conCiclo = calcularPaginas(
       [
-        nodo('HU 1', TipoNodo.HISTORIA),
-        nodo('x', TipoNodo.TAREA),
-        nodo('y', TipoNodo.TAREA),
+        nodo('HU 1', TIPO_NODO.HISTORIA),
+        nodo('x', TIPO_NODO.TAREA),
+        nodo('y', TIPO_NODO.TAREA),
       ],
       [
         conexion('x', PERTENECE_A, 'HU 1'),
@@ -223,10 +237,10 @@ describe('calcularPaginas — las dos caras de cada HU (FASE 17): lo real y el p
   const paginas = calcularPaginas(
     [
       ...nodos,
-      nodo('pieza-plan', TipoNodo.TAREA, ABIERTO, PLAN),
-      nodo('hija-plan', TipoNodo.TAREA, ABIERTO, PLAN),
-      nodo('plan-en-fase', TipoNodo.TAREA, ABIERTO, PLAN),
-      nodo('plan-suelto', TipoNodo.TAREA, ABIERTO, PLAN),
+      nodo('pieza-plan', TIPO_NODO.TAREA, ABIERTO, PLAN),
+      nodo('hija-plan', TIPO_NODO.TAREA, ABIERTO, PLAN),
+      nodo('plan-en-fase', TIPO_NODO.TAREA, ABIERTO, PLAN),
+      nodo('plan-suelto', TIPO_NODO.TAREA, ABIERTO, PLAN),
     ],
     [
       ...conexiones,
@@ -287,13 +301,13 @@ describe('calcularPaginas — una duda vive en una sola cara: la de lo real gana
   const { ABIERTO } = EstadoNodo;
   const paginas = calcularPaginas(
     [
-      nodo('HU 20379', TipoNodo.HISTORIA),
-      nodo('mi-pbi', TipoNodo.TAREA),
-      nodo('pieza-plan', TipoNodo.TAREA, ABIERTO, PLAN),
-      nodo('duda-de-mi-pbi', TipoNodo.DUDA),
-      nodo('duda-del-plan', TipoNodo.DUDA),
-      nodo('carabantes', TipoNodo.PERSONA),
-      nodo('graciany', TipoNodo.PERSONA),
+      nodo('HU 20379', TIPO_NODO.HISTORIA),
+      nodo('mi-pbi', TIPO_NODO.TAREA),
+      nodo('pieza-plan', TIPO_NODO.TAREA, ABIERTO, PLAN),
+      nodo('duda-de-mi-pbi', TIPO_NODO.DUDA),
+      nodo('duda-del-plan', TIPO_NODO.DUDA),
+      nodo('carabantes', TIPO_NODO.PERSONA),
+      nodo('graciany', TIPO_NODO.PERSONA),
     ],
     [
       conexion('mi-pbi', PERTENECE_A, 'HU 20379'),
@@ -332,11 +346,11 @@ describe('calcularPaginas — la duda va en la cara de quien es dueña (Freddy, 
   const { ABIERTO } = EstadoNodo;
   const paginas = calcularPaginas(
     [
-      nodo('HU 20379', TipoNodo.HISTORIA),
-      nodo('mi-pbi', TipoNodo.TAREA),
-      nodo('pieza-plan', TipoNodo.TAREA, ABIERTO, PLAN),
-      nodo('duda-de-la-pieza', TipoNodo.DUDA),
-      nodo('carabantes', TipoNodo.PERSONA),
+      nodo('HU 20379', TIPO_NODO.HISTORIA),
+      nodo('mi-pbi', TIPO_NODO.TAREA),
+      nodo('pieza-plan', TIPO_NODO.TAREA, ABIERTO, PLAN),
+      nodo('duda-de-la-pieza', TIPO_NODO.DUDA),
+      nodo('carabantes', TIPO_NODO.PERSONA),
     ],
     [
       conexion('mi-pbi', PERTENECE_A, 'HU 20379'),

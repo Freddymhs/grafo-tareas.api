@@ -1,12 +1,9 @@
-import { Injectable } from '@nestjs/common';
 import {
-  Cara,
-  EstadoNodo,
-  Nodo,
-  Prisma,
-  TipoConexion,
-  TipoNodo,
-} from '@prisma/client';
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../../common/constants/tipos.constants.js';
+import { Injectable } from '@nestjs/common';
+import { Cara, EstadoNodo, Nodo, Prisma } from '@prisma/client';
 import { ORIGEN_RITUAL } from '../../common/constants/index.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { Ritual } from '../area/area.types.js';
@@ -20,7 +17,7 @@ export interface NuevoComplemento {
   readonly prioridad: number | null;
   /** A quién espera: queda ESPERA_RESPUESTA_DE en el mismo commit. */
   readonly personaId: string | null;
-  readonly tipo: TipoNodo;
+  readonly tipo: string;
   readonly titulo: string;
   readonly descripcion: string | null;
   readonly etiqueta: string;
@@ -41,12 +38,8 @@ export interface NuevaDecision {
   readonly etiqueta: string;
 }
 
-const conectar = (
-  tx: Tx,
-  origenId: string,
-  destinoId: string,
-  tipo: TipoConexion,
-) => tx.conexion.create({ data: { origenId, destinoId, tipo } });
+const conectar = (tx: Tx, origenId: string, destinoId: string, tipo: string) =>
+  tx.conexion.create({ data: { origenId, destinoId, tipo } });
 
 @Injectable()
 export class ComplementosRepository {
@@ -71,6 +64,10 @@ export class ComplementosRepository {
       ritual,
     } = nuevo;
     return this.prisma.$transaction(async (tx) => {
+      const { proyectoId } = await tx.nodo.findUniqueOrThrow({
+        where: { id: padreId },
+        select: { proyectoId: true },
+      });
       const nodo = await tx.nodo.create({
         data: {
           tipo,
@@ -79,23 +76,24 @@ export class ComplementosRepository {
           cara,
           prioridad,
           etiquetas: [etiqueta],
+          proyectoId,
         },
       });
-      await conectar(tx, nodo.id, padreId, TipoConexion.PERTENECE_A);
+      await conectar(tx, nodo.id, padreId, TIPO_CONEXION.PERTENECE_A);
       if (frenaAlPadre) {
-        await conectar(tx, padreId, nodo.id, TipoConexion.BLOQUEADA_POR);
+        await conectar(tx, padreId, nodo.id, TIPO_CONEXION.BLOQUEADA_POR);
       }
       if (personaId) {
         await conectar(
           tx,
           nodo.id,
           personaId,
-          TipoConexion.ESPERA_RESPUESTA_DE,
+          TIPO_CONEXION.ESPERA_RESPUESTA_DE,
         );
       }
       if (ritual) {
-        const delRitual = await this.nodoDeRitual(tx, ritual);
-        await conectar(tx, nodo.id, delRitual.id, TipoConexion.EN_DAILY_DE);
+        const delRitual = await this.nodoDeRitual(tx, ritual, proyectoId);
+        await conectar(tx, nodo.id, delRitual.id, TIPO_CONEXION.EN_DAILY_DE);
       }
       return nodo;
     });
@@ -110,7 +108,7 @@ export class ComplementosRepository {
       where: {
         etiquetas: { hasSome: [...etiquetas] },
         salientes: {
-          some: { tipo: TipoConexion.PERTENECE_A, destinoId: padreId },
+          some: { tipo: TIPO_CONEXION.PERTENECE_A, destinoId: padreId },
         },
       },
       orderBy: { createdAt: 'asc' },
@@ -122,8 +120,8 @@ export class ComplementosRepository {
     const conexion = await this.prisma.conexion.findFirst({
       where: {
         origenId: dudaId,
-        tipo: TipoConexion.ESPERA_RESPUESTA_DE,
-        destino: { tipo: TipoNodo.PERSONA },
+        tipo: TIPO_CONEXION.ESPERA_RESPUESTA_DE,
+        destino: { tipo: TIPO_NODO.PERSONA },
       },
       select: { id: true, destino: { select: { titulo: true } } },
       orderBy: { createdAt: 'desc' },
@@ -145,19 +143,23 @@ export class ComplementosRepository {
         await tx.conexion.delete({ where: { id: anterior.conexionId } });
       }
       const existente = await tx.nodo.findFirst({
-        where: { tipo: TipoNodo.PERSONA, titulo: persona },
+        where: { tipo: TIPO_NODO.PERSONA, titulo: persona },
         orderBy: { createdAt: 'asc' },
       });
       const nodoPersona =
         existente ??
         (await tx.nodo.create({
-          data: { tipo: TipoNodo.PERSONA, titulo: persona },
+          data: {
+            tipo: TIPO_NODO.PERSONA,
+            titulo: persona,
+            proyectoId: duda.proyectoId,
+          },
         }));
       await conectar(
         tx,
         duda.id,
         nodoPersona.id,
-        TipoConexion.ESPERA_RESPUESTA_DE,
+        TIPO_CONEXION.ESPERA_RESPUESTA_DE,
       );
       const descripcion = [duda.descripcion, rastro]
         .filter((parte) => parte)
@@ -170,7 +172,7 @@ export class ComplementosRepository {
   async decidir(duda: Nodo, decision: NuevaDecision): Promise<Nodo> {
     return this.prisma.$transaction(async (tx) => {
       const padres = await tx.conexion.findMany({
-        where: { origenId: duda.id, tipo: TipoConexion.PERTENECE_A },
+        where: { origenId: duda.id, tipo: TIPO_CONEXION.PERTENECE_A },
         select: { destinoId: true },
       });
       await tx.nodo.update({
@@ -179,21 +181,26 @@ export class ComplementosRepository {
       });
       const nodo = await tx.nodo.create({
         data: {
-          tipo: TipoNodo.TAREA,
+          tipo: TIPO_NODO.TAREA,
           titulo: decision.titulo,
           descripcion: decision.descripcion,
           etiquetas: [decision.etiqueta],
+          proyectoId: duda.proyectoId,
         },
       });
       const destinos = [duda.id, ...padres.map(({ destinoId }) => destinoId)];
       for (const destinoId of destinos) {
-        await conectar(tx, nodo.id, destinoId, TipoConexion.PERTENECE_A);
+        await conectar(tx, nodo.id, destinoId, TIPO_CONEXION.PERTENECE_A);
       }
       return nodo;
     });
   }
 
-  private async nodoDeRitual(tx: Tx, { clave, nombre }: Ritual): Promise<Nodo> {
+  private async nodoDeRitual(
+    tx: Tx,
+    { clave, nombre }: Ritual,
+    proyectoId: string,
+  ): Promise<Nodo> {
     const existente = await tx.nodo.findUnique({
       where: {
         externoOrigen_externoId: {
@@ -206,10 +213,11 @@ export class ComplementosRepository {
       existente ??
       tx.nodo.create({
         data: {
-          tipo: TipoNodo.DAILY_ITEM,
+          tipo: TIPO_NODO.DAILY_ITEM,
           titulo: nombre,
           externoOrigen: ORIGEN_RITUAL,
           externoId: clave,
+          proyectoId,
         },
       })
     );

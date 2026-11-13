@@ -66,6 +66,7 @@ export async function guardarNodo(
   tx: Tx,
   externoOrigen: string,
   nodo: NodoPlan,
+  proyectoId: string,
 ): Promise<NodoGuardado> {
   const externo = {
     externoOrigen: nodo.origen ?? externoOrigen,
@@ -137,7 +138,14 @@ export async function guardarNodo(
     return { descartado: false, id: existente.id, creado: false, cambio };
   }
   const nuevo = await tx.nodo.create({
-    data: { ...datos, ...conFecha, ...conCara, tipo: nodo.tipo, ...externo },
+    data: {
+      ...datos,
+      ...conFecha,
+      ...conCara,
+      tipo: nodo.tipo,
+      proyectoId,
+      ...externo,
+    },
     select: { id: true },
   });
   return { descartado: false, id: nuevo.id, creado: true, cambio: true };
@@ -178,12 +186,13 @@ export async function aplicarPlan(
   origen: string,
   nodos: readonly NodoPlan[],
   conexiones: readonly ConexionPlan[],
+  proyectoId: string,
 ): Promise<ConteoAplicado & { idPorExterno: ReadonlyMap<string, string> }> {
   const idPorExterno = new Map<string, string>();
   const descartados = new Set<string>();
   const conteoNodos = { nuevos: 0, actualizados: 0, descartados: 0 };
   for (const nodo of nodos) {
-    const guardado = await guardarNodo(tx, origen, nodo);
+    const guardado = await guardarNodo(tx, origen, nodo, proyectoId);
     if (guardado.descartado) {
       descartados.add(nodo.externoId);
       conteoNodos.descartados += 1;

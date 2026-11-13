@@ -1,10 +1,8 @@
 import {
-  Cara,
-  EstadoNodo,
-  TipoConexion,
-  TipoNodo,
-  type Nodo,
-} from '@prisma/client';
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../../common/constants/tipos.constants.js';
+import { Cara, EstadoNodo, type Nodo } from '@prisma/client';
 import {
   conexionesDelArchivo,
   conexionesParaArchivo,
@@ -14,7 +12,7 @@ import {
 
 const nodo: Nodo = {
   id: '4cd9e2e3-1d61-4fbd-ab4a-b3884e4f6238',
-  tipo: TipoNodo.TAREA,
+  tipo: TIPO_NODO.TAREA,
   titulo: 'preguntas',
   descripcion: 'Archivada el 06-10',
   resumen: 'búsqueda rápida dentro de las muestras',
@@ -23,6 +21,7 @@ const nodo: Nodo = {
   color: null,
   externoOrigen: 'todoist',
   externoId: '6hhMVChrX8gjMWwc',
+  proyectoId: '9c8a4f0e-1d2b-4c3a-8e5f-7a6b5c4d3e2f',
   etapa: '🔎 Precheck fin de sprint (archivadas)',
   etiquetas: ['retro'],
   prioridad: 4,
@@ -59,7 +58,7 @@ describe('el archivo de un descarte (FASE 16) — se puede deshacer tal cual', (
       {
         origenId: 'a',
         destinoId: nodo.id,
-        tipo: TipoConexion.DEPENDE_DE,
+        tipo: TIPO_CONEXION.DEPENDE_DE,
       },
     ];
     expect(conexionesDelArchivo(conexionesParaArchivo(conexiones))).toEqual(

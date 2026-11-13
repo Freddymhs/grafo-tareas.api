@@ -1,7 +1,9 @@
+import { TIPO_NODO } from '../../common/constants/tipos.constants.js';
 import { Injectable } from '@nestjs/common';
-import { EstadoNodo, Nodo, TipoNodo } from '@prisma/client';
+import { EstadoNodo, Nodo } from '@prisma/client';
 import {
   CLAVE_DECISION,
+  METODO_TRABAJO_HU,
   PREFIJO_COMPLEMENTO,
   etiquetaDeComplemento,
 } from '../../common/constants/index.js';
@@ -11,6 +13,7 @@ import {
   ValidationError,
 } from '../../common/exceptions/index.js';
 import { AreaService } from '../area/area.service.js';
+import { MetodoService } from '../metodo/metodo.service.js';
 import { RolesService } from '../roles/roles.service.js';
 import type { Complemento } from '../roles/roles.types.js';
 import { ComplementosRepository } from './complementos.repository.js';
@@ -33,12 +36,13 @@ export class ComplementosService {
     private readonly repository: ComplementosRepository,
     private readonly roles: RolesService,
     private readonly area: AreaService,
+    private readonly metodos: MetodoService,
   ) {}
 
   async crear(padreId: string, dto: CreateComplementoDto) {
     const { tipo, titulo, descripcion, ritual, personaId, prioridad } = dto;
     const complemento = this.roles.complemento(tipo);
-    const esParaUnRitual = complemento.nodo === TipoNodo.DAILY_ITEM;
+    const esParaUnRitual = complemento.nodo === TIPO_NODO.DAILY_ITEM;
     if (!esParaUnRitual && ritual !== undefined) {
       throw new ValidationError(
         `"${tipo}" no se dice en un ritual: "ritual" solo va con un complemento DAILY_ITEM`,
@@ -50,6 +54,8 @@ export class ComplementosService {
       );
     }
     const padre = await this.buscar(padreId);
+    // El guard del controlador mira el espacio por defecto: el que importa es el del nodo del que se cuelga.
+    await this.metodos.exigirDelProyecto(METODO_TRABAJO_HU, padre.proyectoId);
     const persona = personaId ? await this.buscarPersona(personaId) : null;
     const nodo = await this.repository.crear({
       padreId,
@@ -61,7 +67,7 @@ export class ComplementosService {
       titulo,
       descripcion: descripcion ?? null,
       etiqueta: etiquetaDeComplemento(complemento.clave),
-      frenaAlPadre: complemento.nodo === TipoNodo.DUDA,
+      frenaAlPadre: complemento.nodo === TIPO_NODO.DUDA,
       ritual:
         esParaUnRitual && ritual !== undefined
           ? this.area.ritual(ritual)
@@ -137,7 +143,8 @@ export class ComplementosService {
     id: string,
   ): Promise<{ duda: Nodo; complemento: Complemento }> {
     const duda = await this.buscar(id);
-    if (duda.tipo !== TipoNodo.DUDA || !claveDe(duda)) {
+    await this.metodos.exigirDelProyecto(METODO_TRABAJO_HU, duda.proyectoId);
+    if (duda.tipo !== TIPO_NODO.DUDA || !claveDe(duda)) {
       throw new ValidationError(
         'Solo una duda colgada como complemento se escala o se decide',
       );
@@ -157,7 +164,7 @@ export class ComplementosService {
   /** A quién espera un bloqueante: tiene que ser una PERSONA del grafo. */
   private async buscarPersona(id: string): Promise<Nodo> {
     const persona = await this.buscar(id);
-    if (persona.tipo !== TipoNodo.PERSONA) {
+    if (persona.tipo !== TIPO_NODO.PERSONA) {
       throw new ValidationError(
         '"personaId" tiene que ser una PERSONA del grafo',
       );

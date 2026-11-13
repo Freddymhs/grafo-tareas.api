@@ -1,11 +1,17 @@
+import {
+  TIPO_CONEXION,
+  TIPO_NODO,
+} from '../../common/constants/tipos.constants.js';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Cara, EstadoNodo, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo } from '@prisma/client';
 import { NotFoundError } from '../../common/exceptions/domain.exceptions';
 import { DerivadoRepository, NodoResumen } from './derivado.repository';
 import { RolesService } from '../roles/roles.service';
+import { MetodoService } from '../metodo/metodo.service';
+import { TiposPropiedadesService } from '../tipos/tipos-propiedades.service';
 import { DerivadoService } from './derivado.service';
 
-const resumen = (id: string, tipo: TipoNodo = TipoNodo.TAREA): NodoResumen => ({
+const resumen = (id: string, tipo: string = TIPO_NODO.TAREA): NodoResumen => ({
   id,
   tipo,
   titulo: `Nodo ${id}`,
@@ -17,6 +23,12 @@ const resumen = (id: string, tipo: TipoNodo = TipoNodo.TAREA): NodoResumen => ({
   prioridad: null,
   vence: null,
 });
+
+const BLOQUEANTES = [
+  TIPO_CONEXION.DEPENDE_DE,
+  TIPO_CONEXION.ESPERA_RESPUESTA_DE,
+  TIPO_CONEXION.BLOQUEADA_POR,
+];
 
 const mockRepository = {
   existe: jest.fn().mockResolvedValue(true),
@@ -39,6 +51,16 @@ describe('DerivadoService', () => {
           provide: RolesService,
           useValue: { etiquetasDeNotas: () => ['complemento:apunte'] },
         },
+        {
+          provide: MetodoService,
+          useValue: { espacioDe: () => Promise.resolve({ id: 'espacio' }) },
+        },
+        {
+          provide: TiposPropiedadesService,
+          useValue: {
+            bloqueantes: () => Promise.resolve(BLOQUEANTES),
+          },
+        },
       ],
     }).compile();
     return module.get(DerivadoService);
@@ -48,7 +70,7 @@ describe('DerivadoService', () => {
     it('es true con al menos un bloqueador abierto, y los devuelve', async () => {
       const service = await armar();
       mockRepository.bloqueadoresDe.mockResolvedValueOnce([
-        resumen('duda', TipoNodo.DUDA),
+        resumen('duda', TIPO_NODO.DUDA),
       ]);
 
       const resultado = await service.bloqueado('t1');
@@ -77,16 +99,15 @@ describe('DerivadoService', () => {
       ]);
       mockRepository.resumenes.mockResolvedValueOnce([
         resumen('t1'),
-        resumen('duda', TipoNodo.DUDA),
+        resumen('duda', TIPO_NODO.DUDA),
       ]);
 
       const resultado = await service.libera('tomas');
 
-      expect(mockRepository.bloqueosDe).toHaveBeenCalledWith([
-        'duda',
-        't1',
-        't2',
-      ]);
+      expect(mockRepository.bloqueosDe).toHaveBeenCalledWith(
+        ['duda', 't1', 't2'],
+        BLOQUEANTES,
+      );
       expect(resultado.directos.map(({ id }) => id)).toEqual(['duda']);
       expect(resultado.cadena.map(({ id }) => id)).toEqual(['t1']);
     });

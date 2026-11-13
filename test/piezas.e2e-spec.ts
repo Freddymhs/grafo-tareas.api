@@ -1,3 +1,7 @@
+import {
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../src/common/constants/tipos.constants';
 import { join } from 'node:path';
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
@@ -5,9 +9,10 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { Cara, TipoConexion, TipoNodo } from '@prisma/client';
+import { Cara } from '@prisma/client';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/database/prisma.service';
+import { sembrarEspacioTrabajo, vaciarBase } from './fixtures/sembrar-espacio';
 import { AreaService } from './../src/modules/area/area.service';
 import { RolesService } from './../src/modules/roles/roles.service';
 
@@ -56,12 +61,13 @@ describe('POST /piezas (e2e, FASE 19) — una pieza del reparto entra al plan co
     await ctx.app.init();
     await ctx.app.getHttpAdapter().getInstance().ready();
     ctx.prisma = ctx.app.get(PrismaService);
-    await ctx.prisma.conexion.deleteMany();
-    await ctx.prisma.nodo.deleteMany();
+    await vaciarBase(ctx.prisma);
+    const { proyectoSagId } = await sembrarEspacioTrabajo(ctx.prisma);
     // La HU y un carril que ya trajo el importador del tablero, con sus externos.
     const hu = await ctx.prisma.nodo.create({
       data: {
-        tipo: TipoNodo.HISTORIA,
+        proyectoId: proyectoSagId,
+        tipo: TIPO_NODO.HISTORIA,
         titulo: 'HU 20379 · Dashboard',
         externoOrigen: 'tracker',
         externoId: 'hu:20379',
@@ -69,7 +75,8 @@ describe('POST /piezas (e2e, FASE 19) — una pieza del reparto entra al plan co
     });
     const carril = await ctx.prisma.nodo.create({
       data: {
-        tipo: TipoNodo.RAMA,
+        proyectoId: proyectoSagId,
+        tipo: TIPO_NODO.RAMA,
         titulo: '20379 · C · Recepción',
         etiquetas: ['carril'],
         externoOrigen: 'todoist',
@@ -93,7 +100,7 @@ describe('POST /piezas (e2e, FASE 19) — una pieza del reparto entra al plan co
   const destinosDe = async (id: string) =>
     (
       await ctx.prisma.conexion.findMany({
-        where: { origenId: id, tipo: TipoConexion.PERTENECE_A },
+        where: { origenId: id, tipo: TIPO_CONEXION.PERTENECE_A },
       })
     ).map(({ destinoId }) => destinoId);
 
@@ -113,7 +120,7 @@ describe('POST /piezas (e2e, FASE 19) — una pieza del reparto entra al plan co
       [ctx.hu, ctx.carril].sort(),
     );
     expect(
-      await ctx.prisma.nodo.count({ where: { tipo: TipoNodo.HISTORIA } }),
+      await ctx.prisma.nodo.count({ where: { tipo: TIPO_NODO.HISTORIA } }),
     ).toBe(1);
     expect(
       await ctx.prisma.nodo.count({
@@ -145,7 +152,7 @@ describe('POST /piezas (e2e, FASE 19) — una pieza del reparto entra al plan co
     const rama = await ctx.prisma.nodo.findFirst({
       where: { titulo: '20379 · A · Bandeja' },
     });
-    expect(rama).toMatchObject({ tipo: TipoNodo.RAMA, etiquetas: ['carril'] });
+    expect(rama).toMatchObject({ tipo: TIPO_NODO.RAMA, etiquetas: ['carril'] });
   });
 
   it('sin la cabecera del reparto, o con un carril mal nombrado, no es una pieza: 400 y no se guarda nada', async () => {

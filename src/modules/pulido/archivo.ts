@@ -1,17 +1,10 @@
-import {
-  Cara,
-  EstadoNodo,
-  Prisma,
-  TipoConexion,
-  TipoNodo,
-  type Nodo,
-} from '@prisma/client';
+import { Cara, EstadoNodo, Prisma, type Nodo } from '@prisma/client';
 
 /** Una conexión archivada: lo justo para volver a crearla. */
 export interface ConexionArchivada {
   readonly origenId: string;
   readonly destinoId: string;
-  readonly tipo: TipoConexion;
+  readonly tipo: string;
 }
 
 const fecha = (valor: Date | null) => (valor ? valor.toISOString() : null);
@@ -29,6 +22,7 @@ export function nodoParaArchivo(nodo: Nodo): Prisma.InputJsonObject {
     color: nodo.color,
     externoOrigen: nodo.externoOrigen,
     externoId: nodo.externoId,
+    proyectoId: nodo.proyectoId,
     etapa: nodo.etapa,
     etiquetas: nodo.etiquetas,
     prioridad: nodo.prioridad,
@@ -55,15 +49,20 @@ const esDe = <T extends string>(
 ): valor is T => Object.values<unknown>(valores).includes(valor);
 
 /** Rearma el nodo archivado para volver a crearlo con su mismo id. Un archivo dañado no se restaura a ciegas. */
-export function nodoDelArchivo(archivo: unknown): Omit<Nodo, 'updatedAt'> {
+/** El `proyectoId` puede faltar: los descartes de antes de la FASE 22 no lo guardaron. */
+export type NodoArchivado = Omit<Nodo, 'updatedAt' | 'proyectoId'> & {
+  readonly proyectoId: string | null;
+};
+
+export function nodoDelArchivo(archivo: unknown): NodoArchivado {
   if (!esObjeto(archivo)) throw new Error('descarte dañado: no es un objeto');
   const { id, tipo, titulo, estado, fechaOrigen, createdAt, etiquetas } =
     archivo;
   const valido =
     typeof id === 'string' &&
     typeof titulo === 'string' &&
-    esDe(TipoNodo, tipo) &&
-    esDe(EstadoNodo, estado) &&
+    typeof tipo === 'string' &&
+    (estado === null || esDe(EstadoNodo, estado)) &&
     typeof fechaOrigen === 'string' &&
     typeof createdAt === 'string' &&
     Array.isArray(etiquetas);
@@ -82,6 +81,7 @@ export function nodoDelArchivo(archivo: unknown): Omit<Nodo, 'updatedAt'> {
     color: texto(archivo['color']),
     externoOrigen: texto(archivo['externoOrigen']),
     externoId: texto(archivo['externoId']),
+    proyectoId: texto(archivo['proyectoId']),
     etapa: texto(archivo['etapa']),
     etiquetas: etiquetas.filter((e): e is string => typeof e === 'string'),
     prioridad: numero(archivo['prioridad']),
@@ -112,7 +112,7 @@ export function conexionesDelArchivo(archivo: unknown): ConexionArchivada[] {
     .flatMap(({ origenId, destinoId, tipo }) =>
       typeof origenId === 'string' &&
       typeof destinoId === 'string' &&
-      esDe(TipoConexion, tipo)
+      typeof tipo === 'string'
         ? [{ origenId, destinoId, tipo }]
         : [],
     );

@@ -15,6 +15,10 @@ import { RolesModule } from './modules/roles/roles.module';
 import { ComplementosModule } from './modules/complementos/complementos.module';
 import { AreaModule } from './modules/area/area.module';
 import { PulidoModule } from './modules/pulido/pulido.module';
+import { MetodoModule } from './modules/metodo/metodo.module';
+import { EspaciosModule } from './modules/espacios/espacios.module';
+import { ProyectosModule } from './modules/proyectos/proyectos.module';
+import { TiposModule } from './modules/tipos/tipos.module';
 import { PiezasModule } from './modules/piezas/piezas.module';
 import { ImportadoresModule } from './importadores/todoist/importadores.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
@@ -54,6 +58,7 @@ import { GLOBAL_VALIDATION_PIPE } from './common/pipes/validation.pipe';
 
     DatabaseModule,
     HealthModule,
+    MetodoModule,
     NodosModule,
     ConexionesModule,
     RamasModule,
@@ -63,6 +68,9 @@ import { GLOBAL_VALIDATION_PIPE } from './common/pipes/validation.pipe';
     ComplementosModule,
     AreaModule,
     PiezasModule,
+    EspaciosModule,
+    ProyectosModule,
+    TiposModule,
     ImportadoresModule,
   ],
   providers: [

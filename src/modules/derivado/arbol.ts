@@ -1,19 +1,20 @@
-import { TipoConexion } from '@prisma/client';
+import { TIPO_CONEXION } from '../../common/constants/tipos.constants.js';
 
 /** Lo mínimo de una conexión para recorrer el árbol. */
 export interface Enlace {
   readonly origenId: string;
   readonly destinoId: string;
-  readonly tipo: TipoConexion;
+  readonly tipo: string;
 }
 
 /** Para cada nodo, lo que le PERTENECE_A directo (sus hijos): la FASE de una HU, la tarjeta de una FASE. */
 export function hijosPorPertenencia(
   conexiones: readonly Enlace[],
+  contenedoras: readonly string[] = [TIPO_CONEXION.PERTENECE_A],
 ): ReadonlyMap<string, readonly string[]> {
   const hijosDe = new Map<string, string[]>();
   conexiones
-    .filter(({ tipo }) => tipo === TipoConexion.PERTENECE_A)
+    .filter(({ tipo }) => contenedoras.includes(tipo))
     .forEach(({ origenId, destinoId }) => {
       hijosDe.set(destinoId, [...(hijosDe.get(destinoId) ?? []), origenId]);
     });

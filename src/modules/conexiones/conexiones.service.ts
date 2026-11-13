@@ -20,6 +20,12 @@ export class ConexionesService {
     if (origenId === destinoId) {
       throw new ValidationError('Un nodo no se conecta consigo mismo');
     }
+    const tipoExiste = await this.repository.existeTipo(tipo);
+    if (!tipoExiste) {
+      throw new ValidationError(
+        `tipo de conexión «${tipo}» no existe: se crea con POST /tipos-conexion`,
+      );
+    }
     const existentes = await this.repository.contarNodos([origenId, destinoId]);
     const ambosExisten = existentes === 2;
     if (!ambosExisten) {

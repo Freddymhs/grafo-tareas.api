@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 import { NodoResumenDto } from '../../nodos/dto/index.js';
 
 export class PlanQueryDto {
@@ -11,6 +11,15 @@ export class PlanQueryDto {
   @IsString()
   @IsNotEmpty()
   libro?: string;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description:
+      'El espacio (tiene que usar el método de trabajo); sin él, el del proyecto por defecto',
+  })
+  @IsOptional()
+  @IsUUID()
+  espacio?: string;
 }
 
 /** Un carril que la pieza lleva a la vista: el suyo o uno que espera (`calcularPelotitas`). */

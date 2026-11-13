@@ -1,19 +1,21 @@
+import { TIPO_NODO } from '../../common/constants/tipos.constants.js';
 import { Test, TestingModule } from '@nestjs/testing';
-import { EstadoNodo, TipoNodo } from '@prisma/client';
+import { EstadoNodo } from '@prisma/client';
 import {
   ConflictError,
   NotFoundError,
   ValidationError,
 } from '../../common/exceptions/domain.exceptions';
-import { EtapasService } from './etapas.service';
+import { EtapasDelEspacioService } from './etapas-del-espacio.service';
 import { DerivadoService } from '../derivado/derivado.service';
 import { RolesService } from '../roles/roles.service';
 import { NodosRepository } from './nodos.repository';
 import { NodosService } from './nodos.service';
+import { ProyectoPorDefectoService } from './proyecto-por-defecto.service';
 
 const NODO = {
   id: '123e4567-e89b-12d3-a456-426614174000',
-  tipo: TipoNodo.TAREA,
+  tipo: TIPO_NODO.TAREA,
   titulo: 'Tarea',
   descripcion: null,
   estado: EstadoNodo.ABIERTO,
@@ -37,6 +39,10 @@ const mockRepository = {
   contarExistentes: jest.fn().mockResolvedValue(1),
   buscarPorExterno: jest.fn().mockResolvedValue(null),
   guardarPosiciones: jest.fn().mockResolvedValue(1),
+  proyectoConEspacio: jest
+    .fn()
+    .mockResolvedValue({ id: 'p', espacio: { id: 'e', nombre: 'SIGSA' } }),
+  tipoEnEspacio: jest.fn().mockResolvedValue({ tieneCiclo: true }),
 };
 
 const mockEtapas = { validar: jest.fn(), lista: () => [] };
@@ -49,9 +55,17 @@ describe('NodosService', () => {
       providers: [
         NodosService,
         { provide: NodosRepository, useValue: mockRepository },
-        { provide: EtapasService, useValue: mockEtapas },
+        { provide: EtapasDelEspacioService, useValue: mockEtapas },
         { provide: RolesService, useValue: { filtroDe: jest.fn() } },
         { provide: DerivadoService, useValue: { nodosDe: jest.fn() } },
+        {
+          provide: ProyectoPorDefectoService,
+          useValue: {
+            resolver: jest
+              .fn()
+              .mockResolvedValue({ proyectoId: 'p', porDefecto: true }),
+          },
+        },
       ],
     }).compile();
     return module.get(NodosService);
@@ -61,10 +75,14 @@ describe('NodosService', () => {
     it('solo una RAMA lleva color', async () => {
       const service = await armar();
       await expect(
-        service.create({ tipo: TipoNodo.TAREA, titulo: 'x', color: '#ffffff' }),
+        service.create({
+          tipo: TIPO_NODO.TAREA,
+          titulo: 'x',
+          color: '#ffffff',
+        }),
       ).rejects.toThrow(ValidationError);
       await expect(
-        service.create({ tipo: TipoNodo.RAMA, titulo: 'x', color: '#ffffff' }),
+        service.create({ tipo: TIPO_NODO.RAMA, titulo: 'x', color: '#ffffff' }),
       ).resolves.toEqual(NODO);
     });
 
@@ -72,7 +90,7 @@ describe('NodosService', () => {
       const service = await armar();
       await expect(
         service.create({
-          tipo: TipoNodo.TAREA,
+          tipo: TIPO_NODO.TAREA,
           titulo: 'x',
           externoOrigen: 'origen-x',
         }),
@@ -85,7 +103,7 @@ describe('NodosService', () => {
 
       await expect(
         service.create({
-          tipo: TipoNodo.TAREA,
+          tipo: TIPO_NODO.TAREA,
           titulo: 'x',
           externoOrigen: 'origen-x',
           externoId: '1',

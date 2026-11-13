@@ -1,25 +1,15 @@
-import { TipoConexion, TipoNodo } from '@prisma/client';
+import { TIPO_NODO } from './tipos.constants.js';
 
-/** Conexiones que bloquean a su origen mientras el destino siga ABIERTO (docs/_CONCEPTO.md § Modelo de dominio). */
-export const CONEXIONES_BLOQUEANTES: readonly TipoConexion[] = [
-  TipoConexion.DEPENDE_DE,
-  TipoConexion.ESPERA_RESPUESTA_DE,
-  TipoConexion.BLOQUEADA_POR,
-];
 /**
  * La FASE con su casilla «Mergeado» tildada (FASE 17): la pone `importar:fases`, nunca se deduce de otra cosa. Depender de
  * ella ya está cumplido aunque siga ABIERTA por sus trámites (`dependenciaCumplida`).
  */
 export const ETIQUETA_MERGEADA = 'mergeada';
 
-/** "hoy puedo…" lista TAREAS (concepto § Modelo de dominio: tareas ABIERTAS no bloqueadas). FASE, RAMA, PERSONA, DUDA y PR
- *  agrupan o bloquean, no se hacen. Medido 2026-10-16 con datos reales: con FASE adentro salían 96 de 80 tareas abiertas. */
-export const TIPOS_ACCIONABLES: readonly TipoNodo[] = [TipoNodo.TAREA];
-
 /** El parte del día (FASE 10) habla de tareas y de FASE: lo que se hace y lo que se entrega. */
-export const TIPOS_DEL_DIA: readonly TipoNodo[] = [
-  TipoNodo.TAREA,
-  TipoNodo.FASE,
+export const TIPOS_DEL_DIA: readonly string[] = [
+  TIPO_NODO.TAREA,
+  TIPO_NODO.FASE,
 ];
 /** Freddy lleva dos tarjetas a la vez a propósito (C11): el aviso es con más de dos, no con más de una. */
 export const LIMITE_EN_CURSO = 2;
@@ -92,3 +82,6 @@ export const etiquetaDeRonda = (ronda: string) => `${PREFIJO_RONDA}${ronda}`;
 export const ETIQUETA_CARRIL = 'carril';
 /** Una pieza del reparto (FASE 13 R4): la lleva en el plan y la conserva al tomarla, cuando pasa a lo real. */
 export const ETIQUETA_PIEZA = 'pieza';
+
+/** Largo máximo del nombre de un espacio, de un proyecto o de un tipo. */
+export const LARGO_MAXIMO_NOMBRE = 100;

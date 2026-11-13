@@ -1,7 +1,11 @@
+import {
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../../common/constants/tipos.constants.js';
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { Injectable } from '@nestjs/common';
-import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { EstadoNodo } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
 import { EtapasService } from '../../modules/nodos/etapas.service.js';
 import {
@@ -43,6 +47,8 @@ export interface OpcionesFases {
   readonly roles: string;
   /** El orquestador dueño de esas FASE: separa sus nodos de los de otro proyecto. */
   readonly proyecto: string;
+  /** El proyecto del grafo donde caen los nodos nuevos (`--proyecto-grafo`); las búsquedas por título se limitan a él. */
+  readonly proyectoGrafo: string;
   /**
    * Otro origen cuyas «FASE n» son de ESTE proyecto (p. ej. `todoist` para el Laboratorio: TRABAJO es el SAG): esos
    * nodos se adoptan —pasan a este origen, con su id y sus conexiones— en vez de duplicarse (C10, FASE 11).
@@ -132,6 +138,7 @@ export class ImportadorFasesService {
         opciones.adoptar,
         tasks,
         opciones.podar,
+        opciones.proyectoGrafo,
       );
     const aplicado = opciones.seco
       ? await simular(this.prisma, aplicar)
@@ -189,26 +196,29 @@ export class ImportadorFasesService {
     adoptar: string | null,
     tasks: readonly TaskDeFase[],
     podar: boolean,
+    proyectoGrafo: string,
   ) {
     // Nunca se adopta por título: «FASE 6» de Todoist puede ser de otro orquestador (real 2026-10-17, la FASE 6 del
     // SAG). Solo si el que importa dice de qué origen son sus FASE (`adoptar`), y siempre por externo.
     const adoptadas = adoptar
-      ? await this.adoptar(tx, adoptar, plan.origen, plan.nodos)
+      ? await this.adoptar(tx, adoptar, plan.origen, plan.nodos, proyectoGrafo)
       : 0;
     const fases = await aplicarPlan(
       tx,
       plan.origen,
       plan.nodos,
       plan.conexiones,
+      proyectoGrafo,
     );
     // Sin --tareas no se leyó ningún entendimiento: eso no prueba que las dudas se cerraron, así que no se tocan.
     const dudas = conTareas
-      ? await this.aplicarDudas(tx, plan.origen, plan.dudas)
+      ? await this.aplicarDudas(tx, plan.origen, plan.dudas, proyectoGrafo)
       : SIN_DUDAS;
     const tarjetasEnganchadas = await this.engancharTarjetas(
       tx,
       fases.idPorExterno,
       tasks,
+      proyectoGrafo,
     );
     const viejas = await this.dependenciasViejas(tx, plan, podar);
     return {
@@ -233,10 +243,10 @@ export class ImportadorFasesService {
    * `podar`, porque una conexión hecha a mano en la web entre dos FASE tampoco está en un .md.
    */
   private async dependenciasViejas(tx: Tx, plan: PlanFases, podar: boolean) {
-    const deEsteProyecto = { externoOrigen: plan.origen, tipo: TipoNodo.FASE };
+    const deEsteProyecto = { externoOrigen: plan.origen, tipo: TIPO_NODO.FASE };
     const existentes = await tx.conexion.findMany({
       where: {
-        tipo: TipoConexion.DEPENDE_DE,
+        tipo: TIPO_CONEXION.DEPENDE_DE,
         origen: deEsteProyecto,
         destino: deEsteProyecto,
       },
@@ -252,7 +262,7 @@ export class ImportadorFasesService {
         : [],
     );
     const declaradas = plan.conexiones
-      .filter(({ tipo }) => tipo === TipoConexion.DEPENDE_DE)
+      .filter(({ tipo }) => tipo === TIPO_CONEXION.DEPENDE_DE)
       .map(({ origenExternoId, destinoExternoId }) => ({
         origen: origenExternoId,
         destino: destinoExternoId,
@@ -278,6 +288,7 @@ export class ImportadorFasesService {
     tx: Tx,
     idPorExterno: ReadonlyMap<string, string>,
     tasks: readonly TaskDeFase[],
+    proyectoGrafo: string,
   ): Promise<number> {
     const nuevas: boolean[] = [];
     for (const { externoId, task } of tasks) {
@@ -285,7 +296,11 @@ export class ImportadorFasesService {
       if (!faseId) continue;
       const citaLaTask = new RegExp(`(^|\\D)${task}(\\D|$)`);
       const candidatas = await tx.nodo.findMany({
-        where: { tipo: TipoNodo.TAREA, titulo: { contains: task } },
+        where: {
+          tipo: TIPO_NODO.TAREA,
+          titulo: { contains: task },
+          proyectoId: proyectoGrafo,
+        },
         select: { id: true, titulo: true },
       });
       for (const { id } of candidatas.filter(({ titulo }) =>
@@ -295,7 +310,7 @@ export class ImportadorFasesService {
           await conectar(tx, {
             origenId: id,
             destinoId: faseId,
-            tipo: TipoConexion.PERTENECE_A,
+            tipo: TIPO_CONEXION.PERTENECE_A,
           }),
         );
       }
@@ -314,8 +329,9 @@ export class ImportadorFasesService {
     desde: string,
     origen: string,
     nodos: PlanFases['nodos'],
+    proyectoGrafo: string,
   ): Promise<number> {
-    const deFases = nodos.filter(({ tipo }) => tipo === TipoNodo.FASE);
+    const deFases = nodos.filter(({ tipo }) => tipo === TIPO_NODO.FASE);
     // En serie: la transacción interactiva usa una sola conexión.
     const adoptados: number[] = [];
     for (const { externoId } of deFases) {
@@ -327,7 +343,7 @@ export class ImportadorFasesService {
       } else if (copia) {
         await tx.nodo.update({
           where: { id: copia.id },
-          data: { externoOrigen: origen },
+          data: { externoOrigen: origen, proyectoId: proyectoGrafo },
         });
         adoptados.push(1);
       }
@@ -337,7 +353,7 @@ export class ImportadorFasesService {
 
   private faseDe(tx: Tx, externoOrigen: string, externoId: string) {
     return tx.nodo.findFirst({
-      where: { externoOrigen, externoId, tipo: TipoNodo.FASE },
+      where: { externoOrigen, externoId, tipo: TIPO_NODO.FASE },
       select: { id: true },
     });
   }
@@ -365,6 +381,7 @@ export class ImportadorFasesService {
     tx: Tx,
     origen: string,
     dudas: readonly DudaPlan[],
+    proyectoGrafo: string,
   ) {
     const conteo = {
       nuevos: 0,
@@ -375,7 +392,7 @@ export class ImportadorFasesService {
     };
     const vigentes: string[] = [];
     for (const duda of dudas) {
-      const guardada = await guardarNodo(tx, origen, duda);
+      const guardada = await guardarNodo(tx, origen, duda, proyectoGrafo);
       vigentes.push(duda.externoId);
       // Descartada al pulir el grafo (FASE 16): no se revive ni se conecta.
       if (guardada.descartado) continue;
@@ -384,8 +401,9 @@ export class ImportadorFasesService {
       else if (cambio) conteo.actualizados += 1;
       const tarea = await tx.nodo.findFirst({
         where: {
-          tipo: TipoNodo.TAREA,
+          tipo: TIPO_NODO.TAREA,
           titulo: { startsWith: duda.tareaPrefijo },
+          proyectoId: proyectoGrafo,
         },
         select: { id: true },
         orderBy: { createdAt: 'asc' },
@@ -397,7 +415,7 @@ export class ImportadorFasesService {
       const nueva = await conectar(tx, {
         origenId: tarea.id,
         destinoId: id,
-        tipo: TipoConexion.BLOQUEADA_POR,
+        tipo: TIPO_CONEXION.BLOQUEADA_POR,
       });
       if (nueva) conteo.conexionesNuevas += 1;
       else conteo.conexionesExistentes += 1;

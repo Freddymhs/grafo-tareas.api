@@ -1,8 +1,8 @@
-import { TipoConexion } from '@prisma/client';
+import { TIPO_CONEXION } from '../../common/constants/tipos.constants.js';
 import { calcularFamilia } from './calcular-familia';
 
-const { PERTENECE_A, BLOQUEADA_POR } = TipoConexion;
-const enlace = (origenId: string, tipo: TipoConexion, destinoId: string) => ({
+const { PERTENECE_A, BLOQUEADA_POR } = TIPO_CONEXION;
+const enlace = (origenId: string, tipo: string, destinoId: string) => ({
   origenId,
   destinoId,
   tipo,

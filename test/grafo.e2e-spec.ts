@@ -1,12 +1,17 @@
+import {
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../src/common/constants/tipos.constants';
 import { opcionesCors } from '@config/cors.js';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { EstadoNodo } from '@prisma/client';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/database/prisma.service';
+import { sembrarEspacioTrabajo, vaciarBase } from './fixtures/sembrar-espacio';
 
 /** La forma que da el ResponseInterceptor: { statusCode, data, meta }. */
 interface Envuelto<T> {
@@ -33,7 +38,11 @@ const ORIGEN_WEB = 'http://localhost:3001';
 
 describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres tareas', () => {
   // Lo llena beforeAll una sola vez: un holder en vez de `let` (regla §0).
-  const ctx = {} as { app: NestFastifyApplication; prisma: PrismaService };
+  const ctx = {} as {
+    app: NestFastifyApplication;
+    prisma: PrismaService;
+    proyecto: string;
+  };
 
   const post = async <T>(url: string, payload: object) => {
     const res = await ctx.app.inject({
@@ -53,9 +62,9 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
       body: JSON.parse(res.body) as Envuelto<T>,
     };
   };
-  const nodo = async (tipo: TipoNodo, titulo: string) =>
+  const nodo = async (tipo: string, titulo: string) =>
     (await post<ConId>('/nodos', { tipo, titulo })).body.data.id;
-  const conectar = (origenId: string, destinoId: string, tipo: TipoConexion) =>
+  const conectar = (origenId: string, destinoId: string, tipo: string) =>
     post<ConId>('/conexiones', { origenId, destinoId, tipo });
   const titulos = (nodos: Resumen[]) =>
     nodos.map(({ titulo }) => titulo).sort();
@@ -72,8 +81,8 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
     await ctx.app.init();
     await ctx.app.getHttpAdapter().getInstance().ready();
     ctx.prisma = ctx.app.get(PrismaService);
-    await ctx.prisma.conexion.deleteMany();
-    await ctx.prisma.nodo.deleteMany();
+    await vaciarBase(ctx.prisma);
+    ctx.proyecto = (await sembrarEspacioTrabajo(ctx.prisma)).proyectoSagId;
   });
 
   afterAll(async () => {
@@ -91,7 +100,7 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
     ids.rama = rama.body.data.id;
 
     const conColor = await post('/nodos', {
-      tipo: TipoNodo.TAREA,
+      tipo: TIPO_NODO.TAREA,
       titulo: 'x',
       color: '#ffffff',
     });
@@ -101,12 +110,12 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
   it('un importador no duplica: mismo origen + id → 409 (C3)', async () => {
     const externo = { externoOrigen: 'todoist', externoId: '123' };
     const primero = await post('/nodos', {
-      tipo: TipoNodo.TAREA,
+      tipo: TIPO_NODO.TAREA,
       titulo: 'a',
       ...externo,
     });
     const segundo = await post('/nodos', {
-      tipo: TipoNodo.TAREA,
+      tipo: TIPO_NODO.TAREA,
       titulo: 'b',
       ...externo,
     });
@@ -114,31 +123,31 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
   });
 
   it('arma el grafo y valida las conexiones', async () => {
-    ids.tomas = await nodo(TipoNodo.PERSONA, 'Tomás');
-    ids.duda = await nodo(TipoNodo.DUDA, 'W2 · ¿condición o tabla?');
-    ids.t1 = await nodo(TipoNodo.TAREA, 'Validador del paso 3');
-    ids.t2 = await nodo(TipoNodo.TAREA, 'Service del paso 3');
-    ids.t3 = await nodo(TipoNodo.TAREA, 'Postman del PBI');
-    ids.libre = await nodo(TipoNodo.TAREA, 'Leer la wiki');
+    ids.tomas = await nodo(TIPO_NODO.PERSONA, 'Tomás');
+    ids.duda = await nodo(TIPO_NODO.DUDA, 'W2 · ¿condición o tabla?');
+    ids.t1 = await nodo(TIPO_NODO.TAREA, 'Validador del paso 3');
+    ids.t2 = await nodo(TIPO_NODO.TAREA, 'Service del paso 3');
+    ids.t3 = await nodo(TIPO_NODO.TAREA, 'Postman del PBI');
+    ids.libre = await nodo(TIPO_NODO.TAREA, 'Leer la wiki');
 
     expect(
-      (await conectar(ids.duda, ids.tomas, TipoConexion.ESPERA_RESPUESTA_DE))
+      (await conectar(ids.duda, ids.tomas, TIPO_CONEXION.ESPERA_RESPUESTA_DE))
         .status,
     ).toBe(201);
-    await conectar(ids.t1, ids.duda, TipoConexion.BLOQUEADA_POR);
-    await conectar(ids.t2, ids.duda, TipoConexion.BLOQUEADA_POR);
-    await conectar(ids.t3, ids.t1, TipoConexion.DEPENDE_DE);
-    await conectar(ids.t1, ids.rama, TipoConexion.PERTENECE_A);
-    await conectar(ids.libre, ids.rama, TipoConexion.PERTENECE_A);
+    await conectar(ids.t1, ids.duda, TIPO_CONEXION.BLOQUEADA_POR);
+    await conectar(ids.t2, ids.duda, TIPO_CONEXION.BLOQUEADA_POR);
+    await conectar(ids.t3, ids.t1, TIPO_CONEXION.DEPENDE_DE);
+    await conectar(ids.t1, ids.rama, TIPO_CONEXION.PERTENECE_A);
+    await conectar(ids.libre, ids.rama, TIPO_CONEXION.PERTENECE_A);
 
     expect(
-      (await conectar(ids.t1, ids.duda, TipoConexion.BLOQUEADA_POR)).status,
+      (await conectar(ids.t1, ids.duda, TIPO_CONEXION.BLOQUEADA_POR)).status,
     ).toBe(409);
     expect(
-      (await conectar(ids.t1, ids.t1, TipoConexion.DEPENDE_DE)).status,
+      (await conectar(ids.t1, ids.t1, TIPO_CONEXION.DEPENDE_DE)).status,
     ).toBe(400);
     expect(
-      (await conectar(ids.t1, UUID_INEXISTENTE, TipoConexion.DEPENDE_DE))
+      (await conectar(ids.t1, UUID_INEXISTENTE, TIPO_CONEXION.DEPENDE_DE))
         .status,
     ).toBe(404);
   });
@@ -170,10 +179,10 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
   });
 
   it('un ciclo A→B→A no cuelga la consulta', async () => {
-    const a = await nodo(TipoNodo.TAREA, 'ciclo-a');
-    const b = await nodo(TipoNodo.TAREA, 'ciclo-b');
-    await conectar(a, b, TipoConexion.DEPENDE_DE);
-    await conectar(b, a, TipoConexion.DEPENDE_DE);
+    const a = await nodo(TIPO_NODO.TAREA, 'ciclo-a');
+    const b = await nodo(TIPO_NODO.TAREA, 'ciclo-b');
+    await conectar(a, b, TIPO_CONEXION.DEPENDE_DE);
+    await conectar(b, a, TIPO_CONEXION.DEPENDE_DE);
 
     const libera = await get<Libera>(`/nodos/${a}/libera`);
     expect(libera.status).toBe(200);
@@ -299,15 +308,16 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
   it('depender de algo ya mergeado no bloquea; estar bloqueada por eso, sí (Freddy, 2026-10-21)', async () => {
     const mergeada = await ctx.prisma.nodo.create({
       data: {
-        tipo: TipoNodo.FASE,
+        proyectoId: ctx.proyecto,
+        tipo: TIPO_NODO.FASE,
         titulo: 'FASE 38 · mergeada, con trámites',
         etiquetas: ['producto', 'mergeada'],
       },
     });
-    const depende = await nodo(TipoNodo.TAREA, 'depende de la 38');
-    const frenada = await nodo(TipoNodo.TAREA, 'bloqueada por la 38');
-    await conectar(depende, mergeada.id, TipoConexion.DEPENDE_DE);
-    await conectar(frenada, mergeada.id, TipoConexion.BLOQUEADA_POR);
+    const depende = await nodo(TIPO_NODO.TAREA, 'depende de la 38');
+    const frenada = await nodo(TIPO_NODO.TAREA, 'bloqueada por la 38');
+    await conectar(depende, mergeada.id, TIPO_CONEXION.DEPENDE_DE);
+    await conectar(frenada, mergeada.id, TIPO_CONEXION.BLOQUEADA_POR);
 
     const libre = await get<Bloqueado>(`/nodos/${depende}/bloqueado`);
     expect(libre.body.data.bloqueado).toBe(false);
@@ -318,14 +328,15 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
   it('depender de una tarjeta en APROBADO (mergeada) tampoco bloquea: la etiqueta la lleva su FASE (Freddy, 2026-10-21)', async () => {
     const aprobada = await ctx.prisma.nodo.create({
       data: {
-        tipo: TipoNodo.TAREA,
+        proyectoId: ctx.proyecto,
+        tipo: TIPO_NODO.TAREA,
         titulo: '[25325] Estados y confirmar recepción',
         etiquetas: ['board'],
         etapa: 'APROBADO',
       },
     });
-    const depende = await nodo(TipoNodo.TAREA, '[26998] depende de la 25325');
-    await conectar(depende, aprobada.id, TipoConexion.DEPENDE_DE);
+    const depende = await nodo(TIPO_NODO.TAREA, '[26998] depende de la 25325');
+    await conectar(depende, aprobada.id, TIPO_CONEXION.DEPENDE_DE);
 
     const libre = await get<Bloqueado>(`/nodos/${depende}/bloqueado`);
     expect(libre.body.data.bloqueado).toBe(false);

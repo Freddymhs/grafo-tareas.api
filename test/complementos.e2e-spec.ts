@@ -1,3 +1,4 @@
+import { TIPO_NODO } from '../src/common/constants/tipos.constants';
 import { join } from 'node:path';
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
@@ -5,9 +6,10 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { Cara, TipoNodo } from '@prisma/client';
+import { Cara } from '@prisma/client';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/database/prisma.service';
+import { sembrarEspacioTrabajo, vaciarBase } from './fixtures/sembrar-espacio';
 import { AreaService } from './../src/modules/area/area.service';
 import { RolesService } from './../src/modules/roles/roles.service';
 
@@ -34,6 +36,7 @@ describe('Complementos (e2e) — lo que cuelga de un PBI', () => {
     app: NestFastifyApplication;
     prisma: PrismaService;
     pbi: string;
+    proyecto: string;
   };
 
   const pedir = async <T>(
@@ -73,10 +76,15 @@ describe('Complementos (e2e) — lo que cuelga de un PBI', () => {
     await ctx.app.init();
     await ctx.app.getHttpAdapter().getInstance().ready();
     ctx.prisma = ctx.app.get(PrismaService);
-    await ctx.prisma.conexion.deleteMany();
-    await ctx.prisma.nodo.deleteMany();
+    await vaciarBase(ctx.prisma);
+    const { proyectoSagId } = await sembrarEspacioTrabajo(ctx.prisma);
+    ctx.proyecto = proyectoSagId;
     const pbi = await ctx.prisma.nodo.create({
-      data: { tipo: TipoNodo.HISTORIA, titulo: 'PBI 25699 feriados' },
+      data: {
+        tipo: TIPO_NODO.HISTORIA,
+        titulo: 'PBI 25699 feriados',
+        proyectoId: ctx.proyecto,
+      },
     });
     ctx.pbi = pbi.id;
   });
@@ -122,10 +130,19 @@ describe('Complementos (e2e) — lo que cuelga de un PBI', () => {
 
   it('un bloqueante en una sola llamada: espera a su persona, nace en la cara de su dueño y con su prioridad (Freddy, 2026-10-19)', async () => {
     const persona = await ctx.prisma.nodo.create({
-      data: { tipo: TipoNodo.PERSONA, titulo: 'Carabantes' },
+      data: {
+        tipo: TIPO_NODO.PERSONA,
+        titulo: 'Carabantes',
+        proyectoId: ctx.proyecto,
+      },
     });
     const pieza = await ctx.prisma.nodo.create({
-      data: { tipo: TipoNodo.TAREA, titulo: '3.1 · Iniciar', cara: Cara.PLAN },
+      data: {
+        tipo: TIPO_NODO.TAREA,
+        titulo: '3.1 · Iniciar',
+        cara: Cara.PLAN,
+        proyectoId: ctx.proyecto,
+      },
     });
     const res = await pedir<Nodo & { cara: string; prioridad: number }>(
       'POST',
@@ -265,5 +282,91 @@ describe('Complementos (e2e) — lo que cuelga de un PBI', () => {
     expect(rituales).toHaveLength(1);
     expect(rituales[0]?.titulo).toBe('Daily');
     expect(rituales[0]?.entrantes).toHaveLength(2);
+  });
+  it('colgar un complemento de un nodo de un espacio sin método → 404 y no crea nada', async () => {
+    const espacio = await ctx.prisma.espacio.create({
+      data: { nombre: 'Máquinas del complemento' },
+    });
+    const proyecto = await ctx.prisma.proyecto.create({
+      data: { espacioId: espacio.id, nombre: 'General' },
+    });
+    await ctx.prisma.tipoNodo.create({
+      data: {
+        espacioId: espacio.id,
+        nombre: 'HERRAMIENTA',
+        tieneCiclo: false,
+      },
+    });
+    const herramienta = await ctx.prisma.nodo.create({
+      data: {
+        tipo: 'HERRAMIENTA',
+        titulo: 'buildworkspace',
+        estado: null,
+        proyectoId: proyecto.id,
+      },
+    });
+    const antes = await ctx.prisma.nodo.count();
+    const res = await pedir<unknown>(
+      'POST',
+      `/nodos/${herramienta.id}/complementos`,
+      { tipo: 'apunte', titulo: 'no debería existir' },
+    );
+    expect(res.status).toBe(404);
+    expect(JSON.stringify(res.body)).toContain('no usa el método de trabajo');
+    expect(await ctx.prisma.nodo.count()).toBe(antes);
+  });
+  describe('una duda de un espacio sin método no se escala ni se decide', () => {
+    const sembrarDudaAjena = async (nombre: string) => {
+      const espacio = await ctx.prisma.espacio.create({ data: { nombre } });
+      const proyecto = await ctx.prisma.proyecto.create({
+        data: { espacioId: espacio.id, nombre: 'General' },
+      });
+      await ctx.prisma.tipoNodo.create({
+        data: { espacioId: espacio.id, nombre: TIPO_NODO.DUDA },
+      });
+      return ctx.prisma.nodo.create({
+        data: {
+          tipo: TIPO_NODO.DUDA,
+          titulo: `duda de ${nombre}`,
+          etiquetas: ['complemento:duda-negocio'],
+          proyectoId: proyecto.id,
+        },
+      });
+    };
+    const intactos = async (dudaId: string, nodosAntes: number) => {
+      const duda = await ctx.prisma.nodo.findUniqueOrThrow({
+        where: { id: dudaId },
+      });
+      expect(duda.estado).toBe('ABIERTO');
+      expect(duda.descripcion).toBeNull();
+      expect(await ctx.prisma.nodo.count()).toBe(nodosAntes);
+      expect(
+        await ctx.prisma.conexion.count({
+          where: { OR: [{ origenId: dudaId }, { destinoId: dudaId }] },
+        }),
+      ).toBe(0);
+    };
+
+    it('escalar → 404 y no escala', async () => {
+      const duda = await sembrarDudaAjena('Espacio ajeno (escalar)');
+      const antes = await ctx.prisma.nodo.count();
+      const res = await pedir<unknown>('POST', `/nodos/${duda.id}/escalar`, {});
+      expect(res.status).toBe(404);
+      expect(JSON.stringify(res.body)).toContain('no usa el método de trabajo');
+      await intactos(duda.id, antes);
+    });
+
+    it('decidir → 404, no cierra la duda y no crea la decisión', async () => {
+      const duda = await sembrarDudaAjena('Espacio ajeno (decidir)');
+      const antes = await ctx.prisma.nodo.count();
+      const res = await pedir<unknown>('POST', `/nodos/${duda.id}/decidir`, {
+        quien: 'Alguien',
+        donde: 'Teams',
+        texto: 'no debería existir',
+      });
+      expect(res.status).toBe(404);
+      expect(JSON.stringify(res.body)).toContain('no usa el método de trabajo');
+      await intactos(duda.id, antes);
+    });
   });
 });

@@ -1,6 +1,7 @@
+import { TIPO_NODO } from '../../common/constants/tipos.constants.js';
 import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
-import { Cara, EstadoNodo, Nodo, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo, Nodo } from '@prisma/client';
 import { ValidationError } from '../../common/exceptions/index.js';
 import {
   alrededorDePieza,
@@ -8,6 +9,7 @@ import {
   piezaDe,
 } from '../../importadores/pieza.js';
 import type { NodoPlan } from '../../importadores/plan.js';
+import { ProyectoPorDefectoService } from '../nodos/proyecto-por-defecto.service.js';
 import { CreatePiezaDto } from './dto/index.js';
 import { PiezasRepository } from './piezas.repository.js';
 
@@ -21,17 +23,20 @@ const noEsCarril = (carril: string) =>
 
 @Injectable()
 export class PiezasService {
-  constructor(private readonly repository: PiezasRepository) {}
+  constructor(
+    private readonly repository: PiezasRepository,
+    private readonly proyectoPorDefecto: ProyectoPorDefectoService,
+  ) {}
 
   /** Una pieza en la cara PLAN de su HU, con la misma regla que el importador: su ronda, su HU y su carril. */
-  crear({ carril, titulo, descripcion }: CreatePiezaDto): Promise<Nodo> {
+  async crear({ carril, titulo, descripcion }: CreatePiezaDto): Promise<Nodo> {
     const pieza = piezaDe(titulo, descripcion);
     if (!pieza) throw new ValidationError(SIN_CABECERA);
     if (!esCarril(carril)) throw new ValidationError(noEsCarril(carril));
     const externoId = randomUUID();
     const nodoPieza: NodoPlan = {
       externoId,
-      tipo: TipoNodo.TAREA,
+      tipo: TIPO_NODO.TAREA,
       titulo,
       descripcion,
       estado: EstadoNodo.ABIERTO,
@@ -43,11 +48,13 @@ export class PiezasService {
       cara: Cara.PLAN,
     };
     const { nodos, conexiones } = alrededorDePieza(externoId, pieza, carril);
+    const { proyectoId } = await this.proyectoPorDefecto.resolver();
     return this.repository.guardar(
       ORIGEN_TABLERO,
       nodoPieza,
       nodos,
       conexiones,
+      proyectoId,
     );
   }
 }

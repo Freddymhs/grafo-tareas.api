@@ -1,9 +1,11 @@
+import { TIPO_NODO } from '../../common/constants/tipos.constants.js';
 import { Injectable } from '@nestjs/common';
 import { diferencias } from '../pulido/diferencias.js';
-import { Cara, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo, type Nodo } from '@prisma/client';
 import { DerivadoService } from '../derivado/derivado.service.js';
-import { EtapasService } from './etapas.service.js';
+import { EtapasDelEspacioService } from './etapas-del-espacio.service.js';
 import { RolesService } from '../roles/roles.service.js';
+import { ProyectoPorDefectoService } from './proyecto-por-defecto.service.js';
 import {
   ConflictError,
   NotFoundError,
@@ -35,9 +37,10 @@ function conVenceComoFecha<T extends { readonly vence?: string | null }>(
 export class NodosService {
   constructor(
     private readonly repository: NodosRepository,
-    private readonly etapas: EtapasService,
+    private readonly etapas: EtapasDelEspacioService,
     private readonly roles: RolesService,
     private readonly derivado: DerivadoService,
+    private readonly proyectoPorDefecto: ProyectoPorDefectoService,
   ) {}
 
   async findAll(query: ListarNodosDto) {
@@ -54,6 +57,8 @@ export class NodosService {
       q,
       rol,
       notas,
+      proyecto,
+      espacio,
     } = query;
     const porRol = rol === undefined ? undefined : this.roles.filtroDe(rol);
     const sinEtiquetas =
@@ -75,6 +80,8 @@ export class NodosService {
       q,
       rol: porRol,
       sinEtiquetas,
+      proyectoId: proyecto,
+      espacioId: espacio,
     };
     const [data, total] = await Promise.all([
       this.repository.listar(filtro, offset, limit),
@@ -93,17 +100,30 @@ export class NodosService {
 
   async create(dto: CreateNodoDto) {
     this.validarColor(dto.tipo, dto.color);
-    this.etapas.validar(dto.etapa);
     await this.validarExterno(dto.externoOrigen, dto.externoId);
-    return this.repository.create(conVenceComoFecha(dto));
+    const { proyectoId } = await this.proyectoPorDefecto.resolver(
+      dto.proyectoId,
+    );
+    const tipo = await this.tipoDelProyecto(proyectoId, dto.tipo);
+    await this.etapas.validar(dto.etapa, tipo.espacioId);
+    const estado = tipo.tieneCiclo ? (dto.estado ?? EstadoNodo.ABIERTO) : null;
+    return this.repository.create({
+      ...conVenceComoFecha(dto),
+      proyectoId,
+      estado,
+    });
   }
 
   async update(id: string, dto: UpdateNodoDto) {
     const nodo = await this.findOne(id);
     this.validarColor(nodo.tipo, dto.color);
-    this.etapas.validar(dto.etapa);
     // FASE 16: lo que se edita en el grafo queda en la bitácora, y el importador ya no lo pisa con lo de la fuente.
-    const { motivo, ...cambios } = dto;
+    const { motivo, ...pedido } = dto;
+    const cambios = await this.conEstadoDelTipo(nodo, pedido);
+    await this.etapas.validar(
+      dto.etapa,
+      await this.espacioDelNodo(nodo, dto.proyectoId),
+    );
     return this.repository.actualizarConBitacora(
       nodo,
       conVenceComoFecha(cambios),
@@ -131,8 +151,57 @@ export class NodosService {
     return { guardadas };
   }
 
-  private validarColor(tipo: TipoNodo, color: string | undefined) {
-    const esRama = tipo === TipoNodo.RAMA;
+  /**
+   * El tipo manda sobre el estado: sin ciclo, el nodo no lo tiene (se ignora lo que mande el cliente); con ciclo, pedir
+   * `null` es un 400. Al mover a otro proyecto el tipo tiene que existir en su espacio (409), y un nodo que venía sin
+   * estado y ahora lo tiene nace ABIERTO.
+   */
+  private async conEstadoDelTipo(
+    nodo: Nodo,
+    pedido: Omit<UpdateNodoDto, 'motivo'>,
+  ) {
+    const mueve =
+      pedido.proyectoId !== undefined && pedido.proyectoId !== nodo.proyectoId;
+    const destino = mueve ? pedido.proyectoId : nodo.proyectoId;
+    if (destino === undefined || destino === null) return pedido;
+    const tipo = await this.tipoDelProyecto(destino, nodo.tipo, mueve);
+    if (!tipo.tieneCiclo) return { ...pedido, estado: null };
+    if (pedido.estado === null) {
+      throw new ValidationError(
+        `el tipo «${nodo.tipo}» tiene ciclo: su estado es ABIERTO o CERRADO, no null`,
+      );
+    }
+    const nacia = mueve && nodo.estado === null && pedido.estado === undefined;
+    return nacia ? { ...pedido, estado: EstadoNodo.ABIERTO } : pedido;
+  }
+
+  private async espacioDelNodo(
+    nodo: Nodo,
+    proyectoPedido: string | undefined,
+  ): Promise<string | undefined> {
+    const proyectoId = proyectoPedido ?? nodo.proyectoId;
+    if (proyectoId === null) return undefined;
+    const proyecto = await this.repository.proyectoConEspacio(proyectoId);
+    return proyecto?.espacio.id;
+  }
+
+  /** El tipo del nodo tiene que existir en el espacio del proyecto: 400 al crear, 409 al mover. */
+  private async tipoDelProyecto(
+    proyectoId: string,
+    tipo: string,
+    alMover = false,
+  ) {
+    const proyecto = await this.repository.proyectoConEspacio(proyectoId);
+    if (!proyecto) throw new NotFoundError('Proyecto');
+    const { espacio } = proyecto;
+    const definido = await this.repository.tipoEnEspacio(espacio.id, tipo);
+    if (definido) return definido;
+    const mensaje = `tipo «${tipo}» no existe en el espacio «${espacio.nombre}»`;
+    throw alMover ? new ConflictError(mensaje) : new ValidationError(mensaje);
+  }
+
+  private validarColor(tipo: string, color: string | undefined) {
+    const esRama = tipo === TIPO_NODO.RAMA;
     if (color !== undefined && !esRama) {
       throw new ValidationError('Solo un nodo RAMA lleva color');
     }

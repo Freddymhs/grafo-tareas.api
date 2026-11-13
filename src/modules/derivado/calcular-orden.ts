@@ -1,4 +1,4 @@
-import { TipoConexion } from '@prisma/client';
+import { TIPO_CONEXION } from '../../common/constants/tipos.constants.js';
 import type {
   CarrilDelPlan,
   PertenenciaDelTablero,
@@ -25,7 +25,7 @@ export function calcularOrden(
       .filter(
         ({ origenId, destinoId, tipo }) =>
           origenId === pieza &&
-          tipo === TipoConexion.DEPENDE_DE &&
+          tipo === TIPO_CONEXION.DEPENDE_DE &&
           carrilDe.get(destinoId) === carrilDe.get(pieza),
       )
       .map(({ destinoId }) => destinoId);

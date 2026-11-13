@@ -38,9 +38,11 @@ export class ImportadorTodoistService {
   async importar(
     proyectoId: string,
     seco: boolean,
-    cara: Cara = Cara.REAL,
+    cara: Cara,
     /** El origen de las FASE del orquestador (`origenFases(proyecto)`); null = el tablero sintetiza las suyas. */
-    origenFases: string | null = null,
+    origenFases: string | null,
+    /** El proyecto del grafo donde caen los nodos nuevos (`--proyecto-grafo`). */
+    proyectoGrafoId: string,
   ): Promise<ResumenImportacion> {
     const [tareas, secciones] = await Promise.all([
       this.todoist.tareas(proyectoId),
@@ -64,21 +66,24 @@ export class ImportadorTodoistService {
     if (seco) {
       return {
         ...base,
-        ...(await simular(this.prisma, (tx) => this.aplicar(tx, plan))),
+        ...(await simular(this.prisma, (tx) =>
+          this.aplicar(tx, plan, proyectoGrafoId),
+        )),
       };
     }
     const aplicado = await this.prisma.$transaction((tx) =>
-      this.aplicar(tx, plan),
+      this.aplicar(tx, plan, proyectoGrafoId),
     );
     return { ...base, ...aplicado };
   }
 
-  private async aplicar(tx: Tx, plan: Plan) {
+  private async aplicar(tx: Tx, plan: Plan, proyectoGrafoId: string) {
     const { nodos, conexiones } = await aplicarPlan(
       tx,
       plan.origen,
       plan.nodos,
       plan.conexiones,
+      proyectoGrafoId,
     );
     return { nodos, conexiones };
   }

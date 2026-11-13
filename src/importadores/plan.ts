@@ -1,9 +1,10 @@
-import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { TIPO_NODO } from '../common/constants/tipos.constants.js';
+import { Cara, EstadoNodo } from '@prisma/client';
 
 /** Lo que todo importador produce antes de escribir: nodos y conexiones por `externoId`, aplicables en una transacción. */
 export interface NodoPlan {
   readonly externoId: string;
-  readonly tipo: TipoNodo;
+  readonly tipo: string;
   readonly titulo: string;
   readonly descripcion: string | null;
   readonly estado: EstadoNodo;
@@ -25,7 +26,7 @@ export interface NodoPlan {
 export interface ConexionPlan {
   readonly origenExternoId: string;
   readonly destinoExternoId: string;
-  readonly tipo: TipoConexion;
+  readonly tipo: string;
 }
 
 export interface Plan {
@@ -60,7 +61,7 @@ export function nodoHistoria(
 ): NodoPlan {
   return {
     externoId: externoHistoria(id),
-    tipo: TipoNodo.HISTORIA,
+    tipo: TIPO_NODO.HISTORIA,
     titulo: tituloHistoria(id, titulo),
     ...SIN_TABLERO,
     color: null,

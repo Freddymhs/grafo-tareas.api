@@ -1,4 +1,4 @@
-import { TipoConexion } from '@prisma/client';
+import { TIPO_CONEXION } from '../../common/constants/tipos.constants.js';
 import type {
   CarrilDelPlan,
   PertenenciaDelTablero,
@@ -42,7 +42,7 @@ export function calcularPelotitas(
     conexiones
       .filter(
         ({ origenId, tipo }) =>
-          origenId === pieza && tipo === TipoConexion.DEPENDE_DE,
+          origenId === pieza && tipo === TIPO_CONEXION.DEPENDE_DE,
       )
       .forEach(({ destinoId }) => {
         const carril = carrilDe.get(destinoId);

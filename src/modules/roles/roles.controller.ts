@@ -1,8 +1,11 @@
+import { RequiereMetodo } from '../../common/decorators/index.js';
+import { METODO_TRABAJO_HU } from '../../common/constants/index.js';
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RolesResponseDto } from './dto/index.js';
 import { RolesService } from './roles.service.js';
 
+@RequiereMetodo(METODO_TRABAJO_HU)
 @ApiTags('Roles')
 @Controller('roles')
 export class RolesController {

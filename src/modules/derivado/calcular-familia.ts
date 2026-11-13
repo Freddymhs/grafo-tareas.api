@@ -8,8 +8,9 @@ import { arbolDe, hijosPorPertenencia, type Enlace } from './arbol.js';
 export function calcularFamilia(
   id: string,
   conexiones: readonly Enlace[],
+  contenedoras?: readonly string[],
 ): string[] {
-  const arbol = arbolDe(id, hijosPorPertenencia(conexiones));
+  const arbol = arbolDe(id, hijosPorPertenencia(conexiones, contenedoras));
   const vecinos = conexiones.flatMap(({ origenId, destinoId }) => {
     if (origenId === id) return [destinoId];
     if (destinoId === id) return [origenId];

@@ -1,4 +1,8 @@
-import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import {
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../../common/constants/tipos.constants.js';
+import { Cara, EstadoNodo } from '@prisma/client';
 import {
   ETIQUETA_CARRIL,
   ETIQUETA_PIEZA,
@@ -7,9 +11,9 @@ import {
 
 export interface NodoDelTablero {
   readonly id: string;
-  readonly tipo: TipoNodo;
+  readonly tipo: string;
   readonly titulo: string;
-  readonly estado: EstadoNodo;
+  readonly estado: EstadoNodo | null;
   readonly cara: Cara;
   readonly color: string | null;
   readonly etiquetas: readonly string[];
@@ -18,7 +22,7 @@ export interface NodoDelTablero {
 export interface PertenenciaDelTablero {
   readonly origenId: string;
   readonly destinoId: string;
-  readonly tipo: TipoConexion;
+  readonly tipo: string;
 }
 
 export interface CarrilDelPlan {
@@ -59,14 +63,14 @@ export function calcularTableroPlan(
   const esCarril = (id: string) => {
     const nodo = porId.get(id);
     return (
-      nodo?.tipo === TipoNodo.RAMA && nodo.etiquetas.includes(ETIQUETA_CARRIL)
+      nodo?.tipo === TIPO_NODO.RAMA && nodo.etiquetas.includes(ETIQUETA_CARRIL)
     );
   };
   const esTomada = ({ cara, etiquetas }: NodoDelTablero) =>
     cara === Cara.REAL && etiquetas.includes(ETIQUETA_PIEZA);
   const piezas = nodos.filter(
     (nodo) =>
-      nodo.tipo === TipoNodo.TAREA &&
+      nodo.tipo === TIPO_NODO.TAREA &&
       nodo.estado === EstadoNodo.ABIERTO &&
       (nodo.cara === Cara.PLAN || esTomada(nodo)),
   );
@@ -74,7 +78,7 @@ export function calcularTableroPlan(
     conexiones.find(
       ({ origenId, destinoId, tipo }) =>
         origenId === pieza &&
-        tipo === TipoConexion.PERTENECE_A &&
+        tipo === TIPO_CONEXION.PERTENECE_A &&
         esCarril(destinoId),
     )?.destinoId ?? null;
 

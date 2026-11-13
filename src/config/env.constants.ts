@@ -12,6 +12,8 @@ export const ENV_KEYS = {
   ETAPAS: 'ETAPAS',
   /** El roles.yaml del área (C11); sin ella, la API no tiene roles: GET /roles vacío y GET /etapas = ETAPAS. */
   ROLES_ARCHIVO: 'ROLES_ARCHIVO',
+  /** El id del proyecto donde caen los nodos creados sin `proyectoId`; vacío = el SAG del espacio con método de trabajo. */
+  PROYECTO_POR_DEFECTO: 'PROYECTO_POR_DEFECTO',
   /** El refs.yaml del área (FASE 9): escaleras de dudas y rituales; sin ella, no hay a quién escalar. */
   REFS_ARCHIVO: 'REFS_ARCHIVO',
 } as const;

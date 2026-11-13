@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { TipoCambio } from '@prisma/client';
+import { Prisma, TipoCambio } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
 import {
   conexionesDelArchivo,
@@ -53,14 +53,23 @@ export class PulidoRepository {
 
   /**
    * Vuelve a crear el nodo con su mismo id y las conexiones cuyo otro extremo todavía existe. `null` si no estaba
-   * descartado.
+   * descartado. Vuelve a su proyecto (archivado o no); si el archivo no trae proyecto —los descartes de antes de la
+   * FASE 22— o ese proyecto ya no existe, a `proyectoDeRespaldo`.
    */
-  async restaurar(nodoId: string, motivo: string | null) {
+  async restaurar(
+    nodoId: string,
+    motivo: string | null,
+    proyectoDeRespaldo: () => Promise<string>,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const descarte = await tx.descarte.findUnique({ where: { nodoId } });
       if (!descarte) return null;
+      const archivado = nodoDelArchivo(descarte.nodo);
+      const proyectoId =
+        (await this.proyectoVigente(tx, archivado.proyectoId)) ??
+        (await proyectoDeRespaldo());
       const nodo = await tx.nodo.create({
-        data: nodoDelArchivo(descarte.nodo),
+        data: { ...archivado, proyectoId },
       });
       const conexiones = conexionesDelArchivo(descarte.conexiones);
       const otros = conexiones.map(({ origenId, destinoId }) =>
@@ -98,6 +107,16 @@ export class PulidoRepository {
         conexionesPerdidas: conexiones.length - recuperables.length,
       };
     });
+  }
+
+  /** El proyecto del archivo, si todavía existe (archivado o no). */
+  private async proyectoVigente(
+    tx: Prisma.TransactionClient,
+    proyectoId: string | null,
+  ): Promise<string | null> {
+    if (proyectoId === null) return null;
+    const existe = await tx.proyecto.count({ where: { id: proyectoId } });
+    return existe > 0 ? proyectoId : null;
   }
 
   async descartes() {

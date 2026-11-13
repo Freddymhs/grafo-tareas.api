@@ -1,6 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { TipoConexion } from '@prisma/client';
-import { IsEnum, IsOptional, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class ListarConexionesDto {
   @ApiPropertyOptional({
@@ -11,8 +10,9 @@ export class ListarConexionesDto {
   @IsUUID()
   nodoId?: string;
 
-  @ApiPropertyOptional({ enum: TipoConexion })
+  @ApiPropertyOptional({ type: String })
   @IsOptional()
-  @IsEnum(TipoConexion)
-  tipo?: TipoConexion;
+  @IsString()
+  @IsNotEmpty()
+  tipo?: string;
 }

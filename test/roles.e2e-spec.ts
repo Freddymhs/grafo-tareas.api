@@ -1,3 +1,4 @@
+import { TIPO_NODO } from '../src/common/constants/tipos.constants';
 import { join } from 'node:path';
 import { Test } from '@nestjs/testing';
 import {
@@ -5,9 +6,9 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { ConfigService } from '@nestjs/config';
-import { TipoNodo } from '@prisma/client';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/database/prisma.service';
+import { sembrarEspacioTrabajo, vaciarBase } from './fixtures/sembrar-espacio';
 import { RolesService } from './../src/modules/roles/roles.service';
 
 /** La forma que da el ResponseInterceptor: { statusCode, data, meta }. */
@@ -55,14 +56,25 @@ describe('Roles (e2e) — GET /roles, GET /etapas con las columnas de los roles 
     await ctx.app.init();
     await ctx.app.getHttpAdapter().getInstance().ready();
     ctx.prisma = ctx.app.get(PrismaService);
-    await ctx.prisma.conexion.deleteMany();
-    await ctx.prisma.nodo.deleteMany();
+    await vaciarBase(ctx.prisma);
+    const { proyectoSagId } = await sembrarEspacioTrabajo(ctx.prisma);
     await ctx.prisma.nodo.createMany({
       data: [
-        { tipo: TipoNodo.FASE, titulo: 'de producto', etiquetas: ['producto'] },
-        { tipo: TipoNodo.TAREA, titulo: 'sin rol', etiquetas: ['daily'] },
         {
-          tipo: TipoNodo.FASE,
+          proyectoId: proyectoSagId,
+          tipo: TIPO_NODO.FASE,
+          titulo: 'de producto',
+          etiquetas: ['producto'],
+        },
+        {
+          proyectoId: proyectoSagId,
+          tipo: TIPO_NODO.TAREA,
+          titulo: 'sin rol',
+          etiquetas: ['daily'],
+        },
+        {
+          proyectoId: proyectoSagId,
+          tipo: TIPO_NODO.FASE,
           titulo: 'de calidad',
           etiquetas: ['calidad', 'daily'],
         },

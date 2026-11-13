@@ -1,18 +1,26 @@
+import {
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../src/common/constants/tipos.constants';
 import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
-import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { EstadoNodo } from '@prisma/client';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/database/prisma.service';
-import { ImportadorFasesService } from './../src/importadores/fases/importador-fases.service';
+import { sembrarEspacioTrabajo, vaciarBase } from './fixtures/sembrar-espacio';
+import {
+  ImportadorFasesService,
+  type OpcionesFases,
+} from './../src/importadores/fases/importador-fases.service';
 import { origenFases } from './../src/importadores/fases/traducir-fases';
 import { ORIGEN_TRACKER, externoHistoria } from './../src/importadores/plan';
 
 const FIXTURES = join(__dirname, 'fixtures/fases');
 const PROYECTO = 'prueba';
 const ORIGEN = origenFases(PROYECTO);
-const OPCIONES = {
+const OPCIONES_BASE = {
   backlog: join(FIXTURES, 'backlog'),
   tareas: join(FIXTURES, 'Tareas'),
   roles: join(FIXTURES, 'roles.yaml'),
@@ -32,6 +40,8 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
     app: TestingModule;
     prisma: PrismaService;
     importador: ImportadorFasesService;
+    proyecto: string;
+    opciones: OpcionesFases;
   };
 
   beforeAll(async () => {
@@ -41,19 +51,26 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
     await ctx.app.init();
     ctx.prisma = ctx.app.get(PrismaService);
     ctx.importador = ctx.app.get(ImportadorFasesService);
-    await ctx.prisma.conexion.deleteMany();
-    await ctx.prisma.nodo.deleteMany();
+    await vaciarBase(ctx.prisma);
+    const { proyectoSagId } = await sembrarEspacioTrabajo(ctx.prisma);
+    ctx.proyecto = proyectoSagId;
+    ctx.opciones = { ...OPCIONES_BASE, proyectoGrafo: proyectoSagId };
     // Lo que otro importador (Todoist) ya dejó: una «FASE 2» (que puede ser de OTRO orquestador) y la tarjeta de la task 25699.
     await ctx.prisma.nodo.create({
       data: {
-        tipo: TipoNodo.FASE,
+        proyectoId: ctx.proyecto,
+        tipo: TIPO_NODO.FASE,
         titulo: 'FASE 2',
         externoOrigen: 'todoist',
         externoId: 'fase:2',
       },
     });
     await ctx.prisma.nodo.create({
-      data: { tipo: TipoNodo.TAREA, titulo: '[25699] Feriados' },
+      data: {
+        proyectoId: ctx.proyecto,
+        tipo: TIPO_NODO.TAREA,
+        titulo: '[25699] Feriados',
+      },
     });
   });
 
@@ -62,7 +79,10 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
   });
 
   it('--seco cuenta sin escribir', async () => {
-    const resumen = await ctx.importador.importar({ ...OPCIONES, seco: true });
+    const resumen = await ctx.importador.importar({
+      ...ctx.opciones,
+      seco: true,
+    });
     expect(resumen.fasesLeidas).toBe(FASES_EN_FIXTURE);
     expect(resumen.abiertosLeidos).toBe(ABIERTOS_EN_FIXTURE);
     expect(
@@ -71,7 +91,7 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
   });
 
   it('crea las FASE con su etapa y la etiqueta de su rol, no toca la FASE 2 de Todoist y conecta las dudas a su tarjeta', async () => {
-    const resumen = await ctx.importador.importar(OPCIONES);
+    const resumen = await ctx.importador.importar(ctx.opciones);
     expect(resumen.nodos).toEqual({
       nuevos: FASES_EN_FIXTURE + ABIERTOS_EN_FIXTURE + TRAMITES_EN_FIXTURE,
       actualizados: 0,
@@ -84,7 +104,7 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
     expect(resumen.dudasSueltas).toBe(0);
 
     const fases = await ctx.prisma.nodo.findMany({
-      where: { tipo: TipoNodo.FASE, externoOrigen: ORIGEN },
+      where: { tipo: TIPO_NODO.FASE, externoOrigen: ORIGEN },
       orderBy: { titulo: 'asc' },
     });
     expect(
@@ -133,40 +153,40 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
       where: { titulo: { startsWith: '[25699]' } },
     });
     const bloqueos = await ctx.prisma.conexion.count({
-      where: { origenId: tarea.id, tipo: TipoConexion.BLOQUEADA_POR },
+      where: { origenId: tarea.id, tipo: TIPO_CONEXION.BLOQUEADA_POR },
     });
     expect(bloqueos).toBe(ABIERTOS_EN_FIXTURE);
   });
 
   it('--seco cuenta contra la base: tras importar dice 0 nuevos y no escribe', async () => {
     const nodos = await ctx.prisma.nodo.count();
-    const seco = await ctx.importador.importar({ ...OPCIONES, seco: true });
+    const seco = await ctx.importador.importar({ ...ctx.opciones, seco: true });
     expect(seco.nodos.nuevos).toBe(0);
     expect(seco.conexiones.nuevas).toBe(0);
     expect(await ctx.prisma.nodo.count()).toBe(nodos);
   });
 
   it('la segunda corrida no duplica; un ABIERTO que desaparece cierra su DUDA', async () => {
-    const segunda = await ctx.importador.importar(OPCIONES);
+    const segunda = await ctx.importador.importar(ctx.opciones);
     expect(segunda.nodos.nuevos).toBe(0);
     expect(segunda.conexiones.nuevas).toBe(0);
 
     // Sin --tareas no se leyó nada: las dudas siguen abiertas (omitir el flag no es "se cerraron").
     const sinTareas = await ctx.importador.importar({
-      ...OPCIONES,
+      ...ctx.opciones,
       tareas: null,
     });
     expect(sinTareas.dudasCerradas).toBe(0);
     const abiertas = () =>
       ctx.prisma.nodo.count({
-        where: { tipo: TipoNodo.DUDA, estado: EstadoNodo.ABIERTO },
+        where: { tipo: TIPO_NODO.DUDA, estado: EstadoNodo.ABIERTO },
       });
     expect(await abiertas()).toBe(ABIERTOS_EN_FIXTURE);
 
     // Con una carpeta Tareas/ que ya no trae esos ABIERTO: se cierran.
     const tareasVacias = mkdtempSync(join(tmpdir(), 'tareas-'));
     const sinAbiertos = await ctx.importador.importar({
-      ...OPCIONES,
+      ...ctx.opciones,
       tareas: tareasVacias,
     });
     expect(sinAbiertos.dudasCerradas).toBe(ABIERTOS_EN_FIXTURE);
@@ -175,28 +195,28 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
 
   it('otro proyecto con las mismas FASE no pisa las de éste', async () => {
     const otro = await ctx.importador.importar({
-      ...OPCIONES,
+      ...ctx.opciones,
       proyecto: 'otro',
       tareas: null,
     });
     expect(otro.nodos.actualizados).toBe(0);
     expect(
       await ctx.prisma.nodo.count({
-        where: { tipo: TipoNodo.FASE, externoOrigen: ORIGEN },
+        where: { tipo: TIPO_NODO.FASE, externoOrigen: ORIGEN },
       }),
     ).toBe(FASES_EN_FIXTURE);
   });
 
   it('al tildar el cierre en la FASE y reimportar, su trámite se cierra solo', async () => {
     const backlog = join(mkdtempSync(join(tmpdir(), 'backlog-')), 'backlog');
-    cpSync(OPCIONES.backlog, backlog, { recursive: true });
+    cpSync(ctx.opciones.backlog, backlog, { recursive: true });
     const archivo = join(backlog, 'FASE_3_LISTA.md');
     const tildado = readFileSync(archivo, 'utf8')
       .replace('- [ ] URL commit', '- [x] URL commit')
       .replace('- [ ] Evidencias', '- [x] Evidencias')
       .replace('- [ ] Wiki actualizada', '- [x] Wiki actualizada');
     writeFileSync(archivo, tildado);
-    await ctx.importador.importar({ ...OPCIONES, backlog, tareas: null });
+    await ctx.importador.importar({ ...ctx.opciones, backlog, tareas: null });
     const tramite = await ctx.prisma.nodo.findUniqueOrThrow({
       where: {
         externoOrigen_externoId: {
@@ -221,17 +241,21 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
       },
     });
     const tarea = await ctx.prisma.nodo.create({
-      data: { tipo: TipoNodo.TAREA, titulo: 'tarea de la FASE 2' },
+      data: {
+        proyectoId: ctx.proyecto,
+        tipo: TIPO_NODO.TAREA,
+        titulo: 'tarea de la FASE 2',
+      },
     });
     await ctx.prisma.conexion.create({
       data: {
         origenId: tarea.id,
         destinoId: deTodoist.id,
-        tipo: TipoConexion.PERTENECE_A,
+        tipo: TIPO_CONEXION.PERTENECE_A,
       },
     });
     const resumen = await ctx.importador.importar({
-      ...OPCIONES,
+      ...ctx.opciones,
       proyecto: 'sag',
       tareas: null,
       adoptar: 'todoist',
@@ -265,25 +289,30 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
     const yaConectada = propia.entrantes[0].origenId;
     const copia = await ctx.prisma.nodo.create({
       data: {
-        tipo: TipoNodo.FASE,
+        proyectoId: ctx.proyecto,
+        tipo: TIPO_NODO.FASE,
         titulo: 'FASE 2',
         externoOrigen: 'todoist',
         externoId: 'fase:2',
       },
     });
     const tareaReimportada = await ctx.prisma.nodo.create({
-      data: { tipo: TipoNodo.TAREA, titulo: 'tarea reimportada de la FASE 2' },
+      data: {
+        proyectoId: ctx.proyecto,
+        tipo: TIPO_NODO.TAREA,
+        titulo: 'tarea reimportada de la FASE 2',
+      },
     });
     await ctx.prisma.conexion.createMany({
       data: [tareaReimportada.id, yaConectada].map((origenId) => ({
         origenId,
         destinoId: copia.id,
-        tipo: TipoConexion.PERTENECE_A,
+        tipo: TIPO_CONEXION.PERTENECE_A,
       })),
     });
 
     const resumen = await ctx.importador.importar({
-      ...OPCIONES,
+      ...ctx.opciones,
       proyecto: 'sag',
       tareas: null,
       adoptar: 'todoist',
@@ -294,7 +323,7 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
       await ctx.prisma.nodo.findUnique({ where: { id: copia.id } }),
     ).toBeNull();
     const entrantes = await ctx.prisma.conexion.findMany({
-      where: { destinoId: propia.id, tipo: TipoConexion.PERTENECE_A },
+      where: { destinoId: propia.id, tipo: TIPO_CONEXION.PERTENECE_A },
     });
     const origenes = entrantes.map(({ origenId }) => origenId);
     expect(origenes).toContain(tareaReimportada.id);
@@ -311,14 +340,19 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
     );
     const tarjeta = await ctx.prisma.nodo.create({
       data: {
-        tipo: TipoNodo.TAREA,
+        proyectoId: ctx.proyecto,
+        tipo: TIPO_NODO.TAREA,
         titulo: '[24972] Backend - exponer mezclas',
       },
     });
     const otraTask = await ctx.prisma.nodo.create({
-      data: { tipo: TipoNodo.TAREA, titulo: 'cita la 249721, que es otra' },
+      data: {
+        proyectoId: ctx.proyecto,
+        tipo: TIPO_NODO.TAREA,
+        titulo: 'cita la 249721, que es otra',
+      },
     });
-    const opciones = { ...OPCIONES, tareas: null, padres };
+    const opciones = { ...ctx.opciones, tareas: null, padres };
 
     const resumen = await ctx.importador.importar(opciones);
 
@@ -332,7 +366,7 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
       },
     });
     expect(hu).toMatchObject({
-      tipo: TipoNodo.HISTORIA,
+      tipo: TIPO_NODO.HISTORIA,
       titulo: 'HU 19565 · Registrar Toma de Muestras',
     });
     const fase2 = await ctx.prisma.nodo.findUniqueOrThrow({
@@ -342,7 +376,7 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
     });
     const pertenece = (origenId: string, destinoId: string) =>
       ctx.prisma.conexion.count({
-        where: { origenId, destinoId, tipo: TipoConexion.PERTENECE_A },
+        where: { origenId, destinoId, tipo: TIPO_CONEXION.PERTENECE_A },
       });
     expect(await pertenece(fase2.id, hu.id)).toBe(1);
     expect(await pertenece(tarjeta.id, fase2.id)).toBe(1);
@@ -367,18 +401,21 @@ describe('Importador de FASE_*.md (e2e, contra la base de test)', () => {
       data: {
         origenId: uno.id,
         destinoId: tres.id,
-        tipo: TipoConexion.DEPENDE_DE,
+        tipo: TIPO_CONEXION.DEPENDE_DE,
       },
     });
     const vieja = { origenId: uno.id, destinoId: tres.id };
     const declarada = { origenId: tres.id, destinoId: dos.id };
 
-    const informa = await ctx.importador.importar(OPCIONES);
+    const informa = await ctx.importador.importar(ctx.opciones);
     expect(informa.dependenciasViejas).toEqual(['fase:1 → fase:3']);
     expect(informa.dependenciasPodadas).toBe(0);
     expect(await ctx.prisma.conexion.count({ where: vieja })).toBe(1);
 
-    const poda = await ctx.importador.importar({ ...OPCIONES, podar: true });
+    const poda = await ctx.importador.importar({
+      ...ctx.opciones,
+      podar: true,
+    });
     expect(poda.dependenciasPodadas).toBe(1);
     expect(await ctx.prisma.conexion.count({ where: vieja })).toBe(0);
     expect(await ctx.prisma.conexion.count({ where: declarada })).toBe(1);

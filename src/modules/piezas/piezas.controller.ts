@@ -1,3 +1,5 @@
+import { RequiereMetodo } from '../../common/decorators/index.js';
+import { METODO_TRABAJO_HU } from '../../common/constants/index.js';
 import { Body, Controller, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ErrorResponseDto } from '../../common/dto/index.js';
@@ -5,6 +7,7 @@ import { NodoResponseDto } from '../nodos/dto/index.js';
 import { CreatePiezaDto } from './dto/index.js';
 import { PiezasService } from './piezas.service.js';
 
+@RequiereMetodo(METODO_TRABAJO_HU)
 @ApiTags('Piezas')
 @Controller('piezas')
 export class PiezasController {

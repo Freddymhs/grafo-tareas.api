@@ -1,4 +1,4 @@
-import { TipoConexion } from '@prisma/client';
+import { TIPO_CONEXION } from '../../common/constants/tipos.constants.js';
 import { calcularOrden } from './calcular-orden';
 import type { CarrilDelPlan } from './calcular-tablero-plan';
 
@@ -11,7 +11,7 @@ const carril = (titulo: string, nodos: readonly string[]): CarrilDelPlan => ({
 const depende = (
   origenId: string,
   destinoId: string,
-  tipo: TipoConexion = TipoConexion.DEPENDE_DE,
+  tipo: string = TIPO_CONEXION.DEPENDE_DE,
 ) => ({ origenId, destinoId, tipo });
 
 // La HU 24576 del 26-10: A · Detalle (26957), B · Revisión (26958 → 26960 → 26961), C · Áreas (26963 → 26957).
@@ -60,7 +60,7 @@ describe('calcularOrden — el número de cada pieza dentro de su carril, por su
     const orden = calcularOrden(
       [B],
       [
-        depende('26960', '26958', TipoConexion.BLOQUEADA_POR),
+        depende('26960', '26958', TIPO_CONEXION.BLOQUEADA_POR),
         depende('26958', 'cerrada'),
       ],
     );

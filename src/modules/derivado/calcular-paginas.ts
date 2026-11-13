@@ -1,5 +1,5 @@
-import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
-import { CONEXIONES_BLOQUEANTES } from '../../common/constants/index.js';
+import { TIPO_NODO } from '../../common/constants/tipos.constants.js';
+import { Cara, EstadoNodo } from '@prisma/client';
 import { arbolDe, hijosPorPertenencia } from './arbol.js';
 import { dependenciaCumplida } from './dependencia-cumplida.js';
 
@@ -12,9 +12,9 @@ export const paginaDelPlan = (libro: string) => `${libro}${SUFIJO_PLAN}`;
 
 export interface NodoDePagina {
   readonly id: string;
-  readonly tipo: TipoNodo;
+  readonly tipo: string;
   readonly titulo: string;
-  readonly estado: EstadoNodo;
+  readonly estado: EstadoNodo | null;
   readonly cara: Cara;
   /** Las dos, para saber si depender de él ya está cumplido (`dependenciaCumplida`). */
   readonly etiquetas: readonly string[];
@@ -24,7 +24,7 @@ export interface NodoDePagina {
 export interface ConexionDePagina {
   readonly origenId: string;
   readonly destinoId: string;
-  readonly tipo: TipoConexion;
+  readonly tipo: string;
 }
 
 export interface Pagina {
@@ -40,7 +40,7 @@ export interface Pagina {
   readonly abiertas: number;
   /**
    * Lo que frena en la página (el filtro 4 de la VR): lo abierto de lo que algo abierto de la página depende, espera
-   * respuesta o está bloqueado. La misma regla que `GET /nodos/:id/bloqueado` (`CONEXIONES_BLOQUEANTES`), vista al revés.
+   * respuesta o está bloqueado. La misma regla que `GET /nodos/:id/bloqueado` (las conexiones con `bloquea`), vista al revés.
    */
   readonly frenan: readonly string[];
 }
@@ -57,18 +57,19 @@ export interface Pagina {
 export function calcularPaginas(
   nodos: readonly NodoDePagina[],
   conexiones: readonly ConexionDePagina[],
+  tiposBloqueantes: readonly string[],
 ): Pagina[] {
   const porId = new Map(nodos.map((nodo) => [nodo.id, nodo]));
-  const esRama = (id: string) => porId.get(id)?.tipo === TipoNodo.RAMA;
+  const esRama = (id: string) => porId.get(id)?.tipo === TIPO_NODO.RAMA;
   const hijosDe = hijosPorPertenencia(conexiones);
   const bloqueantes = conexiones.filter(({ tipo }) =>
-    CONEXIONES_BLOQUEANTES.includes(tipo),
+    tiposBloqueantes.includes(tipo),
   );
   const bloqueadoresDe = (ids: ReadonlySet<string>) =>
     bloqueantes
       .filter(({ origenId }) => ids.has(origenId))
       .map(({ destinoId }) => destinoId);
-  const esDuda = (id: string) => porId.get(id)?.tipo === TipoNodo.DUDA;
+  const esDuda = (id: string) => porId.get(id)?.tipo === TIPO_NODO.DUDA;
   const esPlan = (id: string) => porId.get(id)?.cara === Cara.PLAN;
   const esReal = (id: string) => !esPlan(id);
 
@@ -90,7 +91,7 @@ export function calcularPaginas(
     ids.filter((id) => {
       const nodo = porId.get(id);
       return (
-        nodo?.tipo === TipoNodo.TAREA && nodo.estado === EstadoNodo.ABIERTO
+        nodo?.tipo === TIPO_NODO.TAREA && nodo.estado === EstadoNodo.ABIERTO
       );
     }).length;
   const estaAbierto = (id: string) =>
@@ -116,7 +117,7 @@ export function calcularPaginas(
   };
 
   const historias = nodos
-    .filter(({ tipo }) => tipo === TipoNodo.HISTORIA)
+    .filter(({ tipo }) => tipo === TIPO_NODO.HISTORIA)
     .toSorted((a, b) =>
       a.titulo.localeCompare(b.titulo, undefined, { numeric: true }),
     );

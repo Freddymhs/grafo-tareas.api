@@ -1,4 +1,8 @@
-import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import {
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../../common/constants/tipos.constants.js';
+import { Cara, EstadoNodo } from '@prisma/client';
 import {
   calcularTableroPlan,
   NodoDelTablero,
@@ -10,7 +14,7 @@ const nodo = (
   extra: Partial<NodoDelTablero> = {},
 ): NodoDelTablero => ({
   id,
-  tipo: TipoNodo.TAREA,
+  tipo: TIPO_NODO.TAREA,
   titulo: id,
   estado: EstadoNodo.ABIERTO,
   cara: Cara.PLAN,
@@ -20,7 +24,7 @@ const nodo = (
 });
 const carril = (id: string, titulo: string) =>
   nodo(id, {
-    tipo: TipoNodo.RAMA,
+    tipo: TIPO_NODO.RAMA,
     titulo,
     cara: Cara.REAL,
     color: '#0ea5e9',
@@ -34,7 +38,7 @@ const enRonda = (id: string, ronda: number) =>
 const pertenece = (origenId: string, destinoId: string) => ({
   origenId,
   destinoId,
-  tipo: TipoConexion.PERTENECE_A,
+  tipo: TIPO_CONEXION.PERTENECE_A,
 });
 
 describe('calcularTableroPlan — el plan en columnas por carril, como el Draft (FASE 17)', () => {
@@ -42,7 +46,7 @@ describe('calcularTableroPlan — el plan en columnas por carril, como el Draft 
     carril('a', '20379 · A · Bandeja'),
     carril('c', '20379 · C · Recepción'),
     nodo('color', {
-      tipo: TipoNodo.RAMA,
+      tipo: TIPO_NODO.RAMA,
       titulo: '🟢 Recepción',
       cara: Cara.REAL,
     }),

@@ -1,3 +1,7 @@
+import {
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../src/common/constants/tipos.constants';
 import { join } from 'node:path';
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
@@ -5,9 +9,10 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { Cara, TipoConexion, TipoNodo } from '@prisma/client';
+import { Cara } from '@prisma/client';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/database/prisma.service';
+import { sembrarEspacioTrabajo, vaciarBase } from './fixtures/sembrar-espacio';
 import { AreaService } from './../src/modules/area/area.service';
 import { RolesService } from './../src/modules/roles/roles.service';
 
@@ -55,45 +60,44 @@ describe('Las páginas de la VR (e2e, FASE 15) — una por HU, la API decide', (
     await ctx.app.init();
     await ctx.app.getHttpAdapter().getInstance().ready();
     const prisma = ctx.app.get(PrismaService);
-    await prisma.conexion.deleteMany();
-    await prisma.nodo.deleteMany();
+    await vaciarBase(prisma);
+    const { proyectoSagId } = await sembrarEspacioTrabajo(prisma);
 
-    const crear = (tipo: TipoNodo, titulo: string) =>
-      prisma.nodo.create({ data: { tipo, titulo } });
-    const conectar = (
-      origenId: string,
-      tipo: TipoConexion,
-      destinoId: string,
-    ) => prisma.conexion.create({ data: { origenId, destinoId, tipo } });
-    const hu = await crear(TipoNodo.HISTORIA, 'HU 19565 · Toma de muestras');
-    const otra = await crear(TipoNodo.HISTORIA, 'HU 20379 · Dashboard');
-    const fase = await crear(TipoNodo.FASE, 'FASE 22');
-    const tarjeta = await crear(TipoNodo.TAREA, '[25936] FASE 22 · PR 5090');
-    const duda = await crear(TipoNodo.DUDA, '¿el limit acepta 1 a 100?');
-    const rama = await crear(TipoNodo.RAMA, '🔵');
-    const nota = await crear(TipoNodo.TAREA, '01-oct · retro');
+    const crear = (tipo: string, titulo: string) =>
+      prisma.nodo.create({ data: { tipo, titulo, proyectoId: proyectoSagId } });
+    const conectar = (origenId: string, tipo: string, destinoId: string) =>
+      prisma.conexion.create({ data: { origenId, destinoId, tipo } });
+    const hu = await crear(TIPO_NODO.HISTORIA, 'HU 19565 · Toma de muestras');
+    const otra = await crear(TIPO_NODO.HISTORIA, 'HU 20379 · Dashboard');
+    const fase = await crear(TIPO_NODO.FASE, 'FASE 22');
+    const tarjeta = await crear(TIPO_NODO.TAREA, '[25936] FASE 22 · PR 5090');
+    const duda = await crear(TIPO_NODO.DUDA, '¿el limit acepta 1 a 100?');
+    const rama = await crear(TIPO_NODO.RAMA, '🔵');
+    const nota = await crear(TIPO_NODO.TAREA, '01-oct · retro');
     // FASE 17: una pieza del Draft de la HU 20379 es su plan, no su trabajo.
     const pieza = await prisma.nodo.create({
       data: {
-        tipo: TipoNodo.TAREA,
+        proyectoId: proyectoSagId,
+        tipo: TIPO_NODO.TAREA,
         titulo: '2️⃣ 20379 · 0.4 · Catálogo',
         cara: Cara.PLAN,
       },
     });
-    await conectar(pieza.id, TipoConexion.PERTENECE_A, otra.id);
+    await conectar(pieza.id, TIPO_CONEXION.PERTENECE_A, otra.id);
     // Su carril del reparto: una RAMA con la etiqueta `carril` (la columna del tablero del plan).
     const carril = await prisma.nodo.create({
       data: {
-        tipo: TipoNodo.RAMA,
+        proyectoId: proyectoSagId,
+        tipo: TIPO_NODO.RAMA,
         titulo: '20379 · C · Recepción',
         etiquetas: ['carril'],
       },
     });
-    await conectar(pieza.id, TipoConexion.PERTENECE_A, carril.id);
-    await conectar(fase.id, TipoConexion.PERTENECE_A, hu.id);
-    await conectar(tarjeta.id, TipoConexion.PERTENECE_A, fase.id);
-    await conectar(tarjeta.id, TipoConexion.PERTENECE_A, rama.id);
-    await conectar(tarjeta.id, TipoConexion.BLOQUEADA_POR, duda.id);
+    await conectar(pieza.id, TIPO_CONEXION.PERTENECE_A, carril.id);
+    await conectar(fase.id, TIPO_CONEXION.PERTENECE_A, hu.id);
+    await conectar(tarjeta.id, TIPO_CONEXION.PERTENECE_A, fase.id);
+    await conectar(tarjeta.id, TIPO_CONEXION.PERTENECE_A, rama.id);
+    await conectar(tarjeta.id, TIPO_CONEXION.BLOQUEADA_POR, duda.id);
     ctx.ids = {
       hu: hu.id,
       otra: otra.id,

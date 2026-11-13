@@ -1,13 +1,15 @@
+import { TIPO_NODO } from '../src/common/constants/tipos.constants';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { Cara, TipoNodo } from '@prisma/client';
+import { Cara } from '@prisma/client';
 import { AreaService } from './../src/modules/area/area.service';
 import { NodosService } from './../src/modules/nodos/nodos.service';
 import { PulidoService } from './../src/modules/pulido/pulido.service';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/database/prisma.service';
+import { sembrarEspacioTrabajo, vaciarBase } from './fixtures/sembrar-espacio';
 import { ImportadorTodoistService } from './../src/importadores/todoist/importador-todoist.service';
 import { TodoistClient } from './../src/importadores/todoist/todoist.client';
 import {
@@ -33,7 +35,13 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
     app: TestingModule;
     prisma: PrismaService;
     importador: ImportadorTodoistService;
+    proyecto: string;
   };
+  const importar = (
+    proyectoTodoist: string,
+    seco: boolean,
+    cara: Cara = Cara.REAL,
+  ) => ctx.importador.importar(proyectoTodoist, seco, cara, null, ctx.proyecto);
 
   beforeAll(async () => {
     // El área del fixture: las personas salen de su refs.yaml, no del código (D6).
@@ -50,10 +58,9 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
     await ctx.app.init();
     ctx.prisma = ctx.app.get(PrismaService);
     ctx.importador = ctx.app.get(ImportadorTodoistService);
-    await ctx.prisma.conexion.deleteMany();
-    await ctx.prisma.nodo.deleteMany();
-    await ctx.prisma.descarte.deleteMany();
-    await ctx.prisma.cambio.deleteMany();
+    await vaciarBase(ctx.prisma);
+    const { proyectoSagId } = await sembrarEspacioTrabajo(ctx.prisma);
+    ctx.proyecto = proyectoSagId;
   });
 
   afterAll(async () => {
@@ -61,7 +68,7 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
   });
 
   it('--seco traduce y cuenta sin escribir nada', async () => {
-    const resumen = await ctx.importador.importar('P1', true);
+    const resumen = await importar('P1', true);
 
     expect(resumen.tareasLeidas).toBe(tareas.length);
     expect(resumen.nodos.nuevos).toBeGreaterThan(tareas.length);
@@ -69,7 +76,7 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
   });
 
   it('la primera corrida crea todo; la segunda no duplica ni reescribe nada (C3, D8)', async () => {
-    const primera = await ctx.importador.importar('P1', false);
+    const primera = await importar('P1', false);
     expect(primera.nodos.actualizados).toBe(0);
     expect(primera.conexiones.existentes).toBe(0);
     const nodosTrasPrimera = await ctx.prisma.nodo.count();
@@ -99,7 +106,7 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
         .map(({ id, updatedAt }) => `${id}@${updatedAt.toISOString()}`)
         .sort();
     const antes = await fechas();
-    const segunda = await ctx.importador.importar('P1', false);
+    const segunda = await importar('P1', false);
     expect(segunda.nodos.nuevos).toBe(0);
     // Nada cambió en la fuente: no se reescribe nada, y updatedAt sigue diciendo cuándo cambió de verdad (FASE 10).
     expect(segunda.nodos.actualizados).toBe(0);
@@ -111,19 +118,19 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
 
   it('--seco cuenta contra la base: tras importar dice 0 nuevos; un cambio a mano se cuenta y no se pisa', async () => {
     const nodos = await ctx.prisma.nodo.count();
-    const sinCambios = await ctx.importador.importar('P1', true);
+    const sinCambios = await importar('P1', true);
     expect(sinCambios.nodos.nuevos).toBe(0);
     expect(sinCambios.nodos.actualizados).toBe(0);
     expect(sinCambios.conexiones.nuevas).toBe(0);
 
     const tarea = await ctx.prisma.nodo.findFirstOrThrow({
-      where: { tipo: TipoNodo.TAREA },
+      where: { tipo: TIPO_NODO.TAREA },
     });
     await ctx.prisma.nodo.update({
       where: { id: tarea.id },
       data: { titulo: 'tocado a mano' },
     });
-    const conUnCambio = await ctx.importador.importar('P1', true);
+    const conUnCambio = await importar('P1', true);
     expect(conUnCambio.nodos.actualizados).toBe(1);
     const despues = await ctx.prisma.nodo.findUniqueOrThrow({
       where: { id: tarea.id },
@@ -131,7 +138,7 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
     expect(despues.titulo).toBe('tocado a mano');
     expect(await ctx.prisma.nodo.count()).toBe(nodos);
 
-    await ctx.importador.importar('P1', false);
+    await importar('P1', false);
   });
 
   it('lo importado se ve por el dominio: la rama 🟢 existe con su color y Tomás es una PERSONA', async () => {
@@ -143,17 +150,17 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
         },
       },
     });
-    expect(rama).toMatchObject({ tipo: TipoNodo.RAMA, color: '#22c55e' });
+    expect(rama).toMatchObject({ tipo: TIPO_NODO.RAMA, color: '#22c55e' });
     const personas = await ctx.prisma.nodo.count({
-      where: { tipo: TipoNodo.PERSONA },
+      where: { tipo: TIPO_NODO.PERSONA },
     });
     expect(personas).toBe(1);
   });
 
   it('lo pulido en el grafo manda (FASE 16): un descarte no revive y una edición no se pisa', async () => {
-    await ctx.importador.importar('P1', false);
+    await importar('P1', false);
     const [aDescartar, aEditar] = await ctx.prisma.nodo.findMany({
-      where: { externoOrigen: 'todoist', tipo: TipoNodo.TAREA },
+      where: { externoOrigen: 'todoist', tipo: TIPO_NODO.TAREA },
       orderBy: { externoId: 'asc' },
       take: 2,
     });
@@ -165,7 +172,7 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
       motivo: 'más claro',
     });
 
-    const otra = await ctx.importador.importar('P1', false);
+    const otra = await importar('P1', false);
 
     expect(otra.nodos.descartados).toBe(1);
     expect(otra.nodos.nuevos).toBe(0);
@@ -183,37 +190,37 @@ describe('Importador Todoist (e2e, contra la base de test)', () => {
   it('la cara la da el proyecto (FASE 17): el Draft entra al plan, al pasar a TRABAJO vuelve a lo real, y lo movido en el grafo no se pisa', async () => {
     const tareasEn = (cara: Cara) =>
       ctx.prisma.nodo.count({
-        where: { externoOrigen: 'todoist', tipo: TipoNodo.TAREA, cara },
+        where: { externoOrigen: 'todoist', tipo: TIPO_NODO.TAREA, cara },
       });
-    await ctx.importador.importar('DRAFT', false, Cara.PLAN);
+    await importar('DRAFT', false, Cara.PLAN);
     const total = await ctx.prisma.nodo.count({
-      where: { externoOrigen: 'todoist', tipo: TipoNodo.TAREA },
+      where: { externoOrigen: 'todoist', tipo: TIPO_NODO.TAREA },
     });
     expect(total).toBeGreaterThan(0);
     expect(await tareasEn(Cara.PLAN)).toBe(total);
     // Lo sintetizado (HU, ramas, personas) es de todos: no es plan.
     expect(
       await ctx.prisma.nodo.count({
-        where: { tipo: { not: TipoNodo.TAREA }, cara: Cara.PLAN },
+        where: { tipo: { not: TIPO_NODO.TAREA }, cara: Cara.PLAN },
       }),
     ).toBe(0);
 
     const movida = await ctx.prisma.nodo.findFirstOrThrow({
-      where: { externoOrigen: 'todoist', tipo: TipoNodo.TAREA },
+      where: { externoOrigen: 'todoist', tipo: TIPO_NODO.TAREA },
       orderBy: { externoId: 'asc' },
     });
     await ctx.app.get(NodosService).update(movida.id, {
       cara: Cara.REAL,
       motivo: 'ya es trabajo',
     });
-    await ctx.importador.importar('DRAFT', false, Cara.PLAN);
+    await importar('DRAFT', false, Cara.PLAN);
     expect(
       (await ctx.prisma.nodo.findUniqueOrThrow({ where: { id: movida.id } }))
         .cara,
     ).toBe(Cara.REAL);
     expect(await tareasEn(Cara.PLAN)).toBe(total - 1);
 
-    await ctx.importador.importar('TRABAJO', false);
+    await importar('TRABAJO', false);
     expect(await tareasEn(Cara.REAL)).toBe(total);
   });
 });

@@ -1,6 +1,10 @@
+import {
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../../common/constants/tipos.constants.js';
 // Todoist → plan de nodos y conexiones. Función PURA: no toca red ni base; el test corre sobre un fixture real.
 // Las reglas D1-D8 están en docs/backlog/FASE_3_IMPORTADOR_TODOIST.md y las decidió Freddy el 2026-10-16.
-import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo } from '@prisma/client';
 
 export interface TareaTodoist {
   readonly id: string;
@@ -151,7 +155,7 @@ export function traducir(
     const tramite = esTramite && etiquetaTramite ? [etiquetaTramite] : [];
     return {
       externoId: tarea.id,
-      tipo: TipoNodo.TAREA,
+      tipo: TIPO_NODO.TAREA,
       titulo: tarea.content,
       descripcion: descripcionDe(tarea, seccion, etapa),
       estado: estadoDe(tarea, seccion),
@@ -170,7 +174,7 @@ export function traducir(
     const ramas = emojisDe(tarea.content).map((emoji) => {
       sintetizar({
         externoId: externoRama(emoji),
-        tipo: TipoNodo.RAMA,
+        tipo: TIPO_NODO.RAMA,
         titulo: emoji,
         ...SIN_TABLERO,
         color: COLOR_POR_EMOJI[emoji] ?? null,
@@ -178,13 +182,13 @@ export function traducir(
       return {
         origenExternoId: tarea.id,
         destinoExternoId: externoRama(emoji),
-        tipo: TipoConexion.PERTENECE_A,
+        tipo: TIPO_CONEXION.PERTENECE_A,
       };
     });
     const fases = fasesDe(tarea.content).map((numero) => {
       sintetizar({
         externoId: externoFase(numero),
-        tipo: TipoNodo.FASE,
+        tipo: TIPO_NODO.FASE,
         titulo: `FASE ${numero}`,
         ...SIN_TABLERO,
         color: null,
@@ -193,14 +197,14 @@ export function traducir(
       return {
         origenExternoId: tarea.id,
         destinoExternoId: externoFase(numero),
-        tipo: TipoConexion.PERTENECE_A,
+        tipo: TIPO_CONEXION.PERTENECE_A,
       };
     });
     const persona = personaBloqueante(tarea.content, personas);
     if (persona) {
       sintetizar({
         externoId: externoPersona(persona),
-        tipo: TipoNodo.PERSONA,
+        tipo: TIPO_NODO.PERSONA,
         titulo: persona,
         ...SIN_TABLERO,
         color: null,
@@ -211,7 +215,7 @@ export function traducir(
           {
             origenExternoId: tarea.id,
             destinoExternoId: externoPersona(persona),
-            tipo: TipoConexion.ESPERA_RESPUESTA_DE,
+            tipo: TIPO_CONEXION.ESPERA_RESPUESTA_DE,
           },
         ]
       : [];
@@ -233,7 +237,7 @@ export function traducir(
             {
               origenExternoId: padre,
               destinoExternoId: tarea.id,
-              tipo: TipoConexion.DEPENDE_DE,
+              tipo: TIPO_CONEXION.DEPENDE_DE,
             },
           ]
         : [];

@@ -1,5 +1,6 @@
+import { TIPO_NODO } from '../../../common/constants/tipos.constants.js';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Cara, EstadoNodo, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo } from '@prisma/client';
 import {
   ArrayUnique,
   IsDateString,
@@ -8,6 +9,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   Max,
   MaxLength,
@@ -23,9 +25,10 @@ import {
 } from '../../../common/constants/index.js';
 
 export class CreateNodoDto {
-  @ApiProperty({ enum: TipoNodo, example: TipoNodo.TAREA })
-  @IsEnum(TipoNodo)
-  tipo!: TipoNodo;
+  @ApiProperty({ type: String, example: TIPO_NODO.TAREA })
+  @IsString()
+  @IsNotEmpty()
+  tipo!: string;
 
   @ApiProperty({ example: 'Revisar la colección del PBI 24972' })
   @IsString()
@@ -121,4 +124,13 @@ export class CreateNodoDto {
   @IsString()
   @IsNotEmpty()
   externoId?: string;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description:
+      'El proyecto del nodo. Sin él cae en el proyecto por defecto y la respuesta lo avisa (header X-Aviso-Proyecto)',
+  })
+  @IsOptional()
+  @IsUUID()
+  proyectoId?: string;
 }

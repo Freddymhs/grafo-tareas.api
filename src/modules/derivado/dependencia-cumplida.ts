@@ -1,5 +1,5 @@
+import { TIPO_CONEXION } from '../../common/constants/tipos.constants.js';
 // Cuándo una conexión bloqueante ya no frena aunque su destino siga ABIERTO. Puro.
-import { TipoConexion } from '@prisma/client';
 import {
   ETAPA_MERGEADA,
   ETIQUETA_MERGEADA,
@@ -17,11 +17,11 @@ export interface DestinoDeDependencia {
  * (Freddy, 21-10). Lo mergeado se reconoce por la etiqueta `mergeada` (la FASE) o por estar en la columna de lo mergeado
  * (la tarjeta `[<id>]`, que el hook lleva ahí pero sin etiqueta: la 26998 seguía frenada por la tarjeta de la 25325).
  * Esperar respuesta o estar bloqueada por algo mergeado no se cumple: esas siguen frenando.
- * `BLOQUEA_AHORA` (derivado.repository.ts) es esta misma regla escrita para Prisma.
+ * `bloqueaAhora` (derivado.repository.ts) es esta misma regla escrita para Prisma.
  */
 export const dependenciaCumplida = (
-  tipo: TipoConexion,
+  tipo: string,
   { etiquetas, etapa }: DestinoDeDependencia,
 ) =>
-  tipo === TipoConexion.DEPENDE_DE &&
+  tipo === TIPO_CONEXION.DEPENDE_DE &&
   (etiquetas.includes(ETIQUETA_MERGEADA) || etapa === ETAPA_MERGEADA);

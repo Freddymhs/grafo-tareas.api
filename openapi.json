@@ -47,17 +47,7 @@
             "required": false,
             "in": "query",
             "schema": {
-              "type": "string",
-              "enum": [
-                "TAREA",
-                "HISTORIA",
-                "FASE",
-                "RAMA",
-                "DUDA",
-                "PERSONA",
-                "PR",
-                "DAILY_ITEM"
-              ]
+              "type": "string"
             }
           },
           {
@@ -133,6 +123,26 @@
             "required": false,
             "in": "query",
             "description": "Solo los nodos que PERTENECEN_A esta rama",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "proyecto",
+            "required": false,
+            "in": "query",
+            "description": "Solo los nodos de este proyecto",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "espacio",
+            "required": false,
+            "in": "query",
+            "description": "Solo los nodos de los proyectos de este espacio",
             "schema": {
               "format": "uuid",
               "type": "string"
@@ -365,7 +375,18 @@
     "/api/v1/etapas": {
       "get": {
         "operationId": "EtapasController_lista",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "espacio",
+            "required": false,
+            "in": "query",
+            "description": "Las etapas de este espacio",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -381,7 +402,7 @@
             }
           }
         },
-        "summary": "Las columnas del tablero, en orden",
+        "summary": "Las columnas del tablero, en orden (?espacio=: las de ese espacio; sin él, las del método de trabajo)",
         "tags": ["Etapas"]
       }
     },
@@ -408,7 +429,28 @@
     "/api/v1/derivado/hoy-puedo": {
       "get": {
         "operationId": "DerivadoController_hoyPuedo",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "proyecto",
+            "required": false,
+            "in": "query",
+            "description": "Solo lo de este proyecto",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "espacio",
+            "required": false,
+            "in": "query",
+            "description": "Solo lo de este espacio; sin proyecto ni espacio, todos los no archivados",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -424,7 +466,49 @@
             }
           }
         },
-        "summary": "Hoy puedo…: trabajo ABIERTO que nada bloquea",
+        "summary": "Hoy puedo…: trabajo ABIERTO que nada bloquea, sin lo archivado (?proyecto= / ?espacio=)",
+        "tags": ["Derivado"]
+      }
+    },
+    "/api/v1/proyectos/{id}/vecinos": {
+      "get": {
+        "operationId": "DerivadoController_vecinos",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NodoResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Los nodos de otros proyectos conectados con algo de éste (los «fantasmas» de la vista de un proyecto)",
         "tags": ["Derivado"]
       }
     },
@@ -439,6 +523,16 @@
             "description": "Desde cuándo cuenta «terminé» (por defecto, las últimas 24 h)",
             "schema": {
               "example": "2026-10-16T09:00:00-03:00",
+              "type": "string"
+            }
+          },
+          {
+            "name": "espacio",
+            "required": false,
+            "in": "query",
+            "description": "El espacio (tiene que usar el método de trabajo); sin él, el del proyecto por defecto",
+            "schema": {
+              "format": "uuid",
               "type": "string"
             }
           }
@@ -492,7 +586,18 @@
     "/api/v1/derivado/paginas": {
       "get": {
         "operationId": "DerivadoController_paginas",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "espacio",
+            "required": false,
+            "in": "query",
+            "description": "El espacio (tiene que usar el método de trabajo); sin él, el del proyecto por defecto",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -522,6 +627,16 @@
             "in": "query",
             "description": "El libro (el id de la HU, o «sin-hu») cuyo plan se quiere ver; sin él, el plan de todas",
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "espacio",
+            "required": false,
+            "in": "query",
+            "description": "El espacio (tiene que usar el método de trabajo); sin él, el del proyecto por defecto",
+            "schema": {
+              "format": "uuid",
               "type": "string"
             }
           }
@@ -662,6 +777,215 @@
         "tags": ["Derivado"]
       }
     },
+    "/api/v1/espacios/{espacioId}/tipos-nodo": {
+      "get": {
+        "operationId": "TiposController_listarNodo",
+        "parameters": [
+          {
+            "name": "espacioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoNodoResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Los tipos de nodo de un espacio",
+        "tags": ["Tipos"]
+      },
+      "post": {
+        "operationId": "TiposController_crearNodo",
+        "parameters": [
+          {
+            "name": "espacioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTipoNodoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoNodoResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Crear un tipo de nodo en un espacio",
+        "tags": ["Tipos"]
+      }
+    },
+    "/api/v1/tipos-nodo/{id}": {
+      "patch": {
+        "operationId": "TiposController_actualizarNodo",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTipoNodoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoNodoResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Editar un tipo de nodo (el nombre no se edita)",
+        "tags": ["Tipos"]
+      }
+    },
+    "/api/v1/tipos-conexion": {
+      "get": {
+        "operationId": "TiposController_listarConexion",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoConexionResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Los tipos de conexión (globales)",
+        "tags": ["Tipos"]
+      },
+      "post": {
+        "operationId": "TiposController_crearConexion",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTipoConexionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoConexionResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Crear un tipo de conexión",
+        "tags": ["Tipos"]
+      }
+    },
     "/api/v1/conexiones": {
       "get": {
         "operationId": "ConexionesController_findAll",
@@ -681,14 +1005,7 @@
             "required": false,
             "in": "query",
             "schema": {
-              "type": "string",
-              "enum": [
-                "DEPENDE_DE",
-                "ESPERA_RESPUESTA_DE",
-                "BLOQUEADA_POR",
-                "PERTENECE_A",
-                "EN_DAILY_DE"
-              ]
+              "type": "string"
             }
           }
         ],
@@ -1344,6 +1661,397 @@
         "summary": "Una pieza del reparto en el plan de su HU (cara PLAN), colgada de su HU y de su carril",
         "tags": ["Piezas"]
       }
+    },
+    "/api/v1/espacios": {
+      "get": {
+        "operationId": "EspaciosController_findAll",
+        "parameters": [
+          {
+            "name": "archivados",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EspacioResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Los espacios (sin los archivados por defecto)",
+        "tags": ["Espacios"]
+      },
+      "post": {
+        "operationId": "EspaciosController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEspacioDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EspacioResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Crear un espacio con su proyecto General y los tipos y etapas de la plantilla",
+        "tags": ["Espacios"]
+      }
+    },
+    "/api/v1/espacios/{id}": {
+      "patch": {
+        "operationId": "EspaciosController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEspacioDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EspacioResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Editar o archivar un espacio",
+        "tags": ["Espacios"]
+      },
+      "delete": {
+        "operationId": "EspaciosController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EspacioResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Borrar un espacio sin nodos",
+        "tags": ["Espacios"]
+      }
+    },
+    "/api/v1/espacios/{espacioId}/proyectos": {
+      "get": {
+        "operationId": "ProyectosController_listarDeEspacio",
+        "parameters": [
+          {
+            "name": "espacioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "archivados",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProyectoResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Los proyectos de un espacio",
+        "tags": ["Proyectos"]
+      },
+      "post": {
+        "operationId": "ProyectosController_create",
+        "parameters": [
+          {
+            "name": "espacioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProyectoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProyectoResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Crear un proyecto en un espacio",
+        "tags": ["Proyectos"]
+      }
+    },
+    "/api/v1/proyectos/{id}": {
+      "patch": {
+        "operationId": "ProyectosController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProyectoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProyectoResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Editar o archivar un proyecto",
+        "tags": ["Proyectos"]
+      },
+      "delete": {
+        "operationId": "ProyectosController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProyectoResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Borrar un proyecto sin nodos",
+        "tags": ["Proyectos"]
+      }
     }
   },
   "info": {
@@ -1364,24 +2072,15 @@
             "format": "uuid"
           },
           "tipo": {
-            "type": "string",
-            "enum": [
-              "TAREA",
-              "HISTORIA",
-              "FASE",
-              "RAMA",
-              "DUDA",
-              "PERSONA",
-              "PR",
-              "DAILY_ITEM"
-            ]
+            "type": "string"
           },
           "titulo": {
             "type": "string"
           },
           "estado": {
             "type": "string",
-            "enum": ["ABIERTO", "CERRADO"]
+            "enum": ["ABIERTO", "CERRADO"],
+            "nullable": true
           },
           "cara": {
             "type": "string",
@@ -1443,6 +2142,10 @@
             "type": "string",
             "description": "Cuándo nació en su fuente (la tarjeta en Todoist) o, si se creó acá, al crearse. Nunca vacía"
           },
+          "proyectoId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -1460,6 +2163,7 @@
           "cara",
           "etiquetas",
           "fechaOrigen",
+          "proyectoId",
           "createdAt",
           "updatedAt"
         ]
@@ -1560,16 +2264,6 @@
         "properties": {
           "tipo": {
             "type": "string",
-            "enum": [
-              "TAREA",
-              "HISTORIA",
-              "FASE",
-              "RAMA",
-              "DUDA",
-              "PERSONA",
-              "PR",
-              "DAILY_ITEM"
-            ],
             "example": "TAREA"
           },
           "titulo": {
@@ -1631,6 +2325,11 @@
           "externoId": {
             "type": "string",
             "example": "6Vh..."
+          },
+          "proyectoId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "El proyecto del nodo. Sin él cae en el proyecto por defecto y la respuesta lo avisa (header X-Aviso-Proyecto)"
           }
         },
         "required": ["tipo", "titulo"]
@@ -1683,6 +2382,11 @@
             "type": "string",
             "example": "#3b82f6",
             "description": "Solo para nodos RAMA"
+          },
+          "proyectoId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "El proyecto del nodo. Sin él cae en el proyecto por defecto y la respuesta lo avisa (header X-Aviso-Proyecto)"
           },
           "etapa": {
             "type": "string",
@@ -1802,24 +2506,15 @@
             "format": "uuid"
           },
           "tipo": {
-            "type": "string",
-            "enum": [
-              "TAREA",
-              "HISTORIA",
-              "FASE",
-              "RAMA",
-              "DUDA",
-              "PERSONA",
-              "PR",
-              "DAILY_ITEM"
-            ]
+            "type": "string"
           },
           "titulo": {
             "type": "string"
           },
           "estado": {
             "type": "string",
-            "enum": ["ABIERTO", "CERRADO"]
+            "enum": ["ABIERTO", "CERRADO"],
+            "nullable": true
           },
           "cara": {
             "type": "string",
@@ -2064,24 +2759,15 @@
             "format": "uuid"
           },
           "tipo": {
-            "type": "string",
-            "enum": [
-              "TAREA",
-              "HISTORIA",
-              "FASE",
-              "RAMA",
-              "DUDA",
-              "PERSONA",
-              "PR",
-              "DAILY_ITEM"
-            ]
+            "type": "string"
           },
           "titulo": {
             "type": "string"
           },
           "estado": {
             "type": "string",
-            "enum": ["ABIERTO", "CERRADO"]
+            "enum": ["ABIERTO", "CERRADO"],
+            "nullable": true
           },
           "cara": {
             "type": "string",
@@ -2206,6 +2892,136 @@
         },
         "required": ["directos", "cadena"]
       },
+      "TipoNodoResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "espacioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "forma": {
+            "type": "string",
+            "nullable": true
+          },
+          "tieneCiclo": {
+            "type": "boolean"
+          },
+          "accionable": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "espacioId", "nombre", "tieneCiclo", "accionable"]
+      },
+      "CreateTipoNodoDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "example": "HERRAMIENTA"
+          },
+          "color": {
+            "type": "string",
+            "example": "#3b82f6"
+          },
+          "forma": {
+            "type": "string",
+            "example": "esfera",
+            "description": "La forma en la VR"
+          },
+          "tieneCiclo": {
+            "type": "boolean",
+            "default": true,
+            "description": "Con ciclo, el nodo está ABIERTO o CERRADO; sin él, no tiene estado"
+          },
+          "accionable": {
+            "type": "boolean",
+            "default": false,
+            "description": "Entra a «hoy puedo»"
+          }
+        },
+        "required": ["nombre"]
+      },
+      "UpdateTipoNodoDto": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "type": "string",
+            "example": "#3b82f6"
+          },
+          "forma": {
+            "type": "string",
+            "example": "esfera",
+            "description": "La forma en la VR"
+          },
+          "tieneCiclo": {
+            "type": "boolean",
+            "default": true,
+            "description": "Con ciclo, el nodo está ABIERTO o CERRADO; sin él, no tiene estado"
+          },
+          "accionable": {
+            "type": "boolean",
+            "default": false,
+            "description": "Entra a «hoy puedo»"
+          }
+        }
+      },
+      "TipoConexionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "bloquea": {
+            "type": "boolean"
+          },
+          "contiene": {
+            "type": "boolean"
+          },
+          "simetrica": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "nombre", "bloquea", "contiene", "simetrica"]
+      },
+      "CreateTipoConexionDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "example": "SE_RELACIONA_CON"
+          },
+          "bloquea": {
+            "type": "boolean",
+            "default": false,
+            "description": "Bloquea al origen mientras el destino siga ABIERTO"
+          },
+          "contiene": {
+            "type": "boolean",
+            "default": false,
+            "description": "El destino contiene al origen (agrupa: el papel de PERTENECE_A)"
+          },
+          "simetrica": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": ["nombre"]
+      },
       "ConexionResponseDto": {
         "type": "object",
         "properties": {
@@ -2222,14 +3038,7 @@
             "format": "uuid"
           },
           "tipo": {
-            "type": "string",
-            "enum": [
-              "DEPENDE_DE",
-              "ESPERA_RESPUESTA_DE",
-              "BLOQUEADA_POR",
-              "PERTENECE_A",
-              "EN_DAILY_DE"
-            ]
+            "type": "string"
           },
           "createdAt": {
             "format": "date-time",
@@ -2253,13 +3062,6 @@
           },
           "tipo": {
             "type": "string",
-            "enum": [
-              "DEPENDE_DE",
-              "ESPERA_RESPUESTA_DE",
-              "BLOQUEADA_POR",
-              "PERTENECE_A",
-              "EN_DAILY_DE"
-            ],
             "example": "DEPENDE_DE"
           }
         },
@@ -2513,24 +3315,15 @@
             "format": "uuid"
           },
           "tipo": {
-            "type": "string",
-            "enum": [
-              "TAREA",
-              "HISTORIA",
-              "FASE",
-              "RAMA",
-              "DUDA",
-              "PERSONA",
-              "PR",
-              "DAILY_ITEM"
-            ]
+            "type": "string"
           },
           "titulo": {
             "type": "string"
           },
           "estado": {
             "type": "string",
-            "enum": ["ABIERTO", "CERRADO"]
+            "enum": ["ABIERTO", "CERRADO"],
+            "nullable": true
           },
           "cara": {
             "type": "string",
@@ -2592,6 +3385,10 @@
             "type": "string",
             "description": "Cuándo nació en su fuente (la tarjeta en Todoist) o, si se creó acá, al crearse. Nunca vacía"
           },
+          "proyectoId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -2614,6 +3411,7 @@
           "cara",
           "etiquetas",
           "fechaOrigen",
+          "proyectoId",
           "createdAt",
           "updatedAt",
           "complemento"
@@ -2756,6 +3554,136 @@
           }
         },
         "required": ["carril", "titulo", "descripcion"]
+      },
+      "EspacioResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "orden": {
+            "type": "number"
+          },
+          "archivado": {
+            "type": "boolean"
+          },
+          "metodo": {
+            "type": "string",
+            "nullable": true,
+            "description": "El método de trabajo que enciende (solo SIGSA: trabajo-hu)"
+          },
+          "etapas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["id", "nombre", "orden", "archivado", "etapas"]
+      },
+      "CreateEspacioDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "example": "Mis máquinas"
+          },
+          "color": {
+            "type": "string",
+            "example": "#3b82f6"
+          },
+          "plantilla": {
+            "type": "string",
+            "enum": ["empresa", "maquinas", "conocimiento", "vacia"],
+            "description": "Los tipos y las etapas con que nace el espacio"
+          }
+        },
+        "required": ["nombre", "plantilla"]
+      },
+      "UpdateEspacioDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "example": "#3b82f6"
+          },
+          "orden": {
+            "type": "number"
+          },
+          "archivado": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ProyectoResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "espacioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "orden": {
+            "type": "number"
+          },
+          "archivado": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "espacioId", "nombre", "orden", "archivado"]
+      },
+      "CreateProyectoDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "example": "ThinkPad"
+          },
+          "color": {
+            "type": "string",
+            "example": "#3b82f6"
+          }
+        },
+        "required": ["nombre"]
+      },
+      "UpdateProyectoDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "example": "#3b82f6"
+          },
+          "orden": {
+            "type": "number"
+          },
+          "archivado": {
+            "type": "boolean"
+          }
+        }
       }
     }
   }

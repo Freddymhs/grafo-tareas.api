@@ -1,6 +1,10 @@
+import {
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../../common/constants/tipos.constants.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Cara, EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo } from '@prisma/client';
 import type { Persona } from '../../modules/area/area.types';
 import { externoCarril } from '../pieza';
 import { ORIGEN_TRACKER, externoHistoria } from '../plan';
@@ -59,14 +63,16 @@ const tarea = (patron: RegExp) => {
 };
 const nodo = (externoId: string) =>
   plan.nodos.find((n) => n.externoId === externoId);
-const conexionesDe = (externoId: string, tipo: TipoConexion) =>
+const conexionesDe = (externoId: string, tipo: string) =>
   plan.conexiones.filter(
     (c) => c.origenExternoId === externoId && c.tipo === tipo,
   );
 
 describe('traducir (fixture real de TRABAJO, reducido)', () => {
   it('D1 · cada tarea es un nodo TAREA con su id de Todoist y el título tal cual', () => {
-    const tareasPlan = plan.nodos.filter(({ tipo }) => tipo === TipoNodo.TAREA);
+    const tareasPlan = plan.nodos.filter(
+      ({ tipo }) => tipo === TIPO_NODO.TAREA,
+    );
     expect(tareasPlan).toHaveLength(tareas.length);
     tareas.forEach((t) => expect(nodo(t.id)?.titulo).toBe(t.content));
   });
@@ -101,15 +107,15 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
   it('la cara del proyecto va a cada tarea (FASE 17); lo sintetizado es de todos y no la lleva', () => {
     const delDraft = traducir(tareas, secciones, ETAPAS, Cara.PLAN);
     const [deTareas, sintetizados] = [
-      delDraft.nodos.filter(({ tipo }) => tipo === TipoNodo.TAREA),
-      delDraft.nodos.filter(({ tipo }) => tipo !== TipoNodo.TAREA),
+      delDraft.nodos.filter(({ tipo }) => tipo === TIPO_NODO.TAREA),
+      delDraft.nodos.filter(({ tipo }) => tipo !== TIPO_NODO.TAREA),
     ];
     expect(deTareas.every(({ cara }) => cara === Cara.PLAN)).toBe(true);
     expect(sintetizados.length).toBeGreaterThan(0);
     expect(sintetizados.every(({ cara }) => cara === undefined)).toBe(true);
     expect(
       plan.nodos
-        .filter(({ tipo }) => tipo === TipoNodo.TAREA)
+        .filter(({ tipo }) => tipo === TIPO_NODO.TAREA)
         .every(({ cara }) => cara === Cara.REAL),
     ).toBe(true);
   });
@@ -138,7 +144,7 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
     hijas.forEach((hija) => {
       const dependencias = conexionesDe(
         hija.parent_id ?? '',
-        TipoConexion.DEPENDE_DE,
+        TIPO_CONEXION.DEPENDE_DE,
       );
       expect(dependencias.map((c) => c.destinoExternoId)).toContain(hija.id);
     });
@@ -146,14 +152,14 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
 
   it('D4 · una tarea con 🔵🟢 pertenece a dos ramas, y cada rama tiene su color', () => {
     const dosColores = tarea(/🔵🟢/);
-    const ramas = conexionesDe(dosColores.id, TipoConexion.PERTENECE_A).map(
+    const ramas = conexionesDe(dosColores.id, TIPO_CONEXION.PERTENECE_A).map(
       (c) => c.destinoExternoId,
     );
     expect(ramas).toEqual(
       expect.arrayContaining([externoRama('🔵'), externoRama('🟢')]),
     );
     expect(nodo(externoRama('🟢'))).toMatchObject({
-      tipo: TipoNodo.RAMA,
+      tipo: TIPO_NODO.RAMA,
       titulo: '🟢',
       color: '#22c55e',
     });
@@ -162,11 +168,11 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
   it('D5 · "FASE 32" en el título crea el nodo FASE y la tarea le pertenece', () => {
     const conFase = tarea(/FASE 32/);
     expect(nodo(externoFase('32'))).toMatchObject({
-      tipo: TipoNodo.FASE,
+      tipo: TIPO_NODO.FASE,
       titulo: 'FASE 32',
     });
     expect(
-      conexionesDe(conFase.id, TipoConexion.PERTENECE_A).map(
+      conexionesDe(conFase.id, TIPO_CONEXION.PERTENECE_A).map(
         (c) => c.destinoExternoId,
       ),
     ).toContain(externoFase('32'));
@@ -185,7 +191,7 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
       (n) => n.externoId === externoFase('32'),
     );
     expect(fase32).toMatchObject({
-      tipo: TipoNodo.FASE,
+      tipo: TIPO_NODO.FASE,
       origen: 'fases-md:laboratorio',
       soloSiFalta: true,
     });
@@ -199,13 +205,13 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
     const persona = externoPersona('Tomás Carabantes');
     bloqueos.forEach((b) => {
       expect(
-        conexionesDe(b.id, TipoConexion.ESPERA_RESPUESTA_DE).map(
+        conexionesDe(b.id, TIPO_CONEXION.ESPERA_RESPUESTA_DE).map(
           (c) => c.destinoExternoId,
         ),
       ).toEqual([persona]);
     });
     expect(
-      plan.nodos.filter(({ tipo }) => tipo === TipoNodo.PERSONA),
+      plan.nodos.filter(({ tipo }) => tipo === TIPO_NODO.PERSONA),
     ).toHaveLength(1);
   });
 
@@ -224,7 +230,7 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
         .conexiones.filter(
           ({ origenExternoId, tipo }) =>
             origenExternoId === 'espera' &&
-            tipo === TipoConexion.ESPERA_RESPUESTA_DE,
+            tipo === TIPO_CONEXION.ESPERA_RESPUESTA_DE,
         )
         .map(({ destinoExternoId }) => destinoExternoId);
     expect(esperaDe('BLOQUEO — esperando a Thomas por el esquema')).toEqual([
@@ -240,7 +246,7 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
 
   it('D6 · "Bloqueo sin Unidad Organizacional" es una feature, no una espera', () => {
     const feature = tarea(/\[25327\]/);
-    expect(conexionesDe(feature.id, TipoConexion.ESPERA_RESPUESTA_DE)).toEqual(
+    expect(conexionesDe(feature.id, TIPO_CONEXION.ESPERA_RESPUESTA_DE)).toEqual(
       [],
     );
   });
@@ -248,7 +254,7 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
   it('D7 · el emoji de orden queda en el título y no crea DEPENDE_DE', () => {
     const conOrden = tarea(/0️⃣/);
     expect(nodo(conOrden.id)?.titulo).toContain('0️⃣');
-    expect(conexionesDe(conOrden.id, TipoConexion.DEPENDE_DE)).toEqual([]);
+    expect(conexionesDe(conOrden.id, TIPO_CONEXION.DEPENDE_DE)).toEqual([]);
   });
 
   it('D8 · los nodos sintetizados no se repiten y toda conexión apunta a nodos del plan', () => {
@@ -270,11 +276,11 @@ describe('traducir (fixture real de TRABAJO, reducido)', () => {
   it('D6 · sin personas en el área, una espera no inventa una PERSONA (agnóstico: los nombres son del cliente)', () => {
     const sinArea = traducir(tareas, secciones, ETAPAS);
     expect(
-      sinArea.nodos.filter(({ tipo }) => tipo === TipoNodo.PERSONA),
+      sinArea.nodos.filter(({ tipo }) => tipo === TIPO_NODO.PERSONA),
     ).toEqual([]);
     expect(
       sinArea.conexiones.filter(
-        ({ tipo }) => tipo === TipoConexion.ESPERA_RESPUESTA_DE,
+        ({ tipo }) => tipo === TIPO_CONEXION.ESPERA_RESPUESTA_DE,
       ),
     ).toEqual([]);
   });
@@ -321,7 +327,7 @@ describe('R4 (FASE 13) · las piezas del Draft (fixture real: 3 tarjetas de la H
       .filter(
         (c) =>
           c.origenExternoId === externoId &&
-          c.tipo === TipoConexion.PERTENECE_A,
+          c.tipo === TIPO_CONEXION.PERTENECE_A,
       )
       .map((c) => c.destinoExternoId);
 
@@ -355,7 +361,9 @@ describe('R4 (FASE 13) · las piezas del Draft (fixture real: 3 tarjetas de la H
   });
 
   it('la HU es la compartida (origen tracker) y el tablero no le pisa el título: solo la crea si falta', () => {
-    const hu = planDraft.nodos.filter(({ tipo }) => tipo === TipoNodo.HISTORIA);
+    const hu = planDraft.nodos.filter(
+      ({ tipo }) => tipo === TIPO_NODO.HISTORIA,
+    );
     expect(hu).toHaveLength(1);
     expect(hu[0]).toMatchObject({
       externoId: externoHistoria('20379'),
@@ -374,7 +382,7 @@ describe('R4 (FASE 13) · las piezas del Draft (fixture real: 3 tarjetas de la H
       '20379 · C · Recepción',
     ]);
     expect(
-      carriles.every(({ tipo, color }) => tipo === TipoNodo.RAMA && color),
+      carriles.every(({ tipo, color }) => tipo === TIPO_NODO.RAMA && color),
     ).toBe(true);
     expect(
       carriles.every(({ etiquetas }) => etiquetas.includes('carril')),

@@ -1,3 +1,4 @@
+export { EtapasQueryDto } from './etapas-query.dto';
 export { CreateNodoDto } from './create-nodo.dto';
 export { UpdateNodoDto } from './update-nodo.dto';
 export { ListarNodosDto } from './listar-nodos.dto';

@@ -11,6 +11,7 @@ const antes = {
   prioridad: 4,
   vence: new Date('2026-10-20T00:00:00.000Z'),
   color: null,
+  proyectoId: null,
 };
 
 describe('diferencias — qué anota la bitácora de una edición (FASE 16)', () => {

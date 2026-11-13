@@ -12,7 +12,7 @@ export class RamaResponseDto {
   color!: string | null;
 
   @ApiProperty({ enum: EstadoNodo })
-  estado!: EstadoNodo;
+  estado!: EstadoNodo | null;
 
   @ApiProperty({ description: 'Nodos que PERTENECEN_A esta rama' })
   miembros!: number;

@@ -1,13 +1,6 @@
+import { TIPO_CONEXION } from '../../common/constants/tipos.constants.js';
 import { Injectable } from '@nestjs/common';
-import {
-  Cara,
-  EstadoNodo,
-  Nodo,
-  Prisma,
-  TipoCambio,
-  TipoConexion,
-  TipoNodo,
-} from '@prisma/client';
+import { Cara, EstadoNodo, Nodo, Prisma, TipoCambio } from '@prisma/client';
 import { BaseRepository } from '../../database/base.repository.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { Diferencia } from '../pulido/diferencias.js';
@@ -15,7 +8,7 @@ import type { FiltroRol } from '../roles/roles.service.js';
 import { PosicionNodoDto } from './dto/index.js';
 
 export interface FiltroNodos {
-  readonly tipo?: TipoNodo;
+  readonly tipo?: string;
   readonly estado?: EstadoNodo;
   readonly cara?: Cara;
   /** Solo estos ids (los de la página de una HU); undefined = todos. */
@@ -26,6 +19,8 @@ export interface FiltroNodos {
   readonly rama?: string;
   readonly q?: string;
   readonly rol?: FiltroRol;
+  readonly proyectoId?: string;
+  readonly espacioId?: string;
   /** Etiquetas que excluyen al nodo (las notas, si el tablero las oculta). */
   readonly sinEtiquetas?: readonly string[];
 }
@@ -42,6 +37,8 @@ function whereDe({
   q,
   rol,
   sinEtiquetas,
+  proyectoId,
+  espacioId,
 }: FiltroNodos): Prisma.NodoWhereInput {
   const porEtapa =
     etapa === undefined ? {} : { etapa: etapa === '' ? null : etapa };
@@ -52,7 +49,7 @@ function whereDe({
       ? {}
       : {
           salientes: {
-            some: { tipo: TipoConexion.PERTENECE_A, destinoId: rama },
+            some: { tipo: TIPO_CONEXION.PERTENECE_A, destinoId: rama },
           },
         };
   const porTexto =
@@ -80,11 +77,14 @@ function whereDe({
     sinEtiquetas === undefined || sinEtiquetas.length === 0
       ? {}
       : { NOT: { etiquetas: { hasSome: [...sinEtiquetas] } } };
+  const porEspacio = espacioId === undefined ? {} : { proyecto: { espacioId } };
   const porIds = ids === undefined ? {} : { id: { in: [...ids] } };
   return {
     tipo,
     estado,
     cara,
+    proyectoId,
+    ...porEspacio,
     ...porIds,
     ...porEtapa,
     ...porRama,
@@ -96,8 +96,8 @@ function whereDe({
 @Injectable()
 export class NodosRepository extends BaseRepository<
   Nodo,
-  Prisma.NodoCreateInput,
-  Prisma.NodoUpdateInput
+  Prisma.NodoUncheckedCreateInput,
+  Prisma.NodoUncheckedUpdateInput
 > {
   constructor(prisma: PrismaService) {
     super(prisma);
@@ -110,7 +110,7 @@ export class NodosRepository extends BaseRepository<
   /** Actualiza y anota en la bitácora (FASE 16) cada campo que cambió, con su motivo: todo o nada. */
   async actualizarConBitacora(
     nodo: Nodo,
-    data: Prisma.NodoUpdateInput,
+    data: Prisma.NodoUncheckedUpdateInput,
     cambios: readonly Diferencia[],
     motivo: string | null,
   ): Promise<Nodo> {
@@ -151,6 +151,19 @@ export class NodosRepository extends BaseRepository<
 
   async contar(filtro: FiltroNodos): Promise<number> {
     return this.prisma.nodo.count({ where: whereDe(filtro) });
+  }
+
+  proyectoConEspacio(id: string) {
+    return this.prisma.proyecto.findUnique({
+      where: { id },
+      select: { id: true, espacio: { select: { id: true, nombre: true } } },
+    });
+  }
+
+  tipoEnEspacio(espacioId: string, nombre: string) {
+    return this.prisma.tipoNodo.findUnique({
+      where: { espacioId_nombre: { espacioId, nombre } },
+    });
   }
 
   async contarExistentes(ids: readonly string[]): Promise<number> {

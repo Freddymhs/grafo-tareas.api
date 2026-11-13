@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { NotFoundError } from '../../common/exceptions/index.js';
+import { ProyectoPorDefectoService } from '../nodos/proyecto-por-defecto.service.js';
 import { calcularContraste } from './contraste.js';
 import { PulidoRepository } from './pulido.repository.js';
 
@@ -9,7 +10,10 @@ import { PulidoRepository } from './pulido.repository.js';
  */
 @Injectable()
 export class PulidoService {
-  constructor(private readonly repository: PulidoRepository) {}
+  constructor(
+    private readonly repository: PulidoRepository,
+    private readonly proyectoPorDefecto: ProyectoPorDefectoService,
+  ) {}
 
   async descartar(nodoId: string, motivo: string) {
     const hecho = await this.repository.descartar(nodoId, motivo);
@@ -24,7 +28,10 @@ export class PulidoService {
   }
 
   async restaurar(nodoId: string, motivo: string | null) {
-    const hecho = await this.repository.restaurar(nodoId, motivo);
+    const hecho = await this.repository.restaurar(nodoId, motivo, async () => {
+      const { proyectoId } = await this.proyectoPorDefecto.resolver();
+      return proyectoId;
+    });
     if (!hecho) throw new NotFoundError('Descarte');
     const { nodo, conexionesRecuperadas, conexionesPerdidas } = hecho;
     return {

@@ -1,18 +1,18 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Cara, EstadoNodo, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo } from '@prisma/client';
 
 export class NodoResumenDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 
-  @ApiProperty({ enum: TipoNodo })
-  tipo!: TipoNodo;
+  @ApiProperty({ type: String })
+  tipo!: string;
 
   @ApiProperty()
   titulo!: string;
 
-  @ApiProperty({ enum: EstadoNodo })
-  estado!: EstadoNodo;
+  @ApiProperty({ enum: EstadoNodo, nullable: true })
+  estado!: EstadoNodo | null;
 
   @ApiProperty({ enum: Cara })
   cara!: Cara;
@@ -60,6 +60,9 @@ export class NodoResponseDto extends NodoResumenDto {
       'Cuándo nació en su fuente (la tarjeta en Todoist) o, si se creó acá, al crearse. Nunca vacía',
   })
   fechaOrigen!: Date;
+
+  @ApiProperty({ format: 'uuid' })
+  proyectoId!: string;
 
   @ApiProperty()
   createdAt!: Date;

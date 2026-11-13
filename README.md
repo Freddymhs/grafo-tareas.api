@@ -11,8 +11,9 @@ nombra una herramienta son los importadores (`src/importadores/`, FASE 3). El CI
 
 |              |                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Nodo**     | `tipo` (TAREA, HISTORIA, FASE, RAMA, DUDA, PERSONA, PR, DAILY_ITEM) · `titulo` · `estado` (ABIERTO/CERRADO) · `color` (solo RAMA) · `externo {origen, id}` (de dónde se importó, único) · `pos {x,y,z}` (el mapa 3D, persistido)                                                                                                                                                                                     |
-| **Conexión** | `origen → destino` con `tipo`: DEPENDE_DE, ESPERA_RESPUESTA_DE, BLOQUEADA_POR (bloquean al origen mientras el destino siga ABIERTO), PERTENECE_A (a una rama), EN_DAILY_DE                                                                                                                                                                                                                                           |
+| **Espacio**  | pestaña de nivel 1 (SIGSA, Mis máquinas…) con sus `proyectos` y sus tipos de nodo; `metodo` (`trabajo-hu` o nada) enciende roles, día, páginas y piezas solo ahí (FASE 22)                                                                                                                                                                                                                                           |
+| **Nodo**     | `proyectoId` (obligatorio; sin él cae en el proyecto por defecto, `X-Aviso-Proyecto`) · `tipo` (un `TipoNodo` del espacio: SIGSA trae TAREA, HISTORIA, FASE, RAMA, DUDA, PERSONA, PR, DAILY_ITEM) · `titulo` · `estado` (ABIERTO/CERRADO; `null` si el tipo no tiene ciclo) · `color` (solo RAMA) · `externo {origen, id}` (de dónde se importó, único) · `pos {x,y,z}` (el mapa 3D, persistido)                     |
+| **Conexión** | `origen → destino` con `tipo` (una fila de `tipos_conexion`, global): DEPENDE_DE, ESPERA_RESPUESTA_DE, BLOQUEADA_POR (bloquean al origen mientras el destino siga ABIERTO), PERTENECE_A (a una rama), EN_DAILY_DE, SE_RELACIONA_CON, DERIVA_DE                                                                                                                                                                       |
 | **Derivado** | se calcula **acá y solo acá** (C1): `bloqueado` (qué lo frena), `hoy-puedo` (trabajo abierto que nada bloquea), `libera` (si este nodo se cierra —alguien contesta—, qué queda libre, directo y en cadena; `WITH RECURSIVE` + punto fijo, termina con ciclos), `plan` (columnas por carril; cada pieza con sus `pelotitas`: su carril y los otros que espera por DEPENDE_DE; y su `orden` en la cadena de su carril) |
 
 ## Rutas (prefijo `/api/v1`, Swagger en `/docs`)
@@ -26,6 +27,8 @@ GET             derivado/hoy-puedo  GET nodos/:id/bloqueado       GET nodos/:id/
 GET             etapas              roles   (GET nodos?rol=<clave>: los nodos de ese rol)
 GET/POST        nodos/:id/complementos   POST nodos/:id/escalar   POST nodos/:id/decidir   GET area
 POST            piezas              (una pieza del reparto en el plan de su HU, FASE 19)
+GET/POST        espacios            PATCH/DELETE espacios/:id     GET/POST espacios/:id/proyectos   PATCH/DELETE proyectos/:id
+GET/POST        espacios/:id/tipos-nodo   PATCH tipos-nodo/:id   GET/POST tipos-conexion   GET proyectos/:id/vecinos (FASE 22)
 GET             health
 ```
 
@@ -62,9 +65,11 @@ el escenario del concepto —Tomás, una duda W2 y tres tareas— de punta a pun
 
 ## Importar los `FASE_*.md` del método (FASE 5) — cada vez que cambian las casillas
 
+`--proyecto-grafo <uuid>` es obligatorio en los dos importadores (FASE 22): el proyecto del grafo donde escriben.
+
 ```bash
-pnpm importar:fases -- --backlog ../docs/backlog --tareas ../Tareas --seco   # cuenta, no escribe
-pnpm importar:fases -- --backlog ../docs/backlog --tareas ../Tareas          # aplica en una transacción
+pnpm importar:fases -- --backlog ../docs/backlog --tareas ../Tareas --proyecto-grafo <uuid> --seco   # cuenta, no escribe
+pnpm importar:fases -- --backlog ../docs/backlog --tareas ../Tareas --proyecto-grafo <uuid>          # aplica en una transacción
 ```
 
 Cada `FASE_n_*.md` es un nodo FASE «FASE n» con la etiqueta de su rol (`**Tipo**:`, o el defecto) y la etapa derivada de sus
@@ -80,8 +85,8 @@ el Laboratorio. Solo lee los archivos.
 ## Importar desde Todoist (FASE 3) — una vez, como migración
 
 ```bash
-pnpm importar:todoist -- --proyecto <id-del-proyecto> --seco   # traduce y cuenta, no escribe
-pnpm importar:todoist -- --proyecto <id-del-proyecto>          # aplica el plan en una transacción
+pnpm importar:todoist -- --proyecto <id-del-proyecto> --proyecto-grafo <uuid> --seco   # traduce y cuenta, no escribe
+pnpm importar:todoist -- --proyecto <id-del-proyecto> --proyecto-grafo <uuid>          # aplica el plan en una transacción
 ```
 
 Lee con `TODOIST_API_KEY` (del entorno, nunca del repo) y **nunca escribe en Todoist**. Es idempotente: la segunda

@@ -1,4 +1,8 @@
-import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import {
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../../common/constants/tipos.constants.js';
+import { EstadoNodo } from '@prisma/client';
 import {
   ETAPAS_POR_DEFECTO,
   ETIQUETA_MERGEADA,
@@ -43,7 +47,7 @@ describe('traducirFases', () => {
     const [primera, segunda, tercera] = plan.nodos;
     expect(primera).toMatchObject({
       externoId: externoFase(1),
-      tipo: TipoNodo.FASE,
+      tipo: TIPO_NODO.FASE,
       titulo: 'FASE 1',
       etapa: 'EN CODIGO',
       estado: EstadoNodo.ABIERTO,
@@ -76,7 +80,7 @@ describe('traducirFases', () => {
       {
         origenExternoId: externoFase(2),
         destinoExternoId: externoFase(1),
-        tipo: TipoConexion.DEPENDE_DE,
+        tipo: TIPO_CONEXION.DEPENDE_DE,
       },
     ]);
   });
@@ -84,7 +88,7 @@ describe('traducirFases', () => {
   it('cada ABIERTO es una DUDA con etiqueta `abierto` y el prefijo de su task', () => {
     expect(plan.dudas).toHaveLength(1);
     expect(plan.dudas[0]).toMatchObject({
-      tipo: TipoNodo.DUDA,
+      tipo: TIPO_NODO.DUDA,
       titulo: 'duda',
       etiquetas: ['abierto'],
       tareaPrefijo: '[25699]',
@@ -135,7 +139,7 @@ describe('traducirFases', () => {
       expect(conTramites.conexiones).toContainEqual({
         origenExternoId: externoTramite(7),
         destinoExternoId: externoFase(7),
-        tipo: TipoConexion.PERTENECE_A,
+        tipo: TIPO_CONEXION.PERTENECE_A,
       });
     });
 
@@ -175,7 +179,7 @@ describe('traducirFases', () => {
       padres,
     );
     const historias = plan.nodos.filter(
-      ({ tipo }) => tipo === TipoNodo.HISTORIA,
+      ({ tipo }) => tipo === TIPO_NODO.HISTORIA,
     );
 
     it('una HU por padre, con su título real y de origen tracker; ésta manda (soloSiFalta: false)', () => {
@@ -196,33 +200,33 @@ describe('traducirFases', () => {
     it('la FASE PERTENECE_A su HU; sin task o sin padre conocido, queda sin HU', () => {
       const deHu = plan.conexiones.filter(
         ({ tipo, destinoExternoId }) =>
-          tipo === TipoConexion.PERTENECE_A &&
+          tipo === TIPO_CONEXION.PERTENECE_A &&
           destinoExternoId.startsWith('hu:'),
       );
       expect(deHu).toEqual([
         {
           origenExternoId: externoFase(10),
           destinoExternoId: externoHistoria('19565'),
-          tipo: TipoConexion.PERTENECE_A,
+          tipo: TIPO_CONEXION.PERTENECE_A,
         },
         {
           origenExternoId: externoFase(9),
           destinoExternoId: externoHistoria('19565'),
-          tipo: TipoConexion.PERTENECE_A,
+          tipo: TIPO_CONEXION.PERTENECE_A,
         },
         {
           origenExternoId: externoFase(32),
           destinoExternoId: externoHistoria('20379'),
-          tipo: TipoConexion.PERTENECE_A,
+          tipo: TIPO_CONEXION.PERTENECE_A,
         },
       ]);
     });
 
     it('sin mapa de padres, no hay HU (el mapa sale del tracker, no de la prosa de la FASE)', () => {
       const sinMapa = traducirFases(conTask, [], ETAPAS_POR_DEFECTO, 'sag');
-      expect(sinMapa.nodos.some(({ tipo }) => tipo === TipoNodo.HISTORIA)).toBe(
-        false,
-      );
+      expect(
+        sinMapa.nodos.some(({ tipo }) => tipo === TIPO_NODO.HISTORIA),
+      ).toBe(false);
     });
   });
 });

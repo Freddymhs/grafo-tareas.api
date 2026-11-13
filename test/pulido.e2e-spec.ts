@@ -1,3 +1,7 @@
+import {
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../src/common/constants/tipos.constants';
 import { join } from 'node:path';
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
@@ -5,9 +9,9 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { TipoConexion, TipoNodo } from '@prisma/client';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/database/prisma.service';
+import { sembrarEspacioTrabajo, vaciarBase } from './fixtures/sembrar-espacio';
 import { AreaService } from './../src/modules/area/area.service';
 import { RolesService } from './../src/modules/roles/roles.service';
 
@@ -32,6 +36,7 @@ describe('El pulido del grafo (e2e, FASE 16) — descartar sin borrar y la bitá
     app: NestFastifyApplication;
     prisma: PrismaService;
     ids: Record<string, string>;
+    proyecto: string;
   };
   const pedir = async <T>(
     method: 'GET' | 'POST' | 'PATCH',
@@ -70,30 +75,36 @@ describe('El pulido del grafo (e2e, FASE 16) — descartar sin borrar y la bitá
     await ctx.app.init();
     await ctx.app.getHttpAdapter().getInstance().ready();
     ctx.prisma = ctx.app.get(PrismaService);
-    await ctx.prisma.conexion.deleteMany();
-    await ctx.prisma.nodo.deleteMany();
-    await ctx.prisma.descarte.deleteMany();
-    await ctx.prisma.cambio.deleteMany();
+    await vaciarBase(ctx.prisma);
+    const sembrado = await sembrarEspacioTrabajo(ctx.prisma);
+    ctx.proyecto = sembrado.proyectoSagId;
 
-    const crear = (tipo: TipoNodo, titulo: string) =>
+    const crear = (tipo: string, titulo: string) =>
       ctx.prisma.nodo.create({
-        data: { tipo, titulo, posX: 1, posY: 2, posZ: 3 },
+        data: {
+          tipo,
+          titulo,
+          posX: 1,
+          posY: 2,
+          posZ: 3,
+          proyectoId: ctx.proyecto,
+        },
       });
-    const fase = await crear(TipoNodo.FASE, 'FASE 22');
-    const tarjeta = await crear(TipoNodo.TAREA, 'preguntas');
-    const duda = await crear(TipoNodo.DUDA, '¿qué preguntas?');
-    const nota = await crear(TipoNodo.TAREA, '01-oct · retro');
+    const fase = await crear(TIPO_NODO.FASE, 'FASE 22');
+    const tarjeta = await crear(TIPO_NODO.TAREA, 'preguntas');
+    const duda = await crear(TIPO_NODO.DUDA, '¿qué preguntas?');
+    const nota = await crear(TIPO_NODO.TAREA, '01-oct · retro');
     await ctx.prisma.conexion.createMany({
       data: [
         {
           origenId: tarjeta.id,
           destinoId: fase.id,
-          tipo: TipoConexion.PERTENECE_A,
+          tipo: TIPO_CONEXION.PERTENECE_A,
         },
         {
           origenId: tarjeta.id,
           destinoId: duda.id,
-          tipo: TipoConexion.BLOQUEADA_POR,
+          tipo: TIPO_CONEXION.BLOQUEADA_POR,
         },
       ],
     });
@@ -207,7 +218,7 @@ describe('El pulido del grafo (e2e, FASE 16) — descartar sin borrar y la bitá
       'POST',
       '/nodos',
       {
-        tipo: TipoNodo.TAREA,
+        tipo: TIPO_NODO.TAREA,
         titulo: 'horas extras: correo a Fabián',
         vence: '2026-10-19',
       },
@@ -239,7 +250,7 @@ describe('El pulido del grafo (e2e, FASE 16) — descartar sin borrar y la bitá
     const crear = async (titulo: string) =>
       (
         await pedir<{ id: string }>('POST', '/nodos', {
-          tipo: TipoNodo.DUDA,
+          tipo: TIPO_NODO.DUDA,
           titulo,
         })
       ).data.id;
@@ -282,7 +293,8 @@ describe('El pulido del grafo (e2e, FASE 16) — descartar sin borrar y la bitá
     const crearImportado = (externoId: string, titulo: string) =>
       ctx.prisma.nodo.create({
         data: {
-          tipo: TipoNodo.TAREA,
+          proyectoId: ctx.proyecto,
+          tipo: TIPO_NODO.TAREA,
           titulo,
           externoOrigen: 'todoist',
           externoId,
@@ -319,5 +331,62 @@ describe('El pulido del grafo (e2e, FASE 16) — descartar sin borrar y la bitá
     expect(data.diferencias.map(({ externoId }) => externoId)).not.toContain(
       igual.externoId,
     );
+  });
+  describe('descartes y proyectos (FASE 22, Tarea 8)', () => {
+    it('un descarte de antes de la FASE (sin proyectoId en su JSON) vuelve al proyecto por defecto', async () => {
+      const nodoId = '5d1f3a2e-6c5b-4a43-9a5f-0c7f2b6f3a10';
+      await ctx.prisma.descarte.create({
+        data: {
+          nodoId,
+          titulo: 'descartada antes de la FASE 22',
+          motivo: 'vieja',
+          nodo: {
+            id: nodoId,
+            tipo: TIPO_NODO.TAREA,
+            titulo: 'descartada antes de la FASE 22',
+            estado: 'ABIERTO',
+            etiquetas: [],
+            fechaOrigen: '2026-10-01T00:00:00.000Z',
+            createdAt: '2026-10-01T00:00:00.000Z',
+          },
+          conexiones: [],
+        },
+      });
+      const hecho = await pedir<unknown>(
+        'POST',
+        `/descartes/${nodoId}/restaurar`,
+        {},
+      );
+      expect(hecho.status).toBe(201);
+      const vuelto = await ctx.prisma.nodo.findUniqueOrThrow({
+        where: { id: nodoId },
+      });
+      expect(vuelto.proyectoId).toBe(ctx.proyecto);
+    });
+
+    it('restaurar a un proyecto archivado restaura igual: archivar no es borrar', async () => {
+      const espacio = await ctx.prisma.espacio.findFirstOrThrow({});
+      const archivado = await ctx.prisma.proyecto.create({
+        data: { espacioId: espacio.id, nombre: 'Archivado', archivado: true },
+      });
+      const nodo = await ctx.prisma.nodo.create({
+        data: {
+          tipo: TIPO_NODO.TAREA,
+          titulo: 'en el archivado',
+          proyectoId: archivado.id,
+        },
+      });
+      await pedir('POST', `/nodos/${nodo.id}/descartar`, { motivo: 'prueba' });
+      const hecho = await pedir<unknown>(
+        'POST',
+        `/descartes/${nodo.id}/restaurar`,
+        {},
+      );
+      expect(hecho.status).toBe(201);
+      const vuelto = await ctx.prisma.nodo.findUniqueOrThrow({
+        where: { id: nodo.id },
+      });
+      expect(vuelto.proyectoId).toBe(archivado.id);
+    });
   });
 });

@@ -11,8 +11,14 @@ import {
   Post,
   Put,
   Query,
+  Res,
 } from '@nestjs/common';
+import type { FastifyReply } from 'fastify';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  AVISO_PROYECTO_POR_DEFECTO,
+  HEADER_AVISO_PROYECTO,
+} from '../../common/constants/index.js';
 import { ErrorResponseDto } from '../../common/dto/index.js';
 import {
   CreateNodoDto,
@@ -63,8 +69,15 @@ export class NodosController {
   @ApiResponse({ status: 201, type: NodoResponseDto })
   @ApiResponse({ status: 400, type: ErrorResponseDto })
   @ApiResponse({ status: 409, type: ErrorResponseDto })
-  create(@Body() dto: CreateNodoDto) {
-    return this.service.create(dto);
+  async create(
+    @Body() dto: CreateNodoDto,
+    @Res({ passthrough: true }) respuesta: FastifyReply,
+  ) {
+    const nodo = await this.service.create(dto);
+    if (dto.proyectoId === undefined) {
+      respuesta.header(HEADER_AVISO_PROYECTO, AVISO_PROYECTO_POR_DEFECTO);
+    }
+    return nodo;
   }
 
   @Patch(':id')

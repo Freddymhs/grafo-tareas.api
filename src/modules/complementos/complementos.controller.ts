@@ -1,3 +1,5 @@
+import { RequiereMetodo } from '../../common/decorators/index.js';
+import { METODO_TRABAJO_HU } from '../../common/constants/index.js';
 import {
   Body,
   Controller,
@@ -18,6 +20,7 @@ import {
   EscalarDto,
 } from './dto/index.js';
 
+@RequiereMetodo(METODO_TRABAJO_HU)
 @ApiTags('Complementos')
 @Controller('nodos')
 export class ComplementosController {

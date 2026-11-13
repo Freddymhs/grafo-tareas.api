@@ -1,5 +1,8 @@
+import {
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../../common/constants/tipos.constants.js';
 import { Injectable } from '@nestjs/common';
-import { TipoConexion, TipoNodo } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
 import { RamaResponseDto } from './dto/index.js';
 
@@ -9,7 +12,7 @@ export class RamasRepository {
 
   async listarConMiembros(): Promise<RamaResponseDto[]> {
     const ramas = await this.prisma.nodo.findMany({
-      where: { tipo: TipoNodo.RAMA },
+      where: { tipo: TIPO_NODO.RAMA },
       orderBy: { createdAt: 'asc' },
       select: {
         id: true,
@@ -17,7 +20,7 @@ export class RamasRepository {
         color: true,
         estado: true,
         _count: {
-          select: { entrantes: { where: { tipo: TipoConexion.PERTENECE_A } } },
+          select: { entrantes: { where: { tipo: TIPO_CONEXION.PERTENECE_A } } },
         },
       },
     });

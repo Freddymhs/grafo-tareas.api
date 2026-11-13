@@ -1,13 +1,17 @@
+import { RequiereMetodo } from '../../common/decorators/index.js';
+import { METODO_TRABAJO_HU } from '../../common/constants/index.js';
 import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ErrorResponseDto } from '../../common/dto/index.js';
-import { NodoResumenDto } from '../nodos/dto/index.js';
+import { NodoResponseDto, NodoResumenDto } from '../nodos/dto/index.js';
 import { DerivadoService } from './derivado.service.js';
 import {
   BloqueadoResponseDto,
   DiaQueryDto,
   DiaResponseDto,
+  EspacioQueryDto,
   FamiliaResponseDto,
+  HoyPuedoQueryDto,
   LiberaResponseDto,
   CarrilDto,
   PaginaDto,
@@ -23,20 +27,35 @@ export class DerivadoController {
   constructor(private readonly service: DerivadoService) {}
 
   @Get('derivado/hoy-puedo')
-  @ApiOperation({ summary: 'Hoy puedo…: trabajo ABIERTO que nada bloquea' })
+  @ApiOperation({
+    summary:
+      'Hoy puedo…: trabajo ABIERTO que nada bloquea, sin lo archivado (?proyecto= / ?espacio=)',
+  })
   @ApiResponse({ status: 200, type: [NodoResumenDto] })
-  hoyPuedo() {
-    return this.service.hoyPuedo();
+  hoyPuedo(@Query() { proyecto, espacio }: HoyPuedoQueryDto) {
+    return this.service.hoyPuedo({ proyectoId: proyecto, espacioId: espacio });
+  }
+
+  @Get('proyectos/:id/vecinos')
+  @ApiOperation({
+    summary:
+      'Los nodos de otros proyectos conectados con algo de éste (los «fantasmas» de la vista de un proyecto)',
+  })
+  @ApiResponse({ status: 200, type: [NodoResponseDto] })
+  @ApiResponse({ status: 404, type: ErrorResponseDto })
+  vecinos(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.vecinos(id);
   }
 
   @Get('derivado/dia')
+  @RequiereMetodo(METODO_TRABAJO_HU)
   @ApiOperation({
     summary:
       'El parte del día: terminé, en curso (y si pasa del límite), detenido y para decir',
   })
   @ApiResponse({ status: 200, type: DiaResponseDto })
-  dia(@Query() { desde }: DiaQueryDto) {
-    return this.service.dia(desde);
+  dia(@Query() { desde, espacio }: DiaQueryDto) {
+    return this.service.dia(desde, espacio);
   }
 
   @Get('derivado/ultimo-cambio')
@@ -50,23 +69,25 @@ export class DerivadoController {
   }
 
   @Get('derivado/paginas')
+  @RequiereMetodo(METODO_TRABAJO_HU)
   @ApiOperation({
     summary:
       'Las páginas de la VR: una por HU (su árbol y lo que la bloquea) y «Sin HU» al final',
   })
   @ApiResponse({ status: 200, type: [PaginaDto] })
-  paginas() {
-    return this.service.paginas();
+  paginas(@Query() { espacio }: EspacioQueryDto) {
+    return this.service.paginas(espacio);
   }
 
   @Get('derivado/plan')
+  @RequiereMetodo(METODO_TRABAJO_HU)
   @ApiOperation({
     summary:
       'El tablero del plan: una columna por carril con sus piezas abiertas, en orden de ronda (?libro= una HU)',
   })
   @ApiResponse({ status: 200, type: [CarrilDto] })
-  plan(@Query() { libro }: PlanQueryDto) {
-    return this.service.plan(libro);
+  plan(@Query() { libro, espacio }: PlanQueryDto) {
+    return this.service.plan(libro, espacio);
   }
 
   @Get('nodos/:id/familia')

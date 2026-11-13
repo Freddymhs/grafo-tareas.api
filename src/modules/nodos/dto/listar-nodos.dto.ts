@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Cara, EstadoNodo, TipoNodo } from '@prisma/client';
+import { Cara, EstadoNodo } from '@prisma/client';
 import {
   IsEnum,
   IsIn,
@@ -16,10 +16,11 @@ import {
 import { PaginationQueryDto } from '../../../common/dto/index.js';
 
 export class ListarNodosDto extends PaginationQueryDto {
-  @ApiPropertyOptional({ enum: TipoNodo })
+  @ApiPropertyOptional({ type: String })
   @IsOptional()
-  @IsEnum(TipoNodo)
-  tipo?: TipoNodo;
+  @IsString()
+  @IsNotEmpty()
+  tipo?: string;
 
   @ApiPropertyOptional({ enum: EstadoNodo })
   @IsOptional()
@@ -85,6 +86,22 @@ export class ListarNodosDto extends PaginationQueryDto {
   @IsOptional()
   @IsUUID()
   rama?: string;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Solo los nodos de este proyecto',
+  })
+  @IsOptional()
+  @IsUUID()
+  proyecto?: string;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Solo los nodos de los proyectos de este espacio',
+  })
+  @IsOptional()
+  @IsUUID()
+  espacio?: string;
 
   @ApiPropertyOptional({
     example: '25327',

@@ -27,12 +27,19 @@ export class PiezasRepository {
     pieza: NodoPlan,
     alrededor: readonly NodoPlan[],
     conexiones: readonly ConexionPlan[],
+    proyectoId: string,
   ): Promise<Nodo> {
     return this.prisma.$transaction(async (tx) => {
       const conOrigen = await Promise.all(
         alrededor.map((nodo) => conOrigenExistente(tx, nodo)),
       );
-      await aplicarPlan(tx, origen, [pieza, ...conOrigen], conexiones);
+      await aplicarPlan(
+        tx,
+        origen,
+        [pieza, ...conOrigen],
+        conexiones,
+        proyectoId,
+      );
       return tx.nodo.findUniqueOrThrow({
         where: {
           externoOrigen_externoId: {

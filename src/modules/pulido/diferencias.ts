@@ -11,6 +11,8 @@ export const CAMPOS_EDITABLES = [
   'color',
   // FASE 17: pasar una pieza del plan a lo real (o al revés) es una edición más.
   'cara',
+  // FASE 22: mover un nodo de proyecto también queda en la bitácora.
+  'proyectoId',
 ] as const;
 export type CampoEditable = (typeof CAMPOS_EDITABLES)[number];
 

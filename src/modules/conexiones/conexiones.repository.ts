@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Conexion, TipoConexion } from '@prisma/client';
+import { Conexion } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
 import { CreateConexionDto } from './dto/index.js';
 
@@ -7,7 +7,7 @@ import { CreateConexionDto } from './dto/index.js';
 export class ConexionesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listar(nodoId?: string, tipo?: TipoConexion): Promise<Conexion[]> {
+  async listar(nodoId?: string, tipo?: string): Promise<Conexion[]> {
     const deEseNodo = nodoId
       ? { OR: [{ origenId: nodoId }, { destinoId: nodoId }] }
       : {};
@@ -29,6 +29,11 @@ export class ConexionesRepository {
     return this.prisma.conexion.findUnique({
       where: { origenId_destinoId_tipo: { origenId, destinoId, tipo } },
     });
+  }
+
+  async existeTipo(nombre: string): Promise<boolean> {
+    const cuenta = await this.prisma.tipoConexion.count({ where: { nombre } });
+    return cuenta > 0;
   }
 
   async contarNodos(ids: readonly string[]): Promise<number> {

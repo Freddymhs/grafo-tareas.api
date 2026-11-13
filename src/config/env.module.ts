@@ -17,6 +17,7 @@ export const EnvModule = ConfigModule.forRoot({
     THROTTLE_LIMIT: Joi.number().default(100),
     ROLES_ARCHIVO: Joi.string().allow('').optional(),
     REFS_ARCHIVO: Joi.string().allow('').optional(),
+    PROYECTO_POR_DEFECTO: Joi.string().allow('').optional(),
   }),
   validationOptions: { abortEarly: false },
 });

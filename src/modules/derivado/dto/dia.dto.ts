@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsOptional } from 'class-validator';
+import { IsDateString, IsOptional, IsUUID } from 'class-validator';
 import { NodoResumenDto } from '../../nodos/dto/index.js';
 
 export class DiaQueryDto {
@@ -11,6 +11,15 @@ export class DiaQueryDto {
   @IsOptional()
   @IsDateString()
   desde?: string;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description:
+      'El espacio (tiene que usar el método de trabajo); sin él, el del proyecto por defecto',
+  })
+  @IsOptional()
+  @IsUUID()
+  espacio?: string;
 }
 
 export class EnCursoDto {

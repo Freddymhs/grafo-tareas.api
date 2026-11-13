@@ -1,6 +1,10 @@
+import {
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../../common/constants/tipos.constants.js';
 // FASE_*.md + entendimiento.md → plan del grafo (puro). Cada FASE es un nodo FASE con su etapa derivada de
 // las casillas y la etiqueta de su rol (C11); `**Dependencias**` son conexiones DEPENDE_DE entre FASEs; cada punto ABIERTO es una DUDA.
-import { EstadoNodo, TipoConexion, TipoNodo } from '@prisma/client';
+import { EstadoNodo } from '@prisma/client';
 import {
   ETAPA_TRAMITES,
   ETIQUETA_MERGEADA,
@@ -88,7 +92,7 @@ function nodoDeFase(fase: FaseLeida, etapas: readonly string[]): NodoPlan {
     .join(' · ');
   return {
     externoId: externoFase(fase.numero),
-    tipo: TipoNodo.FASE,
+    tipo: TIPO_NODO.FASE,
     titulo,
     descripcion: descripcion || null,
     estado: fase.terminada ? EstadoNodo.CERRADO : EstadoNodo.ABIERTO,
@@ -110,7 +114,7 @@ function tramiteDe(fase: FaseLeida, etiqueta: string): NodoPlan | null {
   const falta = pendiente.length > 0;
   return {
     externoId: externoTramite(fase.numero),
-    tipo: TipoNodo.TAREA,
+    tipo: TIPO_NODO.TAREA,
     titulo: falta
       ? `${tituloFase(fase.numero)}: falta ${pendiente.join(', ')}`
       : `${tituloFase(fase.numero)}: cierre oficial completo`,
@@ -128,7 +132,7 @@ function tramiteDe(fase: FaseLeida, etiqueta: string): NodoPlan | null {
 function nodoDeAbierto(abierto: AbiertoLeido): DudaPlan {
   return {
     externoId: externoAbierto(abierto.taskId, abierto.orden),
-    tipo: TipoNodo.DUDA,
+    tipo: TIPO_NODO.DUDA,
     titulo: abierto.titulo,
     descripcion: abierto.texto,
     estado: EstadoNodo.ABIERTO,
@@ -175,18 +179,18 @@ export function traducirFases(
       .map((numero) => ({
         origenExternoId: externoFase(fase.numero),
         destinoExternoId: externoFase(numero),
-        tipo: TipoConexion.DEPENDE_DE,
+        tipo: TIPO_CONEXION.DEPENDE_DE,
       })),
   );
   const deTramites: ConexionPlan[] = tramites.map(({ fase, tramite }) => ({
     origenExternoId: tramite.externoId,
     destinoExternoId: externoFase(fase),
-    tipo: TipoConexion.PERTENECE_A,
+    tipo: TIPO_CONEXION.PERTENECE_A,
   }));
   const aSuHu: ConexionPlan[] = deHu.map(({ fase, hu }) => ({
     origenExternoId: externoFase(fase),
     destinoExternoId: externoHistoria(hu),
-    tipo: TipoConexion.PERTENECE_A,
+    tipo: TIPO_CONEXION.PERTENECE_A,
   }));
   return {
     origen: origenFases(proyecto),

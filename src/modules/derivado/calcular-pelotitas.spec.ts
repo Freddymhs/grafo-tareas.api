@@ -1,4 +1,4 @@
-import { TipoConexion } from '@prisma/client';
+import { TIPO_CONEXION } from '../../common/constants/tipos.constants.js';
 import { calcularPelotitas } from './calcular-pelotitas';
 import type { CarrilDelPlan } from './calcular-tablero-plan';
 
@@ -10,7 +10,7 @@ const carril = (
 const depende = (
   origenId: string,
   destinoId: string,
-  tipo: TipoConexion = TipoConexion.DEPENDE_DE,
+  tipo: string = TIPO_CONEXION.DEPENDE_DE,
 ) => ({ origenId, destinoId, tipo });
 
 // La HU 24576 del 26-10, en dos líneas: A · Detalle y áreas (26957 → 26963) y B · Revisión (26958 → 26960 → 26961);
@@ -86,8 +86,8 @@ describe('calcularPelotitas — la línea de cada pieza y las líneas que espera
     const pelotitas = calcularPelotitas(
       PLAN,
       [
-        depende('26963', '26958', TipoConexion.PERTENECE_A),
-        depende('26963', '26958', TipoConexion.BLOQUEADA_POR),
+        depende('26963', '26958', TIPO_CONEXION.PERTENECE_A),
+        depende('26963', '26958', TIPO_CONEXION.BLOQUEADA_POR),
       ],
       ORDEN,
     );

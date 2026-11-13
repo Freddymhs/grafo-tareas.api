@@ -1,5 +1,5 @@
+import { TIPO_NODO } from '../../common/constants/tipos.constants.js';
 import { Injectable } from '@nestjs/common';
-import { TipoNodo } from '@prisma/client';
 import { NodosService } from '../nodos/nodos.service.js';
 import { CreateRamaDto } from './dto/index.js';
 import { RamasRepository } from './ramas.repository.js';
@@ -16,6 +16,6 @@ export class RamasService {
   }
 
   async create(dto: CreateRamaDto) {
-    return this.nodos.create({ ...dto, tipo: TipoNodo.RAMA });
+    return this.nodos.create({ ...dto, tipo: TIPO_NODO.RAMA });
   }
 }

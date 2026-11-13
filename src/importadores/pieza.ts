@@ -1,6 +1,9 @@
+import {
+  TIPO_NODO,
+  TIPO_CONEXION,
+} from '../common/constants/tipos.constants.js';
 // La pieza del reparto (FASE 13 R4, FASE 17): qué es una pieza y qué trae al grafo (su HU y su carril). Una sola
 // regla para los dos caminos por los que entra una pieza: el importador del tablero y `POST /piezas` (el adaptador).
-import { TipoConexion, TipoNodo } from '@prisma/client';
 import {
   ETIQUETA_CARRIL,
   ETIQUETA_PIEZA,
@@ -81,7 +84,7 @@ export function alrededorDePieza(
   const nodoCarril: NodoPlan | null = carril
     ? {
         externoId: externoCarril(pieza.hu, carril),
-        tipo: TipoNodo.RAMA,
+        tipo: TIPO_NODO.RAMA,
         titulo: `${pieza.hu} · ${carril}`,
         ...SIN_TABLERO,
         // La API arma el tablero del plan con una columna por carril: lo reconoce por esta etiqueta, no por su id.
@@ -96,7 +99,7 @@ export function alrededorDePieza(
   const conexiones = nodos.map(({ externoId: destino }) => ({
     origenExternoId: externoId,
     destinoExternoId: destino,
-    tipo: TipoConexion.PERTENECE_A,
+    tipo: TIPO_CONEXION.PERTENECE_A,
   }));
   return { nodos, conexiones };
 }

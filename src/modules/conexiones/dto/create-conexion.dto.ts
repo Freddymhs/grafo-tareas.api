@@ -1,6 +1,6 @@
+import { TIPO_CONEXION } from '../../../common/constants/tipos.constants.js';
 import { ApiProperty } from '@nestjs/swagger';
-import { TipoConexion } from '@prisma/client';
-import { IsEnum, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
 
 export class CreateConexionDto {
   @ApiProperty({
@@ -17,7 +17,8 @@ export class CreateConexionDto {
   @IsUUID()
   destinoId!: string;
 
-  @ApiProperty({ enum: TipoConexion, example: TipoConexion.DEPENDE_DE })
-  @IsEnum(TipoConexion)
-  tipo!: TipoConexion;
+  @ApiProperty({ type: String, example: TIPO_CONEXION.DEPENDE_DE })
+  @IsString()
+  @IsNotEmpty()
+  tipo!: string;
 }

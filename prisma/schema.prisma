@@ -6,18 +6,6 @@ datasource db {
   provider = "postgresql"
 }
 
-/// Qué es un nodo del grafo (docs/_CONCEPTO.md § Modelo de dominio). HISTORIA y no HU: vocabulario de cualquier empresa.
-enum TipoNodo {
-  TAREA
-  HISTORIA
-  FASE
-  RAMA
-  DUDA
-  PERSONA
-  PR
-  DAILY_ITEM
-}
-
 enum EstadoNodo {
   ABIERTO
   CERRADO
@@ -30,61 +18,58 @@ enum Cara {
   PLAN
 }
 
-/// DEPENDE_DE, ESPERA_RESPUESTA_DE y BLOQUEADA_POR bloquean al origen mientras el destino siga ABIERTO.
-enum TipoConexion {
-  DEPENDE_DE
-  ESPERA_RESPUESTA_DE
-  BLOQUEADA_POR
-  PERTENECE_A
-  EN_DAILY_DE
-}
-
 model Nodo {
-  id            String     @id @default(uuid())
-  tipo          TipoNodo
+  id            String      @id @default(uuid())
+  /// Nombre de un `TipoNodo` del espacio del proyecto; el servicio lo valida contra la tabla.
+  tipo          String
   titulo        String
   descripcion   String?
   /// Una línea con las palabras del humano: de qué trata el nodo, para explicarlo en una reunión sin cuaderno
   /// (2026-10-26). La escribe /flow:pbi:compactar con su sí; la VR la muestra al seleccionar el nodo.
   resumen       String?
-  estado        EstadoNodo @default(ABIERTO)
-  cara          Cara       @default(REAL)
+  /// null cuando el tipo no tiene ciclo.
+  estado        EstadoNodo? @default(ABIERTO)
+  cara          Cara        @default(REAL)
   /// Solo los nodos RAMA: el color de la rama, en hex (#rrggbb).
   color         String?
   /// De dónde se importó (texto libre: todoist, azure, github…) y su id allá. La API no conoce la lista (C3).
-  externoOrigen String?    @map("externo_origen")
-  externoId     String?    @map("externo_id")
+  externoOrigen String?     @map("externo_origen")
+  externoId     String?     @map("externo_id")
   /// Columna del tablero (una de ETAPAS, C9); null = entrada. Tiene sentido en TAREA e HISTORIA.
   etapa         String?
-  etiquetas     String[]   @default([])
+  etiquetas     String[]    @default([])
   /// 1 = la más urgente … 4 = sin prioridad (los p1-p4 de Todoist).
   prioridad     Int?
-  vence         DateTime?  @db.Date
+  vence         DateTime?   @db.Date
   /// Posición en el mapa 3D, persistida para que el mapa no cambie entre sesiones (C2).
-  posX          Float?     @map("pos_x")
-  posY          Float?     @map("pos_y")
-  posZ          Float?     @map("pos_z")
+  posX          Float?      @map("pos_x")
+  posY          Float?      @map("pos_y")
+  posZ          Float?      @map("pos_z")
   /// Cuándo nació en su fuente (la fecha de creación de la tarjeta en Todoist); lo creado acá, al crearse. Nunca vacía:
   /// todo nodo tiene fecha (FASE 15) y nada se oculta por no tenerla.
-  fechaOrigen   DateTime   @default(now()) @map("fecha_origen")
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
+  fechaOrigen   DateTime    @default(now()) @map("fecha_origen")
+  proyectoId    String      @map("proyecto_id")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
 
+  proyecto  Proyecto   @relation(fields: [proyectoId], references: [id], onDelete: Restrict)
   salientes Conexion[] @relation("origen")
   entrantes Conexion[] @relation("destino")
 
   @@unique([externoOrigen, externoId])
   @@index([tipo, estado])
   @@index([etapa])
+  @@index([proyectoId])
   @@map("nodos")
 }
 
 model Conexion {
-  id        String       @id @default(uuid())
-  origenId  String       @map("origen_id")
-  destinoId String       @map("destino_id")
-  tipo      TipoConexion
-  createdAt DateTime     @default(now()) @map("created_at")
+  id        String   @id @default(uuid())
+  origenId  String   @map("origen_id")
+  destinoId String   @map("destino_id")
+  /// Nombre de un `TipoConexion` global.
+  tipo      String
+  createdAt DateTime @default(now()) @map("created_at")
 
   origen  Nodo @relation("origen", fields: [origenId], references: [id], onDelete: Cascade)
   destino Nodo @relation("destino", fields: [destinoId], references: [id], onDelete: Cascade)
@@ -138,4 +123,64 @@ model Cambio {
   @@index([nodoId])
   @@index([externoOrigen, externoId])
   @@map("cambios")
+}
+
+/// Un contexto de vida o de trabajo (SIGSA, Mis máquinas…). `metodo` enciende la capa del método de trabajo (solo SIGSA).
+model Espacio {
+  id        String   @id @default(uuid())
+  nombre    String   @unique
+  color     String?
+  orden     Int      @default(0)
+  archivado Boolean  @default(false)
+  metodo    String?
+  etapas    String[] @default([])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  proyectos Proyecto[]
+  tiposNodo TipoNodo[]
+
+  @@map("espacios")
+}
+
+model Proyecto {
+  id        String   @id @default(uuid())
+  espacioId String   @map("espacio_id")
+  nombre    String
+  color     String?
+  orden     Int      @default(0)
+  archivado Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  espacio Espacio @relation(fields: [espacioId], references: [id], onDelete: Restrict)
+  nodos   Nodo[]
+
+  @@unique([espacioId, nombre])
+  @@map("proyectos")
+}
+
+/// Vocabulario de nodos de un espacio. `accionable` = entra a "hoy puedo"; sin ciclo, el nodo no tiene estado.
+model TipoNodo {
+  id         String  @id @default(uuid())
+  espacioId  String  @map("espacio_id")
+  nombre     String
+  color      String?
+  forma      String?
+  tieneCiclo Boolean @default(true) @map("tiene_ciclo")
+  accionable Boolean @default(false)
+
+  espacio Espacio @relation(fields: [espacioId], references: [id], onDelete: Cascade)
+
+  @@unique([espacioId, nombre])
+  @@map("tipos_nodo")
+}
+
+/// Vocabulario de conexiones, global: una conexión puede cruzar espacios.
+model TipoConexion {
+  id        String  @id @default(uuid())
+  nombre    String  @unique
+  bloquea   Boolean @default(false)
+  contiene  Boolean @default(false)
+  simetrica Boolean @default(false)
+
+  @@map("tipos_conexion")
 }
