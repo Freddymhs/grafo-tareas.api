@@ -49,4 +49,4 @@ jobs:
       # El contrato versionado no puede quedar atrás del código: la PWA y la VR generan sus hooks de acá.
       - run: pnpm openapi:export && git diff --exit-code openapi.json
       # La API no conoce ninguna herramienta (concepto § Prueba de que sigue agnóstico).
-      - run: '! grep -rnE "sag\.laboratorio|Laboratorio/|dev\.azure|6VhFQg6v45qcJHPc|todoist" src | grep -v /importadores/'
+      - run: '! grep -rnE "sag\.laboratorio|Laboratorio/|dev\.azure|6VhFQg6v45qcJHPc|todoist" src'

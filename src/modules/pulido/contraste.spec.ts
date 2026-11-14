@@ -1,9 +1,12 @@
 import { TipoCambio } from '@prisma/client';
 import { calcularContraste } from './contraste';
 
+/** Una fuente cualquiera: el contraste no depende de cuál (la API no nombra herramientas). */
+const ORIGEN_FUENTE = 'fuente-externa';
+
 const importado = (id: string, externoId: string, titulo = id) => ({
   id,
-  externoOrigen: 'todoist',
+  externoOrigen: ORIGEN_FUENTE,
   externoId,
   titulo,
 });
@@ -14,7 +17,7 @@ const edicion = (nodoId: string, campo: string) => ({
   motivo: 'más claro',
 });
 
-describe('calcularContraste — Todoist ↔ grafo, desde el grafo (FASE 16)', () => {
+describe('calcularContraste — fuente ↔ grafo, desde el grafo (FASE 16)', () => {
   const contraste = calcularContraste(
     [
       importado('a', 'T1'),
@@ -29,7 +32,7 @@ describe('calcularContraste — Todoist ↔ grafo, desde el grafo (FASE 16)', ()
     ],
     [
       {
-        externoOrigen: 'todoist',
+        externoOrigen: ORIGEN_FUENTE,
         externoId: 'T4',
         titulo: 'preguntas',
         motivo: 'sin contenido',
@@ -50,7 +53,7 @@ describe('calcularContraste — Todoist ↔ grafo, desde el grafo (FASE 16)', ()
   it('lista solo lo que difiere, con qué cambió y por qué', () => {
     expect(contraste.diferencias).toEqual([
       {
-        externoOrigen: 'todoist',
+        externoOrigen: ORIGEN_FUENTE,
         externoId: 'T2',
         titulo: 'b',
         estado: 'EDITADO',
@@ -58,7 +61,7 @@ describe('calcularContraste — Todoist ↔ grafo, desde el grafo (FASE 16)', ()
         motivo: 'más claro',
       },
       {
-        externoOrigen: 'todoist',
+        externoOrigen: ORIGEN_FUENTE,
         externoId: 'T4',
         titulo: 'preguntas',
         estado: 'DESCARTADO',

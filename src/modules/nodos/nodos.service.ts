@@ -117,7 +117,7 @@ export class NodosService {
   async update(id: string, dto: UpdateNodoDto) {
     const nodo = await this.findOne(id);
     this.validarColor(nodo.tipo, dto.color);
-    // FASE 16: lo que se edita en el grafo queda en la bitácora, y el importador ya no lo pisa con lo de la fuente.
+    // FASE 16: lo que se edita en el grafo queda en la bitácora, y lo que vuelva a llegar de la fuente ya no lo pisa.
     const { motivo, ...pedido } = dto;
     const cambios = await this.conEstadoDelTipo(nodo, pedido);
     await this.etapas.validar(

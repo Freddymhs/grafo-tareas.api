@@ -57,7 +57,7 @@ export class NodoResponseDto extends NodoResumenDto {
 
   @ApiProperty({
     description:
-      'Cuándo nació en su fuente (la tarjeta en Todoist) o, si se creó acá, al crearse. Nunca vacía',
+      'Cuándo nació en su fuente (la tarjeta importada) o, si se creó acá, al crearse. Nunca vacía',
   })
   fechaOrigen!: Date;
 

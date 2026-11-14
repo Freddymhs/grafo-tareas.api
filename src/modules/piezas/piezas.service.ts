@@ -3,17 +3,13 @@ import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { Cara, EstadoNodo, Nodo } from '@prisma/client';
 import { ValidationError } from '../../common/exceptions/index.js';
-import {
-  alrededorDePieza,
-  esCarril,
-  piezaDe,
-} from '../../importadores/pieza.js';
-import type { NodoPlan } from '../../importadores/plan.js';
+import { alrededorDePieza, esCarril, piezaDe } from './pieza.js';
+import type { NodoPlan } from './plan.js';
 import { ProyectoPorDefectoService } from '../nodos/proyecto-por-defecto.service.js';
 import { CreatePiezaDto } from './dto/index.js';
 import { PiezasRepository } from './piezas.repository.js';
 
-/** Las piezas que entran por el contrato del tablero (el adaptador, con `borrador`) y no por un importador. */
+/** Las piezas que entran por el contrato del tablero (el adaptador, con `borrador`). */
 export const ORIGEN_TABLERO = 'tablero';
 
 const SIN_CABECERA =
@@ -28,7 +24,7 @@ export class PiezasService {
     private readonly proyectoPorDefecto: ProyectoPorDefectoService,
   ) {}
 
-  /** Una pieza en la cara PLAN de su HU, con la misma regla que el importador: su ronda, su HU y su carril. */
+  /** Una pieza en la cara PLAN de su HU, con la regla de `pieza.ts`: su ronda, su HU y su carril. */
   async crear({ carril, titulo, descripcion }: CreatePiezaDto): Promise<Nodo> {
     const pieza = piezaDe(titulo, descripcion);
     if (!pieza) throw new ValidationError(SIN_CABECERA);

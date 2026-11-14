@@ -5,7 +5,7 @@ import { calcularContraste } from './contraste.js';
 import { PulidoRepository } from './pulido.repository.js';
 
 /**
- * El pulido del grafo (FASE 16): Freddy limpia en el grafo, nunca en Todoist. Nada se borra de verdad: se descarta
+ * El pulido del grafo (FASE 16): Freddy limpia en el grafo, nunca en la fuente. Nada se borra de verdad: se descarta
  * (archivado entero, se puede deshacer) y cada cambio queda en la bitácora con su motivo, para el contraste final.
  */
 @Injectable()

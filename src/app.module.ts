@@ -20,7 +20,6 @@ import { EspaciosModule } from './modules/espacios/espacios.module';
 import { ProyectosModule } from './modules/proyectos/proyectos.module';
 import { TiposModule } from './modules/tipos/tipos.module';
 import { PiezasModule } from './modules/piezas/piezas.module';
-import { ImportadoresModule } from './importadores/todoist/importadores.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { GLOBAL_VALIDATION_PIPE } from './common/pipes/validation.pipe';
@@ -71,7 +70,6 @@ import { GLOBAL_VALIDATION_PIPE } from './common/pipes/validation.pipe';
     EspaciosModule,
     ProyectosModule,
     TiposModule,
-    ImportadoresModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },

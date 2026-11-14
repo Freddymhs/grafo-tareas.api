@@ -31,7 +31,7 @@ interface Pagina {
 }
 
 const PREFIJO = '/api/v1';
-const FIXTURES = join(__dirname, 'fixtures/fases');
+const FIXTURES = join(__dirname, 'fixtures/area');
 
 describe('Las páginas de la VR (e2e, FASE 15) — una por HU, la API decide', () => {
   const ctx = {} as {

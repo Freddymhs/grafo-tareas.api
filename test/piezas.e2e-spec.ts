@@ -28,11 +28,11 @@ interface Nodo {
 }
 
 const PREFIJO = '/api/v1';
-const FIXTURES = join(__dirname, 'fixtures/fases');
+const FIXTURES = join(__dirname, 'fixtures/area');
 const CABECERA = (nm: string) =>
   `# ${nm} · Catálogo de criterios   HU 20379 · task por crear · reparto 2026-10-18\n\nla especificación`;
 
-describe('POST /piezas (e2e, FASE 19) — una pieza del reparto entra al plan con la regla del importador', () => {
+describe('POST /piezas (e2e, FASE 19) — una pieza del reparto entra al plan con la regla de la pieza', () => {
   const ctx = {} as {
     app: NestFastifyApplication;
     prisma: PrismaService;
@@ -63,7 +63,7 @@ describe('POST /piezas (e2e, FASE 19) — una pieza del reparto entra al plan co
     ctx.prisma = ctx.app.get(PrismaService);
     await vaciarBase(ctx.prisma);
     const { proyectoSagId } = await sembrarEspacioTrabajo(ctx.prisma);
-    // La HU y un carril que ya trajo el importador del tablero, con sus externos.
+    // La HU y un carril que ya estaban en el grafo con otro origen, con sus externos.
     const hu = await ctx.prisma.nodo.create({
       data: {
         proyectoId: proyectoSagId,
@@ -79,7 +79,7 @@ describe('POST /piezas (e2e, FASE 19) — una pieza del reparto entra al plan co
         tipo: TIPO_NODO.RAMA,
         titulo: '20379 · C · Recepción',
         etiquetas: ['carril'],
-        externoOrigen: 'todoist',
+        externoOrigen: 'fuente-externa',
         externoId: 'carril:20379:C · Recepción',
       },
     });
@@ -142,7 +142,7 @@ describe('POST /piezas (e2e, FASE 19) — una pieza del reparto entra al plan co
     ]);
   });
 
-  it('un carril nuevo es una RAMA «HU · carril» con la etiqueta carril, como la deja el importador', async () => {
+  it('un carril nuevo es una RAMA «HU · carril» con la etiqueta carril', async () => {
     const res = await crear({
       carril: 'A · Bandeja',
       titulo: '2️⃣ 20379 · 1.6 · Buscador · por crear',

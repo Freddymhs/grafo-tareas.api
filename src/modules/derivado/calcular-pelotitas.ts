@@ -16,7 +16,7 @@ export interface Pelotita {
 }
 
 /**
- * Las pelotitas de cada pieza del plan, como en el viejo Draft de Todoist (Freddy, 2026-10-26). La primera es el color
+ * Las pelotitas de cada pieza del plan, como en el viejo tablero del plan (Freddy, 2026-10-26). La primera es el color
  * de su carril, la línea paralela en la que va. Después va una por cada OTRO carril del que espera por sus DEPENDE_DE,
  * con el número de la tarjeta que espera: la pelotita sola decía la línea pero no la tarjeta, y confundía. Solo cuenta
  * lo que sigue en el plan: depender de una pieza cerrada ya no frena. «Sin carril» no tiene color y no da pelotita.

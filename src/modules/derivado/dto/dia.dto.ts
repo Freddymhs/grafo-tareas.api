@@ -83,7 +83,7 @@ export class DiaResponseDto {
   @ApiProperty({
     type: [NodoResumenDto],
     description:
-      'Trámites de cierre pendientes (URL commit, evidencias…) que dejó importar:fases',
+      'Trámites de cierre pendientes (URL commit, evidencias…): los que ya existen; no se crean nuevos',
   })
   tramites!: NodoResumenDto[];
 }

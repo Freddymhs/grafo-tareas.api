@@ -1,5 +1,5 @@
 # Fixture: dos roles y el catálogo de complementos del roles.yaml de la plantilla (~/dotfiles/workspace-template/docs/roles.yaml), copiados tal cual.
-# Lo usan los tests del importador de FASEs y de GET /roles. Si la plantilla cambia sus reglas, se recopian.
+# Lo usan los tests de roles y de complementos. Si la plantilla cambia sus reglas, se recopian.
 version: 1
 defecto: producto
 

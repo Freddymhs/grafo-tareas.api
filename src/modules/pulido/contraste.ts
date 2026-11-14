@@ -58,10 +58,8 @@ const conFuente = <
   fila.externoOrigen !== null && fila.externoId !== null;
 
 /**
- * El contraste Todoist ↔ grafo, visto desde el grafo (FASE 16): de todo lo que vino de una fuente, qué sigue igual, qué se
- * editó acá (según la bitácora) y qué se descartó, con su motivo. Es lo que Freddy revisa antes de migrar del grafo a
- * Todoist. Lo creado en el grafo no entra: no tiene contraparte. Lo que falte en el grafo y siga en la fuente lo dice el
- * importador en seco (sus «nuevos»).
+ * El contraste fuente ↔ grafo, visto desde el grafo (FASE 16): de todo lo que vino de una fuente, qué sigue igual, qué se
+ * editó acá (según la bitácora) y qué se descartó, con su motivo. Lo creado en el grafo no entra: no tiene contraparte.
  */
 export function calcularContraste(
   nodos: readonly NodoConFuente[],

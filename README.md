@@ -4,8 +4,9 @@ La fuente de verdad de `grafo-tareas`: tareas como **grafo**, no como árbol. Na
 (NestJS 11 + Fastify + Prisma 7 + Postgres); el plan vive en el orquestador: `../docs/_CONCEPTO.md` y
 `../docs/backlog/FASE_2_API_GRAFO.md`.
 
-**La API no conoce ninguna herramienta** (ni Todoist, ni Azure): solo nodos, conexiones y ramas. Lo único que
-nombra una herramienta son los importadores (`src/importadores/`, FASE 3). El CI lo verifica con un grep.
+**La API no conoce ninguna herramienta**: solo nodos, conexiones y ramas, sin excepciones (desde la FASE 25 no tiene
+importadores). El CI lo verifica con un grep sobre `src`. Una FASE llega al grafo como tarjeta, por el adaptador
+`grafo` del orquestador; sus casillas y criterios siguen en su `.md`.
 
 ## El dominio
 
@@ -32,8 +33,8 @@ GET/POST        espacios/:id/tipos-nodo   PATCH tipos-nodo/:id   GET/POST tipos-
 GET             health
 ```
 
-**Piezas (FASE 19).** Una pieza del reparto entra al grafo por dos caminos: el importador del tablero y `POST /piezas`
-(lo usa el adaptador `grafo` en `borrador`). Los dos aplican la misma regla, `src/importadores/pieza.ts`: cara PLAN,
+**Piezas (FASE 19).** Una pieza del reparto entra al grafo por `POST /piezas` (lo usa el adaptador `grafo` en
+`borrador`), con la regla de `src/modules/piezas/pieza.ts`: cara PLAN,
 etiquetas `pieza` y `ronda:N`, y la pieza `PERTENECE_A` su HU —la de la cabecera de la especificación— y a la RAMA de su
 carril (la columna de `GET /derivado/plan`). Sin esa cabecera, o con un carril que no es `<letra> · <zona>`, 400.
 
@@ -62,39 +63,6 @@ pnpm build && pnpm start:prod           # http://localhost:3000/docs
 
 Gates: `pnpm type-check` · `pnpm lint` · `pnpm test` (unit, repos mockeados) · `pnpm test:e2e` (contra `grafo_tareas_test`: — el nombre de la base lo fuerza `test/setup-e2e.ts`, no `.env`
 el escenario del concepto —Tomás, una duda W2 y tres tareas— de punta a punta).
-
-## Importar los `FASE_*.md` del método (FASE 5) — cada vez que cambian las casillas
-
-`--proyecto-grafo <uuid>` es obligatorio en los dos importadores (FASE 22): el proyecto del grafo donde escriben.
-
-```bash
-pnpm importar:fases -- --backlog ../docs/backlog --tareas ../Tareas --proyecto-grafo <uuid> --seco   # cuenta, no escribe
-pnpm importar:fases -- --backlog ../docs/backlog --tareas ../Tareas --proyecto-grafo <uuid>          # aplica en una transacción
-```
-
-Cada `FASE_n_*.md` es un nodo FASE «FASE n» con la etiqueta de su rol (`**Tipo**:`, o el defecto) y la etapa derivada de sus
-casillas según `roles.yaml` (por defecto `../docs/roles.yaml`, o `--roles <archivo>`; mismas reglas que `fases.html` /
-`calidad.html` y que `~/dotfiles/tests/test_roles.py`) y `DEPENDE_DE` por su **Dependencias**; cada viñeta de `## ⚠️ ABIERTO` en
-`Tareas/<id>/entendimiento.md` es una DUDA que deja a la TAREA `[<id>]…` `BLOQUEADA_POR` ella, y se cierra sola cuando
-desaparece del archivo (solo cuando se pasa `--tareas`: sin él, las dudas ya importadas no se tocan). Idempotente por
-`externo { fases-md:<proyecto>, fase:n | abierto:<id>:n }`; el proyecto es el nombre del orquestador o `--proyecto`, así
-las FASE de dos orquestadores no se pisan. Cada FASE se titula `FASE n · Nombre · task` y la primera línea de su descripción es el avance de fases.html. Con
-`--adoptar todoist`, la «FASE n» que dejó Todoist pasa a ser la del `.md` (mismo nodo, sus conexiones): lo que se usa para
-el Laboratorio. Solo lee los archivos.
-
-## Importar desde Todoist (FASE 3) — una vez, como migración
-
-```bash
-pnpm importar:todoist -- --proyecto <id-del-proyecto> --proyecto-grafo <uuid> --seco   # traduce y cuenta, no escribe
-pnpm importar:todoist -- --proyecto <id-del-proyecto> --proyecto-grafo <uuid>          # aplica el plan en una transacción
-```
-
-Lee con `TODOIST_API_KEY` (del entorno, nunca del repo) y **nunca escribe en Todoist**. Es idempotente: la segunda
-corrida actualiza y no duplica (`externo {todoist, id}`). Las reglas (secciones → estado, subtareas → el padre
-DEPENDE_DE las hijas, círculos → ramas, `FASE n` → nodo FASE, `BLOQUEO … esperando a <persona>` → ESPERA_RESPUESTA_DE,
-con la persona reconocida por sus alias del `personas:` del `refs.yaml` del área: sin esa clave, no se crea ninguna)
-están en `src/importadores/todoist/traducir.ts`, una función pura con test sobre un fixture real
-(`test/fixtures/todoist/`), y se decidieron en `../docs/backlog/FASE_3_IMPORTADOR_TODOIST.md`.
 
 ## Convenciones
 

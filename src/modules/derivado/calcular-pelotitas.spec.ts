@@ -30,7 +30,7 @@ const ORDEN = new Map([
 const carrilesDe = (pelotitas: readonly { carril: string }[] = []) =>
   pelotitas.map(({ carril: titulo }) => titulo);
 
-describe('calcularPelotitas — la línea de cada pieza y las líneas que espera (el viejo Draft de Todoist)', () => {
+describe('calcularPelotitas — la línea de cada pieza y las líneas que espera (el viejo tablero del plan)', () => {
   it('cada pieza lleva primero la pelotita de su carril, sin número de espera', () => {
     const pelotitas = calcularPelotitas(PLAN, [], ORDEN);
     expect(pelotitas.get('26957')).toEqual([

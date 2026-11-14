@@ -33,7 +33,7 @@ interface Dia {
 }
 
 const PREFIJO = '/api/v1';
-const FIXTURES = join(__dirname, 'fixtures/fases');
+const FIXTURES = join(__dirname, 'fixtures/area');
 
 describe('El día (e2e) — terminé, en curso, detenido y para decir', () => {
   const ctx = {} as {

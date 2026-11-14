@@ -27,8 +27,8 @@ interface Nodo {
 }
 
 const PREFIJO = '/api/v1';
-const ROLES = join(__dirname, 'fixtures/fases/roles.yaml');
-const REFS = join(__dirname, 'fixtures/fases/refs.yaml');
+const ROLES = join(__dirname, 'fixtures/area/roles.yaml');
+const REFS = join(__dirname, 'fixtures/area/refs.yaml');
 const UUID_INEXISTENTE = '00000000-0000-4000-8000-000000000000';
 
 describe('Complementos (e2e) — lo que cuelga de un PBI', () => {

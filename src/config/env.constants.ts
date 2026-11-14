@@ -6,8 +6,6 @@ export const ENV_KEYS = {
   PINO_LOG_LEVEL: 'PINO_LOG_LEVEL',
   THROTTLE_TTL: 'THROTTLE_TTL',
   THROTTLE_LIMIT: 'THROTTLE_LIMIT',
-  /** Solo la lee el importador de Todoist (FASE 3). Nunca se loguea. */
-  TODOIST_API_KEY: 'TODOIST_API_KEY',
   /** Columnas del tablero separadas por coma; sin ella, ETAPAS_POR_DEFECTO. */
   ETAPAS: 'ETAPAS',
   /** El roles.yaml del área (C11); sin ella, la API no tiene roles: GET /roles vacío y GET /etapas = ETAPAS. */

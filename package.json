@@ -24,9 +24,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prepare": "husky",
-    "openapi:export": "pnpm build && node dist/openapi && prettier --write openapi.json",
-    "importar:todoist": "pnpm build && node dist/importadores/todoist/cli",
-    "importar:fases": "pnpm build && node dist/importadores/fases/cli"
+    "openapi:export": "pnpm build && node dist/openapi && prettier --write openapi.json"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",

@@ -114,7 +114,7 @@ export class DerivadoRepository {
     });
   }
 
-  /** Tareas y FASE cerradas desde `desde`, sin las notas (`updatedAt` es honesto: los importadores solo escriben lo que cambia). */
+  /** Tareas y FASE cerradas desde `desde`, sin las notas (`updatedAt` es honesto: nada lo reescribe sin un cambio). */
   async terminadas(
     desde: Date,
     notas: readonly string[],

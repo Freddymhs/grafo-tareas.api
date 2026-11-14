@@ -7,7 +7,7 @@ export interface ConteoAplicado {
   readonly nodos: {
     readonly nuevos: number;
     readonly actualizados: number;
-    /** Descartados al pulir el grafo (FASE 16): la fuente los sigue trayendo y no se reviven. */
+    /** Descartados al pulir el grafo (FASE 16): aunque el plan los vuelva a traer, no se reviven. */
     readonly descartados: number;
   };
   readonly conexiones: {
@@ -90,7 +90,7 @@ export async function guardarNodo(
   // La fecha de origen solo se escribe si la fuente la trae: sin ella, el nodo conserva la suya.
   const fechaOrigen = nodo.fechaOrigen ? new Date(nodo.fechaOrigen) : null;
   const conFecha = fechaOrigen ? { fechaOrigen } : {};
-  // La cara (FASE 17), igual: la trae solo el importador que sabe de qué proyecto vino el nodo.
+  // La cara (FASE 17), igual: solo si el plan la trae.
   const conCara = nodo.cara ? { cara: nodo.cara } : {};
   const existente = await tx.nodo.findUnique({
     where: { externoOrigen_externoId: externo },

@@ -1,14 +1,14 @@
 import {
   TIPO_NODO,
   TIPO_CONEXION,
-} from '../common/constants/tipos.constants.js';
-// La pieza del reparto (FASE 13 R4, FASE 17): qué es una pieza y qué trae al grafo (su HU y su carril). Una sola
-// regla para los dos caminos por los que entra una pieza: el importador del tablero y `POST /piezas` (el adaptador).
+} from '../../common/constants/tipos.constants.js';
+// La pieza del reparto (FASE 13 R4, FASE 17): qué es una pieza y qué trae al grafo (su HU y su carril). Entra por
+// `POST /piezas` (el adaptador).
 import {
   ETIQUETA_CARRIL,
   ETIQUETA_PIEZA,
   etiquetaDeRonda,
-} from '../common/constants/grafo.constants.js';
+} from '../../common/constants/grafo.constants.js';
 import { nodoHistoria, SIN_TABLERO } from './plan.js';
 import type { ConexionPlan, NodoPlan } from './plan.js';
 
@@ -26,7 +26,6 @@ const ESTADO_PIEZA: ReadonlyArray<readonly [RegExp, string]> = [
 ];
 /** Un carril del reparto se llama `A · zona` (zona de código: dos carriles no comparten archivos). */
 const CARRIL = /^[A-Z] · .+$/;
-export { ETIQUETA_PIEZA };
 /**
  * Un color por carril, por su letra: en la VR cada carril se ve como su rama. Sin morados: en la VR el morado es el PBI,
  * y la C violeta hacía pasar por PBI a sus piezas (Freddy en el visor, 2026-10-18: «¿qué significa el morado?»).

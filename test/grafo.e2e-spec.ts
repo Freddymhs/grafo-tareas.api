@@ -108,7 +108,7 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
   });
 
   it('un importador no duplica: mismo origen + id → 409 (C3)', async () => {
-    const externo = { externoOrigen: 'todoist', externoId: '123' };
+    const externo = { externoOrigen: 'fuente-externa', externoId: '123' };
     const primero = await post('/nodos', {
       tipo: TIPO_NODO.TAREA,
       titulo: 'a',
@@ -340,5 +340,24 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
 
     const libre = await get<Bloqueado>(`/nodos/${depende}/bloqueado`);
     expect(libre.body.data.bloqueado).toBe(false);
+  });
+
+  it('una FASE en APROBADO sin la etiqueta `mergeada` no bloquea: la columna basta (FASE 25 D2)', async () => {
+    const aprobada = await ctx.prisma.nodo.create({
+      data: {
+        proyectoId: ctx.proyecto,
+        tipo: TIPO_NODO.FASE,
+        titulo: 'FASE 39 · mergeada por el hook, sin etiqueta',
+        etiquetas: ['producto'],
+        etapa: 'APROBADO',
+      },
+    });
+    const depende = await nodo(TIPO_NODO.TAREA, 'depende de la 39');
+    await conectar(depende, aprobada.id, TIPO_CONEXION.DEPENDE_DE);
+
+    const libre = await get<Bloqueado>(`/nodos/${depende}/bloqueado`);
+    expect(libre.body.data.bloqueado).toBe(false);
+    const hoy = await get<ConId[]>('/derivado/hoy-puedo');
+    expect(hoy.body.data.map(({ id }) => id)).toContain(depende);
   });
 });

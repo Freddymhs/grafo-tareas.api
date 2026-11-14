@@ -1316,7 +1316,7 @@
             }
           }
         },
-        "summary": "El contraste Todoist ↔ grafo, desde el grafo: qué sigue igual, qué se editó y qué se descartó, con su motivo",
+        "summary": "El contraste fuente ↔ grafo, desde el grafo: qué sigue igual, qué se editó y qué se descartó, con su motivo",
         "tags": ["Pulido"]
       }
     },
@@ -2140,7 +2140,7 @@
           "fechaOrigen": {
             "format": "date-time",
             "type": "string",
-            "description": "Cuándo nació en su fuente (la tarjeta en Todoist) o, si se creó acá, al crearse. Nunca vacía"
+            "description": "Cuándo nació en su fuente (la tarjeta importada) o, si se creó acá, al crearse. Nunca vacía"
           },
           "proyectoId": {
             "type": "string",
@@ -2631,7 +2631,7 @@
             }
           },
           "tramites": {
-            "description": "Trámites de cierre pendientes (URL commit, evidencias…) que dejó importar:fases",
+            "description": "Trámites de cierre pendientes (URL commit, evidencias…): los que ya existen; no se crean nuevos",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NodoResumenDto"
@@ -2797,7 +2797,7 @@
             "format": "date"
           },
           "pelotitas": {
-            "description": "La primera, su carril; las demás, una por cada otro carril del que depende (como el Draft de Todoist)",
+            "description": "La primera, su carril; las demás, una por cada otro carril del que depende (como el viejo tablero del plan)",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PelotitaDto"
@@ -3383,7 +3383,7 @@
           "fechaOrigen": {
             "format": "date-time",
             "type": "string",
-            "description": "Cuándo nació en su fuente (la tarjeta en Todoist) o, si se creó acá, al crearse. Nunca vacía"
+            "description": "Cuándo nació en su fuente (la tarjeta importada) o, si se creó acá, al crearse. Nunca vacía"
           },
           "proyectoId": {
             "type": "string",

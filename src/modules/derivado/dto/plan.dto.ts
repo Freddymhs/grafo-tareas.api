@@ -44,7 +44,7 @@ export class PiezaDelPlanDto extends NodoResumenDto {
   @ApiProperty({
     type: [PelotitaDto],
     description:
-      'La primera, su carril; las demás, una por cada otro carril del que depende (como el Draft de Todoist)',
+      'La primera, su carril; las demás, una por cada otro carril del que depende (como el viejo tablero del plan)',
   })
   pelotitas!: PelotitaDto[];
 

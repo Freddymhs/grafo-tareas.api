@@ -19,7 +19,7 @@ const nodo: Nodo = {
   estado: EstadoNodo.CERRADO,
   cara: Cara.PLAN,
   color: null,
-  externoOrigen: 'todoist',
+  externoOrigen: 'fuente-externa',
   externoId: '6hhMVChrX8gjMWwc',
   proyectoId: '9c8a4f0e-1d2b-4c3a-8e5f-7a6b5c4d3e2f',
   etapa: '🔎 Precheck fin de sprint (archivadas)',

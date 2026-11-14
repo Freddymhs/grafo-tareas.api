@@ -21,7 +21,7 @@ import {
 } from './dto/index.js';
 import { PulidoService } from './pulido.service.js';
 
-/** Pulir el grafo sin tocar Todoist (FASE 16): descartar en vez de borrar, y la bitácora de cada cambio. */
+/** Pulir el grafo sin tocar la fuente (FASE 16): descartar en vez de borrar, y la bitácora de cada cambio. */
 @ApiTags('Pulido')
 @Controller()
 export class PulidoController {
@@ -66,7 +66,7 @@ export class PulidoController {
   @Get('contraste')
   @ApiOperation({
     summary:
-      'El contraste Todoist ↔ grafo, desde el grafo: qué sigue igual, qué se editó y qué se descartó, con su motivo',
+      'El contraste fuente ↔ grafo, desde el grafo: qué sigue igual, qué se editó y qué se descartó, con su motivo',
   })
   @ApiResponse({ status: 200, type: ContrasteResponseDto })
   contraste() {

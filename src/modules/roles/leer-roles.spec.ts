@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { leerRoles } from './leer-roles';
 
 const TEXTO = readFileSync(
-  join(__dirname, '../../../test/fixtures/fases/roles.yaml'),
+  join(__dirname, '../../../test/fixtures/area/roles.yaml'),
   'utf8',
 );
 

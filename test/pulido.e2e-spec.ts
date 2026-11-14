@@ -29,7 +29,7 @@ interface Cambio {
 }
 
 const PREFIJO = '/api/v1';
-const FIXTURES = join(__dirname, 'fixtures/fases');
+const FIXTURES = join(__dirname, 'fixtures/area');
 
 describe('El pulido del grafo (e2e, FASE 16) — descartar sin borrar y la bitácora', () => {
   const ctx = {} as {
@@ -296,7 +296,7 @@ describe('El pulido del grafo (e2e, FASE 16) — descartar sin borrar y la bitá
           proyectoId: ctx.proyecto,
           tipo: TIPO_NODO.TAREA,
           titulo,
-          externoOrigen: 'todoist',
+          externoOrigen: 'fuente-externa',
           externoId,
         },
       });

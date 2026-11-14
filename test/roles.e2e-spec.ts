@@ -25,7 +25,7 @@ interface Pagina {
 }
 
 const PREFIJO = '/api/v1';
-const ROLES = join(__dirname, 'fixtures/fases/roles.yaml');
+const ROLES = join(__dirname, 'fixtures/area/roles.yaml');
 
 describe('Roles (e2e) — GET /roles, GET /etapas con las columnas de los roles y GET /nodos?rol=', () => {
   const ctx = {} as { app: NestFastifyApplication; prisma: PrismaService };

@@ -5,7 +5,7 @@ import { ETAPAS_POR_DEFECTO } from '../../common/constants/grafo.constants';
 import { EtapasService } from '../nodos/etapas.service';
 import { RolesService } from './roles.service';
 
-const ARCHIVO = join(__dirname, '../../../test/fixtures/fases/roles.yaml');
+const ARCHIVO = join(__dirname, '../../../test/fixtures/area/roles.yaml');
 const config = (entorno: Record<string, string>) =>
   ({ get: (clave: string) => entorno[clave] }) as unknown as ConfigService;
 const conRoles = () => new RolesService(config({ ROLES_ARCHIVO: ARCHIVO }));

@@ -1,8 +1,9 @@
 import { TIPO_NODO } from './tipos.constants.js';
 
 /**
- * La FASE con su casilla «Mergeado» tildada (FASE 17): la pone `importar:fases`, nunca se deduce de otra cosa. Depender de
- * ella ya está cumplido aunque siga ABIERTA por sus trámites (`dependenciaCumplida`).
+ * La FASE con su casilla «Mergeado» tildada (FASE 17): la llevan las FASE que ya la tenían, y no la pone nadie más
+ * (FASE 25 D2). Lo mergeado de hoy es la columna `ETAPA_MERGEADA`. Depender de cualquiera de las dos ya está cumplido
+ * aunque siga ABIERTA por sus trámites (`dependenciaCumplida`).
  */
 export const ETIQUETA_MERGEADA = 'mergeada';
 
@@ -64,7 +65,7 @@ export const LIMITE_MAXIMO_PAGINA = 500;
 export const PREFIJO_COMPLEMENTO = 'complemento:';
 /** La clave del catálogo que deja `POST /nodos/:id/decidir`: una duda contestada (tiene que estar en roles.yaml). */
 export const CLAVE_DECISION = 'decision';
-/** La clave del catálogo para los trámites de cierre que deja `importar:fases` (FASE 10). */
+/** La clave del catálogo para los trámites de cierre (FASE 10): «el día» muestra los que existen; no se crean nuevos. */
 export const CLAVE_TRAMITE = 'tramite';
 /** Un ritual (daily, retro, 1:1) es un DAILY_ITEM con este origen externo, creado la primera vez que se usa. */
 export const ORIGEN_RITUAL = 'ritual';

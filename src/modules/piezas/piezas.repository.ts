@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { Nodo } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
-import { aplicarPlan } from '../../importadores/aplicar-plan.js';
-import type { Tx } from '../../importadores/aplicar-plan.js';
-import type { ConexionPlan, NodoPlan } from '../../importadores/plan.js';
+import { aplicarPlan } from './aplicar-plan.js';
+import type { Tx } from './aplicar-plan.js';
+import type { ConexionPlan, NodoPlan } from './plan.js';
 
-/** El carril que ya trajo un importador se reusa con su origen: si no, la misma columna del plan saldría dos veces. */
+/** El carril que ya está en el grafo con otro origen se reusa con ese origen: si no, la misma columna del plan saldría dos veces. */
 async function conOrigenExistente(tx: Tx, nodo: NodoPlan): Promise<NodoPlan> {
   if (nodo.origen) return nodo;
   const existente = await tx.nodo.findFirst({
