@@ -50,3 +50,17 @@ jobs:
       - run: pnpm openapi:export && git diff --exit-code openapi.json
       # La API no conoce ninguna herramienta (concepto § Prueba de que sigue agnóstico).
       - run: '! grep -rnE "sag\.laboratorio|Laboratorio/|dev\.azure|6VhFQg6v45qcJHPc|todoist" src'
+
+  # FASE 27: con los tests en verde, el push a main queda en producción. Corre en el runner del Mac Mini el
+  # deploy/desplegar-aqui.sh publicado del orquestador (el mismo que usa bin/desplegar a mano). Despliega todo junto e
+  # idempotente: lo que no cambió no se reconstruye. El candado del script evita dos composes a la vez entre repos.
+  deploy:
+    name: Desplegar en el Mac Mini
+    needs: [ci]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, mac-mini, grafo]
+    steps:
+      - name: deploy/desplegar-aqui.sh de origin/main del orquestador
+        run: |
+          git -C "$HOME/apps/grafo-tareas" fetch -q origin main
+          git -C "$HOME/apps/grafo-tareas" show origin/main:deploy/desplegar-aqui.sh | bash -s
