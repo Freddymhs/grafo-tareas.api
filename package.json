@@ -97,7 +97,8 @@
       "unrs-resolver"
     ],
     "overrides": {
-      "fastify": "$fastify"
+      "fastify": "$fastify",
+      "proxy-addr": ">=2.0.8"
     }
   },
   "jest": {
