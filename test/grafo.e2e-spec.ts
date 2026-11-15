@@ -36,7 +36,7 @@ const PREFIJO = '/api/v1';
 const UUID_INEXISTENTE = '00000000-0000-4000-8000-000000000000';
 const ORIGEN_WEB = 'http://localhost:3001';
 
-describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres tareas', () => {
+describe('Grafo (e2e) — el escenario del concepto: Persona A, una duda W2 y tres tareas', () => {
   // Lo llena beforeAll una sola vez: un holder en vez de `let` (regla §0).
   const ctx = {} as {
     app: NestFastifyApplication;
@@ -123,7 +123,7 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
   });
 
   it('arma el grafo y valida las conexiones', async () => {
-    ids.tomas = await nodo(TIPO_NODO.PERSONA, 'Tomás');
+    ids.personaA = await nodo(TIPO_NODO.PERSONA, 'Persona A');
     ids.duda = await nodo(TIPO_NODO.DUDA, 'W2 · ¿condición o tabla?');
     ids.t1 = await nodo(TIPO_NODO.TAREA, 'Validador del paso 3');
     ids.t2 = await nodo(TIPO_NODO.TAREA, 'Service del paso 3');
@@ -131,8 +131,13 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
     ids.libre = await nodo(TIPO_NODO.TAREA, 'Leer la wiki');
 
     expect(
-      (await conectar(ids.duda, ids.tomas, TIPO_CONEXION.ESPERA_RESPUESTA_DE))
-        .status,
+      (
+        await conectar(
+          ids.duda,
+          ids.personaA,
+          TIPO_CONEXION.ESPERA_RESPUESTA_DE,
+        )
+      ).status,
     ).toBe(201);
     await conectar(ids.t1, ids.duda, TIPO_CONEXION.BLOQUEADA_POR);
     await conectar(ids.t2, ids.duda, TIPO_CONEXION.BLOQUEADA_POR);
@@ -166,8 +171,8 @@ describe('Grafo (e2e) — el escenario del concepto: Tomás, una duda W2 y tres 
     expect(titulos(hoy.body.data)).toEqual(['Leer la wiki', 'a']);
   });
 
-  it('si Tomás contesta: libera la duda directo y las tres tareas en cadena', async () => {
-    const libera = await get<Libera>(`/nodos/${ids.tomas}/libera`);
+  it('si Persona A contesta: libera la duda directo y las tres tareas en cadena', async () => {
+    const libera = await get<Libera>(`/nodos/${ids.personaA}/libera`);
     expect(titulos(libera.body.data.directos)).toEqual([
       'W2 · ¿condición o tabla?',
     ]);

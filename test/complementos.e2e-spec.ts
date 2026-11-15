@@ -132,7 +132,7 @@ describe('Complementos (e2e) — lo que cuelga de un PBI', () => {
     const persona = await ctx.prisma.nodo.create({
       data: {
         tipo: TIPO_NODO.PERSONA,
-        titulo: 'Carabantes',
+        titulo: 'Persona A',
         proyectoId: ctx.proyecto,
       },
     });
@@ -149,7 +149,7 @@ describe('Complementos (e2e) — lo que cuelga de un PBI', () => {
       `/nodos/${pieza.id}/complementos`,
       {
         tipo: 'duda-negocio',
-        titulo: 'Para Carabantes: ¿dos recepcionistas a la vez?',
+        titulo: 'Para Persona A: ¿dos recepcionistas a la vez?',
         personaId: persona.id,
         prioridad: 1,
       },

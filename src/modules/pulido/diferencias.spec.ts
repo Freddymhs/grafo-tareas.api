@@ -18,12 +18,16 @@ describe('diferencias — qué anota la bitácora de una edición (FASE 16)', ()
   it('solo lo que cambió de verdad, con su antes y su después como texto', () => {
     expect(
       diferencias(antes, {
-        titulo: 'Preguntas para Tomás',
+        titulo: 'Preguntas para Persona A',
         etapa: 'ENTENDIMIENTO',
         etiquetas: ['retro', 'cierre'],
       }),
     ).toEqual([
-      { campo: 'titulo', antes: 'preguntas', despues: 'Preguntas para Tomás' },
+      {
+        campo: 'titulo',
+        antes: 'preguntas',
+        despues: 'Preguntas para Persona A',
+      },
       { campo: 'etiquetas', antes: 'retro', despues: 'retro, cierre' },
     ]);
   });

@@ -219,7 +219,7 @@ describe('El pulido del grafo (e2e, FASE 16) — descartar sin borrar y la bitá
       '/nodos',
       {
         tipo: TIPO_NODO.TAREA,
-        titulo: 'horas extras: correo a Fabián',
+        titulo: 'horas extras: correo a Persona F',
         vence: '2026-10-19',
       },
     );
@@ -266,7 +266,7 @@ describe('El pulido del grafo (e2e, FASE 16) — descartar sin borrar y la bitá
     });
     await pedir('PATCH', `/nodos/${duda}`, {
       estado: 'CERRADO',
-      motivo: 'Thomas, 19-10: «el 1 y el 2 todavía no»',
+      motivo: 'Persona B, 19-10: «el 1 y el 2 todavía no»',
     });
 
     const bitacora = await pedir<Cambio[]>('GET', `/nodos/${duda}/cambios`);
@@ -276,7 +276,7 @@ describe('El pulido del grafo (e2e, FASE 16) — descartar sin borrar y la bitá
       expect.objectContaining({
         campo: 'estado',
         despues: 'CERRADO',
-        motivo: 'Thomas, 19-10: «el 1 y el 2 todavía no»',
+        motivo: 'Persona B, 19-10: «el 1 y el 2 todavía no»',
       }),
     );
     expect(

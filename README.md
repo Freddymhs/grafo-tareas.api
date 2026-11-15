@@ -62,7 +62,7 @@ pnpm build && pnpm start:prod           # http://localhost:3000/docs
 ```
 
 Gates: `pnpm type-check` · `pnpm lint` (arregla; el CI corre `pnpm lint:ci`, sin `--fix`, que falla de verdad) · `pnpm test` (unit, repos mockeados) · `pnpm test:e2e` (contra `grafo_tareas_test`: — el nombre de la base lo fuerza `test/setup-e2e.ts`, no `.env`
-el escenario del concepto —Tomás, una duda W2 y tres tareas— de punta a punta).
+el escenario del concepto —Persona A, una duda W2 y tres tareas— de punta a punta).
 
 ## Convenciones
 

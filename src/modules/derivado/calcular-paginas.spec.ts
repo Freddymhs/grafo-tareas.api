@@ -306,17 +306,17 @@ describe('calcularPaginas — una duda vive en una sola cara: la de lo real gana
       nodo('pieza-plan', TIPO_NODO.TAREA, ABIERTO, PLAN),
       nodo('duda-de-mi-pbi', TIPO_NODO.DUDA),
       nodo('duda-del-plan', TIPO_NODO.DUDA),
-      nodo('carabantes', TIPO_NODO.PERSONA),
-      nodo('graciany', TIPO_NODO.PERSONA),
+      nodo('persona-a', TIPO_NODO.PERSONA),
+      nodo('persona-g', TIPO_NODO.PERSONA),
     ],
     [
       conexion('mi-pbi', PERTENECE_A, 'HU 20379'),
       conexion('pieza-plan', PERTENECE_A, 'HU 20379'),
       conexion('mi-pbi', BLOQUEADA_POR, 'duda-de-mi-pbi'),
       conexion('pieza-plan', BLOQUEADA_POR, 'duda-de-mi-pbi'),
-      conexion('duda-de-mi-pbi', ESPERA_RESPUESTA_DE, 'carabantes'),
+      conexion('duda-de-mi-pbi', ESPERA_RESPUESTA_DE, 'persona-a'),
       conexion('pieza-plan', BLOQUEADA_POR, 'duda-del-plan'),
-      conexion('duda-del-plan', ESPERA_RESPUESTA_DE, 'graciany'),
+      conexion('duda-del-plan', ESPERA_RESPUESTA_DE, 'persona-g'),
     ],
   );
   const contenido = (id: string) =>
@@ -325,9 +325,9 @@ describe('calcularPaginas — una duda vive en una sola cara: la de lo real gana
   it('la duda que destraba lo real se ve en lo real, aunque también frene una pieza del plan', () => {
     expect(contenido('HU 20379')).toEqual([
       'HU 20379',
-      'carabantes',
       'duda-de-mi-pbi',
       'mi-pbi',
+      'persona-a',
     ]);
   });
 
@@ -335,7 +335,7 @@ describe('calcularPaginas — una duda vive en una sola cara: la de lo real gana
     expect(contenido(paginaDelPlan('HU 20379'))).toEqual([
       'HU 20379',
       'duda-del-plan',
-      'graciany',
+      'persona-g',
       'pieza-plan',
     ]);
   });
@@ -350,7 +350,7 @@ describe('calcularPaginas — la duda va en la cara de quien es dueña (Freddy, 
       nodo('mi-pbi', TIPO_NODO.TAREA),
       nodo('pieza-plan', TIPO_NODO.TAREA, ABIERTO, PLAN),
       nodo('duda-de-la-pieza', TIPO_NODO.DUDA),
-      nodo('carabantes', TIPO_NODO.PERSONA),
+      nodo('persona-a', TIPO_NODO.PERSONA),
     ],
     [
       conexion('mi-pbi', PERTENECE_A, 'HU 20379'),
@@ -359,7 +359,7 @@ describe('calcularPaginas — la duda va en la cara de quien es dueña (Freddy, 
       conexion('duda-de-la-pieza', PERTENECE_A, 'pieza-plan'),
       conexion('pieza-plan', BLOQUEADA_POR, 'duda-de-la-pieza'),
       conexion('mi-pbi', BLOQUEADA_POR, 'duda-de-la-pieza'),
-      conexion('duda-de-la-pieza', ESPERA_RESPUESTA_DE, 'carabantes'),
+      conexion('duda-de-la-pieza', ESPERA_RESPUESTA_DE, 'persona-a'),
     ],
   );
   const contenido = (id: string) =>
@@ -368,8 +368,8 @@ describe('calcularPaginas — la duda va en la cara de quien es dueña (Freddy, 
   it('una duda que pertenece a una pieza del plan se ve en el plan, aunque también frene lo real', () => {
     expect(contenido(paginaDelPlan('HU 20379'))).toEqual([
       'HU 20379',
-      'carabantes',
       'duda-de-la-pieza',
+      'persona-a',
       'pieza-plan',
     ]);
   });

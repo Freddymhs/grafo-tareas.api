@@ -4,7 +4,7 @@ import { LARGO_MAXIMO_TITULO } from '../../../common/constants/index.js';
 
 export class EscalarDto {
   @ApiPropertyOptional({
-    example: 'Nicolás',
+    example: 'Persona C',
     description:
       'A quién, si no es el siguiente de la escalera (p. ej. el senior de front en vez del de back)',
   })

@@ -6,7 +6,7 @@ export interface ResultadoLibera {
 }
 
 /**
- * Qué se libera si `cerradoId` se cierra — "si Tomás contesta, se liberan N" (docs/_CONCEPTO.md § Modelo de dominio).
+ * Qué se libera si `cerradoId` se cierra — "si Persona A contesta, se liberan N" (docs/_CONCEPTO.md § Modelo de dominio).
  *
  * `bloqueadoresAbiertos` trae, para cada nodo ABIERTO aguas abajo, sus bloqueadores ABIERTOS. Se avanza por rondas:
  * un nodo se libera cuando TODOS sus bloqueadores ya están resueltos. Es un punto fijo, así que termina aunque el

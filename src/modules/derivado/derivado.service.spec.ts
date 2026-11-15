@@ -92,7 +92,7 @@ describe('DerivadoService', () => {
       const service = await armar();
       mockRepository.aguasAbajo.mockResolvedValueOnce(['duda', 't1', 't2']);
       mockRepository.bloqueosDe.mockResolvedValueOnce([
-        { origenId: 'duda', destinoId: 'tomas' },
+        { origenId: 'duda', destinoId: 'persona-a' },
         { origenId: 't1', destinoId: 'duda' },
         { origenId: 't2', destinoId: 'duda' },
         { origenId: 't2', destinoId: 'otra' },
@@ -102,7 +102,7 @@ describe('DerivadoService', () => {
         resumen('duda', TIPO_NODO.DUDA),
       ]);
 
-      const resultado = await service.libera('tomas');
+      const resultado = await service.libera('persona-a');
 
       expect(mockRepository.bloqueosDe).toHaveBeenCalledWith(
         ['duda', 't1', 't2'],
