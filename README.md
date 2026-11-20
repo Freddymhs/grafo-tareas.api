@@ -57,7 +57,7 @@ accionables) no entran en `hoy-puedo` y `GET /nodos?notas=ocultar` las saca del 
 ```bash
 docker compose up -d postgres          # Postgres 16 en 127.0.0.1:5433 (usuario/clave grafo, bases grafo_tareas y grafo_tareas_test)
 cp .env.example .env
-pnpm install && pnpm prisma:generate && pnpm prisma:migrate
+pnpm install && pnpm prisma:generate && pnpm prisma:migrate   # migrate y studio cargan .env con `node --env-file`: Prisma 7 ya no lo lee solo
 pnpm build && pnpm start:prod           # http://localhost:3000/docs
 ```
 

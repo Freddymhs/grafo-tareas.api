@@ -22,8 +22,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "type-check": "tsc --noEmit",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio",
+    "prisma:migrate": "node --env-file=.env node_modules/prisma/build/index.js migrate dev",
+    "prisma:studio": "node --env-file=.env node_modules/prisma/build/index.js studio",
     "prepare": "husky",
     "openapi:export": "pnpm build && node dist/openapi && prettier --write openapi.json"
   },
